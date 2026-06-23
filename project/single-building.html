@@ -385,12 +385,12 @@
 
         const result = await response.json();
 
-        if (result.ok) {
+        if (response.ok && result.ok) {
           console.log("Saved:", result.path);
           ui.metaInfo.innerHTML += `<br>saved: ${result.filename}`;
         } else {
           console.error(result);
-          alert("Could not save building.");
+          alert(result.error || "Could not save building.");
         }
       } catch (error) {
         console.error(error);

@@ -7,9 +7,11 @@ const PORT = 8000;
 
 const generatedDir = path.join(__dirname, "assets", "generated-buildings");
 
-if (!fs.existsSync(generatedDir)) {
+function ensureGeneratedDir() {
   fs.mkdirSync(generatedDir, { recursive: true });
 }
+
+ensureGeneratedDir();
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.static(__dirname));
@@ -20,10 +22,21 @@ app.use(
 );
 
 app.post("/api/save-building", (req, res) => {
+  try {
+    ensureGeneratedDir();
+  } catch (error) {
+    console.error("Could not create generated-buildings folder:", error);
+    return res.status(500).json({ error: "Could not create generated-buildings folder" });
+  }
+
   const { imageData } = req.body;
 
   if (!imageData) {
     return res.status(400).json({ error: "No imageData provided" });
+  }
+
+  if (!imageData.startsWith("data:image/png;base64,")) {
+    return res.status(400).json({ error: "Image data must be a PNG data URL" });
   }
 
   const base64Data = imageData.replace(/^data:image\/png;base64,/, "");
@@ -45,6 +58,13 @@ app.post("/api/save-building", (req, res) => {
 });
 
 app.get("/api/buildings", (req, res) => {
+  try {
+    ensureGeneratedDir();
+  } catch (error) {
+    console.error("Could not create generated-buildings folder:", error);
+    return res.status(500).json({ error: "Could not create generated-buildings folder" });
+  }
+
   fs.readdir(generatedDir, (err, files) => {
     if (err) {
       return res.status(500).json({ error: "Could not read folder" });

@@ -28,7 +28,8 @@ build/
 .vite/
 
 # Generated project output
-project/assets/generated-buildings/
+project/assets/generated-buildings/*
+!project/assets/generated-buildings/.gitkeep
 
 # Python
 __pycache__/
