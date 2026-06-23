@@ -168,35 +168,27 @@ function generateHouse(x, state) {
   const widthBlocks = chooseWidth(state);
   const heightBlocks = chooseHeight(state);
 
-    
-  const roofFamily = pick(Object.keys(assets.roofs));
-    
+  const hasRoof = chooseHasRoof(state);
+  const roofFamily = hasRoof ? pick(Object.keys(assets.roofs)) : null;
+
   const wallFamily = pick(Object.keys(assets.walls));
-    
   const windowFamily = pick(Object.keys(assets.windows));
 
-  
-    
-  // one exact wall block for the whole building
-    
+  const topAccentWindow = chooseTopAccentWindow(
+    widthBlocks,
+    hasRoof,
+    state,
+    windowFamily
+  );
+
   const wallBlock = pick(assets.walls[wallFamily]);
 
-  
-    
-  // one exact base block for the whole building
-    
-  const baseBlock = pick(assets.base.plain);
+  const hasBase = chooseHasBase(state);
+  const baseBlock = hasBase ? pick(assets.base.plain) : null;
 
-  
-    
   const doorData = chooseDoor(widthBlocks, state);
-    
-  const windowPattern = chooseWindowPattern(state);
-    
-  const windowColumns = getWindowColumns(widthBlocks, windowPattern);
+  const windowPattern = chooseWindowPattern(widthBlocks, state);
 
-  
-    
   const tintColor = chooseBuildingTint(state);
 
   const cells = [];
@@ -216,18 +208,38 @@ function generateHouse(x, state) {
       const isGroundRow = row === heightBlocks - 1;
       const isMiddleRow = row > 0 && row < heightBlocks - 1;
 
-      if (isGroundRow) {
+      if (isGroundRow && baseBlock) {
         cell.base = baseBlock;
       }
 
-      if (isMiddleRow && windowColumns.includes(col)) {
+      const isTopRow = row === 0;
+
+      if (
+        isTopRow &&
+        topAccentWindow &&
+        col === topAccentWindow.col
+      ) {
+        const accentFamily = topAccentWindow.family;
+        const windowState = random() < 0.45 ? "lit" : "dark";
+      
+        cell.window = assets.windows[accentFamily][windowState];
+      
+        // Usually no balcony on the accent top window
+        cell.detail = null;
+      }
+      
+      if (
+        isMiddleRow &&
+        shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
+      ) {
         const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
         const windowState = random() < litChance ? "lit" : "dark";
+      
         cell.window = assets.windows[windowFamily][windowState];
-
+      
         const balconyChance = 0.05 + state.memory * 0.22;
-
-        if (random() < balconyChance) {
+      
+        if (random() < balconyChance && assets.details.balconies[windowFamily]) {
           cell.detail = assets.details.balconies[windowFamily];
         }
       }
@@ -245,9 +257,15 @@ function generateHouse(x, state) {
     y: groundY,
     widthBlocks,
     heightBlocks,
+    hasRoof,
     roofFamily,
     wallFamily,
     windowFamily,
+    wallBlock,
+    hasBase,
+    baseBlock,
+    windowPattern,
+    topAccentWindow,
     tintColor,
     cells,
   };
@@ -269,13 +287,25 @@ function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
   cells[groundRow][doorCol].door = doorData.asset;
 }
 
+function chooseHasRoof(state) {
+  const roofChance = 0.7 - state.density * 0.15 + state.memory * 0.1;
+  return random() < roofChance;
+}
+
+function chooseHasBase(state) {
+  const baseChance = 0.65 + state.order * 0.1;
+  return random() < baseChance;
+}
+
 function drawHouse(house) {
   const houseDrawX = Math.round(house.x);
 
   const bodyTopY = Math.round(house.y - house.heightBlocks * BLOCK);
   const roofY = bodyTopY - BLOCK;
 
-  drawRoof(house, roofY, houseDrawX);
+  if (house.hasRoof) {
+    drawRoof(house, roofY, houseDrawX);
+  }
 
   for (let row = 0; row < house.heightBlocks; row++) {
     for (let col = 0; col < house.widthBlocks; col++) {
@@ -283,15 +313,12 @@ function drawHouse(house) {
       const y = bodyTopY + row * BLOCK;
       const cell = house.cells[row][col];
 
-      // Main wall tile, slightly overlapping
       drawTintedTile(cell.wall, x, y, house.tintColor, 210);
 
-      // Base overlay, also slightly overlapping
       if (cell.base) {
         drawTile(cell.base, x, y);
       }
 
-      // Windows, doors, and details stay exact size
       if (cell.window) {
         image(cell.window, x, y, BLOCK, BLOCK);
       }
@@ -308,6 +335,8 @@ function drawHouse(house) {
 }
 
 function drawRoof(house, roofY, houseDrawX) {
+  if (!house.hasRoof || !house.roofFamily) return;
+
   const roof = assets.roofs[house.roofFamily];
 
   for (let col = 0; col < house.widthBlocks; col++) {
@@ -399,66 +428,126 @@ function chooseDoor(widthBlocks, state) {
   };
 }
 
-function chooseWindowPattern(state) {
-  if (state.order > 0.65) {
-    return pick(["regular", "everySecond"]);
+function chooseWindowPattern(widthBlocks, state) {
+  let patterns = [];
+
+  // More ordered facade rhythms
+  patterns.push("regular");
+  patterns.push("centerColumn");
+
+  if (widthBlocks >= 3) {
+    patterns.push("edgeColumns");
   }
 
-  if (state.memory > 0.6) {
-    return pick(["centered", "everySecond", "sparse"]);
+  // A little more variation
+  patterns.push("everySecond");
+
+  // Checker only from 3 blocks wide
+  if (widthBlocks >= 3) {
+    patterns.push("checker");
   }
 
-  return pick(["regular", "everySecond", "centered"]);
+  // More memory means more irregular/lived-in layouts
+  if (state.memory > 0.55) {
+    patterns.push("checker");
+    patterns.push("sparse");
+  }
+
+  // More order means less chaotic layouts
+  if (state.order > 0.7) {
+    patterns = ["regular", "centerColumn"];
+
+    if (widthBlocks >= 3) {
+      patterns.push("edgeColumns");
+    }
+  }
+
+  return pick(patterns);
 }
 
-function getWindowColumns(widthBlocks, pattern) {
-  const cols = [];
+function shouldPlaceWindow(row, col, heightBlocks, widthBlocks, pattern) {
+  const bodyRowIndex = row - 1;
 
   if (pattern === "regular") {
-    for (let c = 0; c < widthBlocks; c++) {
-      cols.push(c);
+    return true;
+  }
+
+  if (pattern === "centerColumn") {
+    if (widthBlocks === 2) {
+      return col === 0 || col === 1;
     }
+
+    return col === floor(widthBlocks / 2);
+  }
+
+  if (pattern === "edgeColumns") {
+    if (widthBlocks <= 2) {
+      return true;
+    }
+
+    if (widthBlocks === 3) {
+      return col === 0 || col === 2;
+    }
+
+    return col === 1 || col === widthBlocks - 2;
   }
 
   if (pattern === "everySecond") {
-    const offset = widthBlocks % 2 === 0 ? 0 : 1;
-
-    for (let c = 0; c < widthBlocks; c++) {
-      if (c % 2 === offset) {
-        cols.push(c);
-      }
+    if (widthBlocks <= 2) {
+      return col === 0;
     }
 
-    if (cols.length === 0) {
-      cols.push(floor(widthBlocks / 2));
-    }
+    return col % 2 === 0;
   }
 
-  if (pattern === "centered") {
-    if (widthBlocks <= 2) {
-      cols.push(0, 1);
-    } else if (widthBlocks % 2 === 0) {
-      cols.push(widthBlocks / 2 - 1, widthBlocks / 2);
-    } else {
-      cols.push(floor(widthBlocks / 2));
+  if (pattern === "checker") {
+    if (widthBlocks < 3) {
+      return col % 2 === 0;
     }
+
+    return (col + bodyRowIndex) % 2 === 0;
   }
 
   if (pattern === "sparse") {
-    const count = widthBlocks >= 4 ? 2 : 1;
-
-    while (cols.length < count) {
-      const c = floor(random(widthBlocks));
-      if (!cols.includes(c)) {
-        cols.push(c);
-      }
+    if (widthBlocks <= 2) {
+      return col === floor(widthBlocks / 2);
     }
 
-    cols.sort((a, b) => a - b);
+    if (widthBlocks === 3) {
+      return col === 1;
+    }
+
+    return col === 1 || col === widthBlocks - 2;
   }
 
-  return cols;
+  return false;
 }
+
+function chooseTopAccentWindow(widthBlocks, hasRoof, state, mainWindowFamily) {
+  if (!hasRoof) return null;
+  if (widthBlocks < 3) return null;
+  if (widthBlocks % 2 === 0) return null;
+
+  const accentChance = 0.18 + state.memory * 0.25 - state.order * 0.08;
+
+  if (random() > accentChance) {
+    return null;
+  }
+
+  return {
+    col: floor(widthBlocks / 2),
+    family: chooseDifferentWindowFamily(mainWindowFamily),
+  };
+}
+
+function chooseDifferentWindowFamily(mainWindowFamily) {
+  const families = Object.keys(assets.windows).filter((family) => {
+    return family !== mainWindowFamily;
+  });
+
+  return pick(families);
+}
+
 
 function randomGap(state) {
   const minGap = lerp(BLOCK * 0.25, 0, state.density);
