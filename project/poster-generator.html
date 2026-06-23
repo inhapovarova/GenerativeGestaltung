@@ -141,12 +141,6 @@
       loadImage(buildingData.path, (img) => {
         currentBuilding = img;
         currentLayout = createLayout();
-
-        currentLayout.imageCrop = createImageCrop(
-          img,
-          currentLayout.image,
-          currentLayout.imageMode
-        );
       });
     }
 
@@ -155,14 +149,6 @@
       const title = pick(posterTitles);
       const bodyText = pick(posterTexts);
       const caption = "generated facade / modular city system";
-
-      const imageMode = pick([
-        "full",
-        "corner",
-        "topHalf",
-        "bottomHalf",
-        "zoom"
-      ]);
 
       let layout;
 
@@ -235,7 +221,6 @@
       layout.titleText = title;
       layout.bodyText = bodyText;
       layout.captionText = caption;
-      layout.imageMode = imageMode;
 
       return layout;
     }
@@ -252,7 +237,7 @@
         return;
       }
 
-      drawImageBlock(currentBuilding, currentLayout.image, currentLayout.imageCrop);
+      drawImageBlock(currentBuilding, currentLayout.image);
       drawTitle(currentLayout.title, currentLayout.titleText, currentLayout.dominant);
       drawBodyText(currentLayout.text, currentLayout.bodyText);
       drawCaption(currentLayout);
@@ -261,120 +246,41 @@
       // drawGrid();
     }
 
-    function drawImageBlock(img, r, crop) {
-      if (!img || !crop) return;
+    function drawImageBlock(img, r) {
+      if (!img) return;
+
+      const scale = min(r.w / img.width, r.h / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const x = r.x + (r.w - drawW) / 2;
+      const y = r.y + (r.h - drawH) / 2;
 
       image(
         img,
-        r.x,
-        r.y,
-        r.w,
-        r.h,
-        crop.sx,
-        crop.sy,
-        crop.sw,
-        crop.sh
+        x,
+        y,
+        drawW,
+        drawH
       );
-    }
-
-    function createImageCrop(img, r, mode) {
-      let crop = {
-        sx: 0,
-        sy: 0,
-        sw: img.width,
-        sh: img.height
-      };
-
-      if (mode === "corner") {
-        const corner = pick(["tl", "tr", "bl", "br"]);
-
-        crop.sw = img.width * 0.5;
-        crop.sh = img.height * 0.5;
-
-        if (corner === "tr") {
-          crop.sx = img.width * 0.5;
-        }
-
-        if (corner === "bl") {
-          crop.sy = img.height * 0.5;
-        }
-
-        if (corner === "br") {
-          crop.sx = img.width * 0.5;
-          crop.sy = img.height * 0.5;
-        }
-      }
-
-      if (mode === "topHalf") {
-        crop.sx = 0;
-        crop.sy = 0;
-        crop.sw = img.width;
-        crop.sh = img.height * 0.5;
-      }
-
-      if (mode === "bottomHalf") {
-        crop.sx = 0;
-        crop.sy = img.height * 0.5;
-        crop.sw = img.width;
-        crop.sh = img.height * 0.5;
-      }
-
-      if (mode === "zoom") {
-        const zoom = random(0.45, 0.75);
-
-        crop.sw = img.width * zoom;
-        crop.sh = img.height * zoom;
-        crop.sx = random(0, img.width - crop.sw);
-        crop.sy = random(0, img.height - crop.sh);
-      }
-
-      return fitCropToRectAspect(crop, r, img);
-    }
-
-    function fitCropToRectAspect(crop, r, img) {
-      const targetAspect = r.w / r.h;
-      const cropAspect = crop.sw / crop.sh;
-
-      let sx = crop.sx;
-      let sy = crop.sy;
-      let sw = crop.sw;
-      let sh = crop.sh;
-
-      if (cropAspect > targetAspect) {
-        const newW = sh * targetAspect;
-        sx = sx + (sw - newW) / 2;
-        sw = newW;
-      } else {
-        const newH = sw / targetAspect;
-        sy = sy + (sh - newH) / 2;
-        sh = newH;
-      }
-
-      sx = constrain(sx, 0, img.width - sw);
-      sy = constrain(sy, 0, img.height - sh);
-
-      return {
-        sx,
-        sy,
-        sw,
-        sh
-      };
     }
 
     function drawTitle(r, title, dominant) {
       fill("#111111");
       noStroke();
 
-      const size = dominant === "title" ? 66 : 42;
+      const size = dominant === "title" ? 92 : 58;
+      const titleText = title.toUpperCase();
 
+      textFont("Arial Black");
       textSize(size);
-      textLeading(size * 0.9);
+      textLeading(size * 0.86);
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      text(title, r.x, r.y, r.w, r.h);
+      text(titleText, r.x, r.y, r.w, r.h);
 
       textStyle(NORMAL);
+      textFont("Arial");
     }
 
     function drawBodyText(r, bodyText) {
