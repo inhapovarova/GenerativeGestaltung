@@ -112,6 +112,8 @@ function setup() {
 
   groundY = height - BLOCK * 1.2;
 
+  document.getElementById("saveRowBtn").addEventListener("click", saveRowToFolder);
+
   initializeCity();
 }
 
@@ -256,6 +258,92 @@ function drawCity() {
   for (let house of houses) {
     drawHouse(house);
   }
+}
+
+async function saveRowToFolder() {
+  const visibleHouses = houses.filter((house) => {
+    return house.x + house.widthBlocks * BLOCK > 0 && house.x < width;
+  });
+
+  if (!visibleHouses.length) return;
+
+  const imageData = createTransparentRowPNG(visibleHouses);
+  const saveButton = document.getElementById("saveRowBtn");
+  const originalLabel = saveButton.textContent;
+
+  saveButton.textContent = "saving";
+
+  try {
+    const response = await fetch("/api/save-building", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ imageData }),
+    });
+
+    const result = await response.json();
+
+    if (result.ok) {
+      console.log("Saved row:", result.path);
+      saveButton.textContent = "saved";
+      setTimeout(() => {
+        saveButton.textContent = originalLabel;
+      }, 1200);
+    } else {
+      console.error(result);
+      saveButton.textContent = originalLabel;
+      alert("Could not save row.");
+    }
+  } catch (error) {
+    console.error(error);
+    saveButton.textContent = originalLabel;
+    alert("Server is not running. Start it with: node server.js");
+  }
+}
+
+function createTransparentRowPNG(rowHouses) {
+  const padding = TILE_OVERLAP * 2;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (let house of rowHouses) {
+    const roofExtra = house.hasRoof ? BLOCK : 0;
+    const left = Math.max(0, house.x);
+    const right = Math.min(width, house.x + house.widthBlocks * BLOCK);
+    const top = house.y - house.heightBlocks * BLOCK - roofExtra;
+    const bottom = house.y;
+
+    minX = min(minX, left);
+    minY = min(minY, top);
+    maxX = max(maxX, right);
+    maxY = max(maxY, bottom);
+  }
+
+  const rowWidth = ceil(maxX - minX + padding * 2);
+  const rowHeight = ceil(maxY - minY + padding * 2);
+  const pg = createGraphics(rowWidth, rowHeight);
+
+  pg.pixelDensity(1);
+  pg.clear();
+  pg.imageMode(CORNER);
+  pg.noSmooth();
+
+  for (let house of rowHouses) {
+    drawHouseToGraphics(
+      pg,
+      house,
+      house.x - minX + padding,
+      house.y - minY + padding
+    );
+  }
+
+  const dataUrl = pg.canvas.toDataURL("image/png");
+  pg.remove();
+
+  return dataUrl;
 }
 
 // -----------------------------
@@ -625,6 +713,87 @@ function drawHouse(house) {
       }
     }
   }
+}
+
+function drawHouseToGraphics(pg, house, houseX, baselineY) {
+  const houseDrawX = Math.round(houseX);
+  const bodyTopY = Math.round(baselineY - house.heightBlocks * BLOCK);
+  const roofY = bodyTopY - BLOCK;
+
+  if (house.hasRoof) {
+    drawRoofToGraphics(pg, house, roofY, houseDrawX);
+  }
+
+  for (let row = 0; row < house.heightBlocks; row++) {
+    for (let col = 0; col < house.widthBlocks; col++) {
+      const x = houseDrawX + col * BLOCK;
+      const y = bodyTopY + row * BLOCK;
+      const cell = house.cells[row][col];
+
+      drawTintedTileToGraphics(pg, cell.wall, x, y, house.tintColor, 255);
+
+      if (cell.base) {
+        drawTileToGraphics(pg, cell.base, x, y);
+      }
+
+      if (cell.window) {
+        pg.image(cell.window, x, y, BLOCK, BLOCK);
+      }
+
+      if (cell.door) {
+        pg.image(cell.door, x, y, BLOCK, BLOCK);
+      }
+
+      if (cell.detail) {
+        pg.image(cell.detail, x, y, BLOCK, BLOCK);
+      }
+    }
+  }
+}
+
+function drawRoofToGraphics(pg, house, roofY, houseX) {
+  if (!house.hasRoof || !house.roofFamily) return;
+
+  const roof = assets.roofs[house.roofFamily];
+
+  for (let col = 0; col < house.widthBlocks; col++) {
+    const x = houseX + col * BLOCK;
+
+    let roofPart;
+
+    if (col === 0) {
+      roofPart = roof.left;
+    } else if (col === house.widthBlocks - 1) {
+      roofPart = roof.right;
+    } else {
+      roofPart = roof.mid;
+    }
+
+    drawTileToGraphics(pg, roofPart, x, roofY);
+  }
+}
+
+function drawTileToGraphics(pg, img, x, y) {
+  pg.image(
+    img,
+    x - TILE_OVERLAP / 2,
+    y - TILE_OVERLAP / 2,
+    BLOCK + TILE_OVERLAP,
+    BLOCK + TILE_OVERLAP
+  );
+}
+
+function drawTintedTileToGraphics(pg, img, x, y, tintColor, alpha = 255) {
+  pg.push();
+  pg.tint(tintColor[0], tintColor[1], tintColor[2], alpha);
+  pg.image(
+    img,
+    x - TILE_OVERLAP / 2,
+    y - TILE_OVERLAP / 2,
+    BLOCK + TILE_OVERLAP,
+    BLOCK + TILE_OVERLAP
+  );
+  pg.pop();
 }
 
 function drawRoof(house, roofY, houseDrawX) {

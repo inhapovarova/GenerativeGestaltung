@@ -156,9 +156,9 @@
         layout = {
           archetype,
           dominant: "image",
-          title: rectFromGrid(0, 0, 3, 1),
-          text: rectFromGrid(0, 1, 2, 1),
-          image: rectFromGrid(3, 4, 3, 3),
+          title: rectFromGrid(0, 0, 4, 2),
+          text: rectFromGrid(0, 2.35, 2, 1),
+          image: rectFromGrid(2, 4.35, 4, 2.35),
           caption: "below"
         };
       }
@@ -167,9 +167,9 @@
         layout = {
           archetype,
           dominant: "image",
-          image: rectFromGrid(3, 0, 3, 3),
-          title: rectFromGrid(0, 3, 3, 1),
-          text: rectFromGrid(0, 4, 2, 1),
+          image: rectFromGrid(3, 0.25, 3, 2.05),
+          title: rectFromGrid(0, 3.15, 4, 2),
+          text: rectFromGrid(0, 5.35, 2, 1),
           caption: "below"
         };
       }
@@ -178,10 +178,10 @@
         layout = {
           archetype,
           dominant: "image",
-          image: rectFromGrid(1, 2, 4, 4),
-          title: rectFromGrid(0, 0, 3, 1),
-          text: rectFromGrid(0, 6, 2, 1),
-          caption: "right"
+          title: rectFromGrid(0, 0, 5, 2),
+          text: rectFromGrid(0, 2.25, 2, 1),
+          image: rectFromGrid(1, 3.65, 4, 2.5),
+          caption: "below"
         };
       }
 
@@ -189,9 +189,9 @@
         layout = {
           archetype,
           dominant: "title",
-          title: rectFromGrid(1, 2, 4, 2),
-          text: rectFromGrid(1, 4, 2, 1),
-          image: rectFromGrid(4, 5, 2, 2),
+          title: rectFromGrid(0.5, 1, 5, 2.35),
+          text: rectFromGrid(0.5, 3.65, 2.25, 1),
+          image: rectFromGrid(3.3, 5.25, 2.4, 1.9),
           caption: "below"
         };
       }
@@ -200,10 +200,10 @@
         layout = {
           archetype,
           dominant: "image",
-          image: rectFromGrid(3, 1, 3, 5),
-          title: rectFromGrid(0, 1, 3, 1),
-          text: rectFromGrid(0, 2, 2, 2),
-          caption: "left"
+          title: rectFromGrid(0, 0.65, 3.2, 2),
+          text: rectFromGrid(0, 3, 2, 1),
+          image: rectFromGrid(3, 3.35, 3, 3.1),
+          caption: "below"
         };
       }
 
@@ -211,8 +211,8 @@
         layout = {
           archetype,
           dominant: "image",
-          title: rectFromGrid(0, 0, 4, 1),
-          text: rectFromGrid(0, 3, 2, 1),
+          title: rectFromGrid(0, 0, 5, 2),
+          text: rectFromGrid(0, 2.45, 2.2, 1),
           image: rectFromGrid(1, 5, 4, 2),
           caption: "below"
         };
@@ -297,37 +297,13 @@
 
     function drawCaption(layout) {
       const imageRect = layout.image;
-
-      let r;
-
-      if (layout.caption === "below") {
-        r = {
-          x: imageRect.x,
-          y: imageRect.y + imageRect.h + ROW_H * 0.15,
-          w: imageRect.w,
-          h: ROW_H * 0.35
-        };
-      }
-
-      if (layout.caption === "left") {
-        r = {
-          x: imageRect.x - COL_W * 1.1,
-          y: imageRect.y,
-          w: COL_W,
-          h: ROW_H
-        };
-      }
-
-      if (layout.caption === "right") {
-        r = {
-          x: imageRect.x + imageRect.w + COL_W * 0.15,
-          y: imageRect.y,
-          w: COL_W * 0.85,
-          h: ROW_H
-        };
-      }
-
-      if (!r) return;
+      const posterBottom = MARGIN_Y + WORK_H;
+      const r = {
+        x: imageRect.x,
+        y: min(imageRect.y + imageRect.h + ROW_H * 0.12, posterBottom - ROW_H * 0.35),
+        w: imageRect.w,
+        h: ROW_H * 0.35
+      };
 
       fill("#111111");
       noStroke();
