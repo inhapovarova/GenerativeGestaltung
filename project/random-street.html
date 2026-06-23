@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Single Building</title>
+  <title>Random Street</title>
   <style>
     html, body {
       margin: 0;
@@ -11,7 +11,6 @@
       overflow: hidden;
       background: #f4f1ea;
       font-family: Arial, sans-serif;
-      color: #222;
     }
 
     canvas {
@@ -23,170 +22,47 @@
       top: 18px;
       left: 18px;
       z-index: 10;
-      width: 280px;
-      padding: 16px;
-      box-sizing: border-box;
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 18px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-    }
-
-    .title {
-      font-size: 13px;
-      letter-spacing: 0.02em;
-      margin-bottom: 14px;
-      opacity: 0.82;
-    }
-
-    .control {
-      margin-bottom: 12px;
-    }
-
-    .control-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 5px;
-      font-size: 12px;
-      opacity: 0.82;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      accent-color: #222;
-    }
-
-    .toggles {
-      display: flex;
-      gap: 12px;
-      margin: 12px 0 14px;
-      font-size: 12px;
-      opacity: 0.82;
-    }
-
-    .toggles label {
-      cursor: pointer;
-    }
-
-    input[type="checkbox"] {
-      accent-color: #222;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
     }
 
     button {
       appearance: none;
       border: 1px solid rgba(0,0,0,0.15);
-      background: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.9);
       color: #222;
-      padding: 9px 14px;
+      padding: 10px 16px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 13px;
       cursor: pointer;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
     }
 
     button:hover {
       background: white;
     }
-
-    .meta {
-      margin-top: 12px;
-      font-size: 11px;
-      line-height: 1.45;
-      opacity: 0.55;
-    }
   </style>
 </head>
 <body>
   <div class="ui">
-    <div class="title">single building</div>
-
-    <div class="control">
-      <div class="control-row">
-        <span>width</span>
-        <span id="widthValue">4</span>
-      </div>
-      <input id="widthSlider" type="range" min="2" max="6" step="1" value="4" />
-    </div>
-
-    <div class="control">
-      <div class="control-row">
-        <span>height</span>
-        <span id="heightValue">6</span>
-      </div>
-      <input id="heightSlider" type="range" min="3" max="9" step="1" value="6" />
-    </div>
-
-    <div class="control">
-      <div class="control-row">
-        <span>warmth</span>
-        <span id="warmthValue">0.50</span>
-      </div>
-      <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
-    </div>
-
-    <div class="control">
-      <div class="control-row">
-        <span>density</span>
-        <span id="densityValue">0.50</span>
-      </div>
-      <input id="densitySlider" type="range" min="0" max="1" step="0.01" value="0.50" />
-    </div>
-
-    <div class="control">
-      <div class="control-row">
-        <span>order</span>
-        <span id="orderValue">0.45</span>
-      </div>
-      <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
-    </div>
-
-    <div class="control">
-      <div class="control-row">
-        <span>memory</span>
-        <span id="memoryValue">0.45</span>
-      </div>
-      <input id="memorySlider" type="range" min="0" max="1" step="0.01" value="0.45" />
-    </div>
-
-    <div class="toggles">
-      <label>
-        <input id="roofToggle" type="checkbox" checked />
-        roof
-      </label>
-
-      <label>
-        <input id="baseToggle" type="checkbox" checked />
-        base
-      </label>
-    </div>
-
-    <div class="buttons">
-      <button id="randomBtn">random</button>
-      <button id="variationBtn">variation</button>
-      <button id="saveBtn">save</button>
-    </div>
-
-    <div class="meta" id="metaInfo"></div>
+    <button id="randomBtn">random</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
-
   <script>
     const BLOCK = 64;
     const TILE_OVERLAP = 2;
 
     let assets = {};
+    let houses = [];
+
     let groundY;
-    let singleHouse = null;
-    let ui = {};
+    let scrollSpeed = 1.8;
+
+    let currentState = {
+      warmth: 0.5,
+      density: 0.5,
+      order: 0.45,
+      memory: 0.45,
+    };
 
     function preload() {
       assets = {
@@ -267,115 +143,105 @@
 
       groundY = height - BLOCK * 1.1;
 
-      setupUI();
-      regenerateBuilding();
+      document.getElementById("randomBtn").addEventListener("click", randomizeStreet);
+
+      randomizeStreet();
     }
 
     function draw() {
       drawBackground();
-      drawSingleHouse();
+      updateCity();
+      drawCity();
     }
 
     function windowResized() {
       resizeCanvas(windowWidth, windowHeight);
       groundY = height - BLOCK * 1.1;
-      regenerateBuilding();
+      initializeCity();
     }
 
-    function setupUI() {
-      ui.widthSlider = document.getElementById("widthSlider");
-      ui.heightSlider = document.getElementById("heightSlider");
-      ui.warmthSlider = document.getElementById("warmthSlider");
-      ui.densitySlider = document.getElementById("densitySlider");
-      ui.orderSlider = document.getElementById("orderSlider");
-      ui.memorySlider = document.getElementById("memorySlider");
+    function drawBackground() {
+      background("#f4f1ea");
 
-      ui.widthValue = document.getElementById("widthValue");
-      ui.heightValue = document.getElementById("heightValue");
-      ui.warmthValue = document.getElementById("warmthValue");
-      ui.densityValue = document.getElementById("densityValue");
-      ui.orderValue = document.getElementById("orderValue");
-      ui.memoryValue = document.getElementById("memoryValue");
+      noStroke();
+      fill(238, 234, 226);
+      rect(0, 0, width, groundY);
 
-      ui.roofToggle = document.getElementById("roofToggle");
-      ui.baseToggle = document.getElementById("baseToggle");
+      fill(228, 223, 214);
+      rect(0, groundY, width, height - groundY);
 
-      ui.randomBtn = document.getElementById("randomBtn");
-      ui.variationBtn = document.getElementById("variationBtn");
-      ui.saveBtn = document.getElementById("saveBtn");
-      ui.metaInfo = document.getElementById("metaInfo");
+      fill(210, 204, 194);
+      rect(0, groundY, width, 2);
+    }
 
-      const controls = [
-        ui.widthSlider,
-        ui.heightSlider,
-        ui.warmthSlider,
-        ui.densitySlider,
-        ui.orderSlider,
-        ui.memorySlider,
-        ui.roofToggle,
-        ui.baseToggle,
-      ];
+    function randomizeStreet() {
+      currentState = {
+        warmth: random(0, 1),
+        density: random(0, 1),
+        order: random(0, 1),
+        memory: random(0, 1),
+      };
 
-      controls.forEach((el) => {
-        el.addEventListener("input", regenerateBuilding);
-        el.addEventListener("change", regenerateBuilding);
+      scrollSpeed = random(1.5, 2.5);
+      initializeCity();
+    }
+
+    function initializeCity() {
+      houses = [];
+
+      let x = -BLOCK * 2;
+
+      while (x < width + BLOCK * 4) {
+        const house = generateHouse(x, currentState);
+        houses.push(house);
+
+        // no gaps, houses touch each other
+        x += house.widthBlocks * BLOCK;
+      }
+    }
+
+    function updateCity() {
+      for (let house of houses) {
+        house.x -= scrollSpeed;
+      }
+
+      houses = houses.filter((house) => {
+        return house.x + house.widthBlocks * BLOCK > -BLOCK * 2;
       });
 
-      ui.randomBtn.addEventListener("click", randomizeAll);
-      ui.variationBtn.addEventListener("click", regenerateBuilding);
-      ui.saveBtn.addEventListener("click", () => saveCanvas("single_building", "png"));
+      let rightEdge = getRightEdge();
+
+      while (rightEdge < width + BLOCK * 4) {
+        const newHouse = generateHouse(rightEdge, currentState);
+        houses.push(newHouse);
+        rightEdge = getRightEdge();
+      }
     }
 
-    function getStateFromUI() {
-      return {
-        widthBlocks: parseInt(ui.widthSlider.value),
-        heightBlocks: parseInt(ui.heightSlider.value),
-        warmth: parseFloat(ui.warmthSlider.value),
-        density: parseFloat(ui.densitySlider.value),
-        order: parseFloat(ui.orderSlider.value),
-        memory: parseFloat(ui.memorySlider.value),
-        allowRoof: ui.roofToggle.checked,
-        allowBase: ui.baseToggle.checked,
-      };
+    function getRightEdge() {
+      if (houses.length === 0) return 0;
+
+      let maxEdge = 0;
+
+      for (let house of houses) {
+        const edge = house.x + house.widthBlocks * BLOCK;
+        if (edge > maxEdge) maxEdge = edge;
+      }
+
+      return maxEdge;
     }
 
-    function updateUIValues(state) {
-      ui.widthValue.textContent = state.widthBlocks;
-      ui.heightValue.textContent = state.heightBlocks;
-      ui.warmthValue.textContent = state.warmth.toFixed(2);
-      ui.densityValue.textContent = state.density.toFixed(2);
-      ui.orderValue.textContent = state.order.toFixed(2);
-      ui.memoryValue.textContent = state.memory.toFixed(2);
+    function drawCity() {
+      for (let house of houses) {
+        drawHouse(house);
+      }
     }
 
-    function randomizeAll() {
-      ui.widthSlider.value = floor(random(2, 7));
-      ui.heightSlider.value = floor(random(3, 10));
-      ui.warmthSlider.value = random(0, 1).toFixed(2);
-      ui.densitySlider.value = random(0, 1).toFixed(2);
-      ui.orderSlider.value = random(0, 1).toFixed(2);
-      ui.memorySlider.value = random(0, 1).toFixed(2);
+    function generateHouse(x, state) {
+      const widthBlocks = chooseWidth(state);
+      const heightBlocks = chooseHeight(state);
 
-      ui.roofToggle.checked = random() < 0.75;
-      ui.baseToggle.checked = random() < 0.7;
-
-      regenerateBuilding();
-    }
-
-    function regenerateBuilding() {
-      const state = getStateFromUI();
-      updateUIValues(state);
-      singleHouse = generateSingleHouse(state);
-    }
-
-
-
-
-    function generateSingleHouse(state) {
-      const widthBlocks = state.widthBlocks;
-      const heightBlocks = state.heightBlocks;
-
-      const hasRoof = state.allowRoof ? chooseHasRoof(state) : false;
+      const hasRoof = chooseHasRoof(state);
       const roofFamily = hasRoof ? pick(Object.keys(assets.roofs)) : null;
 
       const wallFamily = pick(Object.keys(assets.walls));
@@ -390,7 +256,7 @@
 
       const wallBlock = pick(assets.walls[wallFamily]);
 
-      const hasBase = state.allowBase ? chooseHasBase(state) : false;
+      const hasBase = chooseHasBase(state);
       const baseBlock = hasBase ? pick(assets.base.plain) : null;
 
       const doorData = chooseDoor(widthBlocks, state);
@@ -428,7 +294,6 @@
             const accentFamily = topAccentWindow.family;
             const windowState = random() < 0.45 ? "lit" : "dark";
             cell.window = assets.windows[accentFamily][windowState];
-            cell.detail = null;
           }
 
           if (
@@ -437,11 +302,9 @@
           ) {
             const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
             const windowState = random() < litChance ? "lit" : "dark";
-
             cell.window = assets.windows[windowFamily][windowState];
 
             const balconyChance = 0.05 + state.memory * 0.22;
-
             if (random() < balconyChance && assets.details.balconies[windowFamily]) {
               cell.detail = assets.details.balconies[windowFamily];
             }
@@ -456,6 +319,8 @@
       placeDoor(cells, widthBlocks, heightBlocks, doorData);
 
       return {
+        x,
+        y: groundY,
         widthBlocks,
         heightBlocks,
         hasRoof,
@@ -468,7 +333,6 @@
         windowPattern,
         topAccentWindow,
         tintColor,
-        doorTypeLabel: doorData.label,
         cells,
       };
     }
@@ -478,10 +342,8 @@
 
       if (doorData.width === 2 && widthBlocks >= 4) {
         const startCol = floor((widthBlocks - 2) / 2);
-
         cells[groundRow][startCol].door = doorData.asset.left;
         cells[groundRow][startCol + 1].door = doorData.asset.right;
-
         return;
       }
 
@@ -499,6 +361,34 @@
       return random() < baseChance;
     }
 
+    function chooseWidth(state) {
+      let minW = 2;
+      let maxW = 5;
+
+      if (state.density > 0.65) {
+        maxW = 6;
+      }
+
+      if (state.order > 0.7) {
+        return pick([3, 4]);
+      }
+
+      return floor(random(minW, maxW + 1));
+    }
+
+    function chooseHeight(state) {
+      let minH = floor(lerp(3, 5, state.density));
+      let maxH = floor(lerp(5, 9, state.density));
+
+      let h = floor(random(minH, maxH + 1));
+
+      if (state.memory > 0.7 && random() < 0.35) {
+        h = max(3, h - 1);
+      }
+
+      return h;
+    }
+
     function chooseDoor(widthBlocks, state) {
       const canUseDouble = widthBlocks >= 4;
       const doubleChance = canUseDouble ? 0.25 + state.order * 0.15 : 0;
@@ -507,7 +397,6 @@
         return {
           width: 2,
           asset: assets.doors.double.rect,
-          label: "double rect",
         };
       }
 
@@ -516,7 +405,6 @@
       return {
         width: 1,
         asset: assets.doors.single[singleType],
-        label: "single " + singleType,
       };
     }
 
@@ -543,7 +431,6 @@
 
       if (state.order > 0.7) {
         patterns = ["regular", "centerColumn"];
-
         if (widthBlocks >= 3) {
           patterns.push("edgeColumns");
         }
@@ -563,7 +450,6 @@
         if (widthBlocks === 2) {
           return col === 0 || col === 1;
         }
-
         return col === floor(widthBlocks / 2);
       }
 
@@ -571,11 +457,9 @@
         if (widthBlocks <= 2) {
           return true;
         }
-
         if (widthBlocks === 3) {
           return col === 0 || col === 2;
         }
-
         return col === 1 || col === widthBlocks - 2;
       }
 
@@ -583,7 +467,6 @@
         if (widthBlocks <= 2) {
           return col === 0;
         }
-
         return col % 2 === 0;
       }
 
@@ -591,7 +474,6 @@
         if (widthBlocks < 3) {
           return col % 2 === 0;
         }
-
         return (col + bodyRowIndex) % 2 === 0;
       }
 
@@ -599,11 +481,9 @@
         if (widthBlocks <= 2) {
           return col === floor(widthBlocks / 2);
         }
-
         if (widthBlocks === 3) {
           return col === 1;
         }
-
         return col === 1 || col === widthBlocks - 2;
       }
 
@@ -628,10 +508,7 @@
     }
 
     function chooseDifferentWindowFamily(mainWindowFamily) {
-      const families = Object.keys(assets.windows).filter((family) => {
-        return family !== mainWindowFamily;
-      });
-
+      const families = Object.keys(assets.windows).filter((family) => family !== mainWindowFamily);
       return pick(families);
     }
 
@@ -655,21 +532,18 @@
       ];
     }
 
-    function drawSingleHouse() {
-      if (!singleHouse) return;
-
-      const house = singleHouse;
-      const houseX = Math.round(width / 2 - (house.widthBlocks * BLOCK) / 2);
-      const bodyTopY = Math.round(groundY - house.heightBlocks * BLOCK);
+    function drawHouse(house) {
+      const houseDrawX = Math.round(house.x);
+      const bodyTopY = Math.round(house.y - house.heightBlocks * BLOCK);
       const roofY = bodyTopY - BLOCK;
 
       if (house.hasRoof) {
-        drawRoof(house, roofY, houseX);
+        drawRoof(house, roofY, houseDrawX);
       }
 
       for (let row = 0; row < house.heightBlocks; row++) {
         for (let col = 0; col < house.widthBlocks; col++) {
-          const x = houseX + col * BLOCK;
+          const x = houseDrawX + col * BLOCK;
           const y = bodyTopY + row * BLOCK;
           const cell = house.cells[row][col];
 
@@ -694,16 +568,15 @@
       }
     }
 
-    function drawRoof(house, roofY, houseX) {
+    function drawRoof(house, roofY, houseDrawX) {
       if (!house.hasRoof || !house.roofFamily) return;
 
       const roof = assets.roofs[house.roofFamily];
 
       for (let col = 0; col < house.widthBlocks; col++) {
-        const x = houseX + col * BLOCK;
+        const x = houseDrawX + col * BLOCK;
 
         let roofPart;
-
         if (col === 0) {
           roofPart = roof.left;
         } else if (col === house.widthBlocks - 1) {
@@ -729,7 +602,6 @@
     function drawTintedTile(img, x, y, tintColor, alpha = 255) {
       push();
       tint(tintColor[0], tintColor[1], tintColor[2], alpha);
-
       image(
         img,
         x - TILE_OVERLAP / 2,
@@ -737,23 +609,7 @@
         BLOCK + TILE_OVERLAP,
         BLOCK + TILE_OVERLAP
       );
-
       pop();
-    }
-
-    function drawBackground() {
-      background("#f4f1ea");
-
-      noStroke();
-
-      fill(238, 234, 226);
-      rect(0, 0, width, groundY);
-
-      fill(228, 223, 214);
-      rect(0, groundY, width, height - groundY);
-
-      fill(210, 204, 194);
-      rect(0, groundY, width, 2);
     }
 
     function pick(arr) {
