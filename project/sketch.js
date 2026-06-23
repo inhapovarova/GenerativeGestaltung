@@ -5,7 +5,16 @@ let assets = {};
 let houses = [];
 
 let groundY;
-let scrollSpeed = 0.8;
+
+// main city speed
+let scrollSpeed = 1.6;
+
+// background layer offsets
+let midBgOffset = 0;
+let asphaltOffset = 0;
+
+// parallax speed for the middle background
+const MID_BG_SPEED_FACTOR = 0.22;
 
 const baselineState = {
   warmth: 0.5,
@@ -18,6 +27,12 @@ let currentState = { ...baselineState };
 
 function preload() {
   assets = {
+    backgrounds: {
+      far: loadImage("assets/backgrounds/bg_far_static.png"),
+      mid: loadImage("assets/backgrounds/bg_mid_loop.png"),
+      asphalt: loadImage("assets/backgrounds/asphalt_loop.png"),
+    },
+
     base: {
       plain: [
         loadImage("assets/base/plain/base_plain_01.png"),
@@ -91,6 +106,8 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   pixelDensity(1);
   imageMode(CORNER);
+
+  // If the image becomes too pixelated, remove this line.
   noSmooth();
 
   groundY = height - BLOCK * 1.2;
@@ -99,10 +116,14 @@ function setup() {
 }
 
 function draw() {
-  drawBackground();
+  updateLayerOffsets();
+
+  drawBackgroundLayers();
 
   updateCity();
   drawCity();
+
+  drawAsphaltForeground();
 
   drawDebugState();
 }
@@ -110,9 +131,82 @@ function draw() {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   groundY = height - BLOCK * 1.2;
+
+  midBgOffset = 0;
+  asphaltOffset = 0;
+
   houses = [];
   initializeCity();
 }
+
+// -----------------------------
+// BACKGROUND LAYERS
+// -----------------------------
+
+function updateLayerOffsets() {
+  midBgOffset = (midBgOffset + scrollSpeed * MID_BG_SPEED_FACTOR) % assets.backgrounds.mid.width;
+  asphaltOffset = (asphaltOffset + scrollSpeed) % assets.backgrounds.asphalt.width;
+}
+
+function drawBackgroundLayers() {
+  background(224, 225, 220);
+
+  drawFarBackground();
+  drawMidBackground();
+}
+
+function drawFarBackground() {
+  const img = assets.backgrounds.far;
+
+  image(img, 0, 0, width, height);
+}
+
+function drawMidBackground() {
+  const img = assets.backgrounds.mid;
+
+  const layerHeight = height * 0.65;
+  const y = groundY - layerHeight;
+
+  drawTiledImage(
+    img,
+    -midBgOffset,
+    y,
+    img.width,
+    layerHeight
+  );
+}
+
+function drawAsphaltForeground() {
+  const img = assets.backgrounds.asphalt;
+
+  const asphaltHeight = height - groundY + BLOCK * 0.35;
+  const y = groundY - BLOCK * 0.05;
+
+  drawTiledImage(
+    img,
+    -asphaltOffset,
+    y,
+    img.width,
+    asphaltHeight
+  );
+}
+
+function drawTiledImage(img, startX, y, tileWidth, tileHeight) {
+  let x = startX;
+
+  while (x > 0) {
+    x -= tileWidth;
+  }
+
+  while (x < width) {
+    image(img, Math.round(x), Math.round(y), tileWidth, tileHeight);
+    x += tileWidth;
+  }
+}
+
+// -----------------------------
+// CITY MANAGEMENT
+// -----------------------------
 
 function initializeCity() {
   houses = [];
@@ -164,6 +258,10 @@ function drawCity() {
   }
 }
 
+// -----------------------------
+// HOUSE GENERATION
+// -----------------------------
+
 function generateHouse(x, state) {
   const widthBlocks = chooseWidth(state);
   const heightBlocks = chooseHeight(state);
@@ -181,6 +279,7 @@ function generateHouse(x, state) {
     windowFamily
   );
 
+  // one exact wall block for the whole building
   const wallBlock = pick(assets.walls[wallFamily]);
 
   const hasBase = chooseHasBase(state);
@@ -207,12 +306,11 @@ function generateHouse(x, state) {
 
       const isGroundRow = row === heightBlocks - 1;
       const isMiddleRow = row > 0 && row < heightBlocks - 1;
+      const isTopRow = row === 0;
 
       if (isGroundRow && baseBlock) {
         cell.base = baseBlock;
       }
-
-      const isTopRow = row === 0;
 
       if (
         isTopRow &&
@@ -221,24 +319,22 @@ function generateHouse(x, state) {
       ) {
         const accentFamily = topAccentWindow.family;
         const windowState = random() < 0.45 ? "lit" : "dark";
-      
+
         cell.window = assets.windows[accentFamily][windowState];
-      
-        // Usually no balcony on the accent top window
         cell.detail = null;
       }
-      
+
       if (
         isMiddleRow &&
         shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
       ) {
         const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
         const windowState = random() < litChance ? "lit" : "dark";
-      
+
         cell.window = assets.windows[windowFamily][windowState];
-      
+
         const balconyChance = 0.05 + state.memory * 0.22;
-      
+
         if (random() < balconyChance && assets.details.balconies[windowFamily]) {
           cell.detail = assets.details.balconies[windowFamily];
         }
@@ -287,6 +383,10 @@ function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
   cells[groundRow][doorCol].door = doorData.asset;
 }
 
+// -----------------------------
+// HOUSE RULES
+// -----------------------------
+
 function chooseHasRoof(state) {
   const roofChance = 0.7 - state.density * 0.15 + state.memory * 0.1;
   return random() < roofChance;
@@ -295,90 +395,6 @@ function chooseHasRoof(state) {
 function chooseHasBase(state) {
   const baseChance = 0.65 + state.order * 0.1;
   return random() < baseChance;
-}
-
-function drawHouse(house) {
-  const houseDrawX = Math.round(house.x);
-
-  const bodyTopY = Math.round(house.y - house.heightBlocks * BLOCK);
-  const roofY = bodyTopY - BLOCK;
-
-  if (house.hasRoof) {
-    drawRoof(house, roofY, houseDrawX);
-  }
-
-  for (let row = 0; row < house.heightBlocks; row++) {
-    for (let col = 0; col < house.widthBlocks; col++) {
-      const x = houseDrawX + col * BLOCK;
-      const y = bodyTopY + row * BLOCK;
-      const cell = house.cells[row][col];
-
-      drawTintedTile(cell.wall, x, y, house.tintColor, 210);
-
-      if (cell.base) {
-        drawTile(cell.base, x, y);
-      }
-
-      if (cell.window) {
-        image(cell.window, x, y, BLOCK, BLOCK);
-      }
-
-      if (cell.door) {
-        image(cell.door, x, y, BLOCK, BLOCK);
-      }
-
-      if (cell.detail) {
-        image(cell.detail, x, y, BLOCK, BLOCK);
-      }
-    }
-  }
-}
-
-function drawRoof(house, roofY, houseDrawX) {
-  if (!house.hasRoof || !house.roofFamily) return;
-
-  const roof = assets.roofs[house.roofFamily];
-
-  for (let col = 0; col < house.widthBlocks; col++) {
-    const x = houseDrawX + col * BLOCK;
-
-    let roofPart;
-
-    if (col === 0) {
-      roofPart = roof.left;
-    } else if (col === house.widthBlocks - 1) {
-      roofPart = roof.right;
-    } else {
-      roofPart = roof.mid;
-    }
-
-    drawTile(roofPart, x, roofY);
-  }
-}
-
-function drawTile(img, x, y) {
-  image(
-    img,
-    x - TILE_OVERLAP / 2,
-    y - TILE_OVERLAP / 2,
-    BLOCK + TILE_OVERLAP,
-    BLOCK + TILE_OVERLAP
-  );
-}
-
-function drawTintedTile(img, x, y, tintColor, alpha = 255) {
-  push();
-  tint(tintColor[0], tintColor[1], tintColor[2], alpha);
-
-  image(
-    img,
-    x - TILE_OVERLAP / 2,
-    y - TILE_OVERLAP / 2,
-    BLOCK + TILE_OVERLAP,
-    BLOCK + TILE_OVERLAP
-  );
-
-  pop();
 }
 
 function chooseWidth(state) {
@@ -431,7 +447,6 @@ function chooseDoor(widthBlocks, state) {
 function chooseWindowPattern(widthBlocks, state) {
   let patterns = [];
 
-  // More ordered facade rhythms
   patterns.push("regular");
   patterns.push("centerColumn");
 
@@ -439,21 +454,17 @@ function chooseWindowPattern(widthBlocks, state) {
     patterns.push("edgeColumns");
   }
 
-  // A little more variation
   patterns.push("everySecond");
 
-  // Checker only from 3 blocks wide
   if (widthBlocks >= 3) {
     patterns.push("checker");
   }
 
-  // More memory means more irregular/lived-in layouts
   if (state.memory > 0.55) {
     patterns.push("checker");
     patterns.push("sparse");
   }
 
-  // More order means less chaotic layouts
   if (state.order > 0.7) {
     patterns = ["regular", "centerColumn"];
 
@@ -548,7 +559,6 @@ function chooseDifferentWindowFamily(mainWindowFamily) {
   return pick(families);
 }
 
-
 function randomGap(state) {
   const minGap = lerp(BLOCK * 0.25, 0, state.density);
   const maxGap = lerp(BLOCK * 1.2, BLOCK * 0.25, state.density);
@@ -576,29 +586,102 @@ function chooseBuildingTint(state) {
   ];
 }
 
-function pick(arr) {
-  return arr[floor(random(arr.length))];
+// -----------------------------
+// DRAWING HOUSES
+// -----------------------------
+
+function drawHouse(house) {
+  const houseDrawX = Math.round(house.x);
+
+  const bodyTopY = Math.round(house.y - house.heightBlocks * BLOCK);
+  const roofY = bodyTopY - BLOCK;
+
+  if (house.hasRoof) {
+    drawRoof(house, roofY, houseDrawX);
+  }
+
+  for (let row = 0; row < house.heightBlocks; row++) {
+    for (let col = 0; col < house.widthBlocks; col++) {
+      const x = houseDrawX + col * BLOCK;
+      const y = bodyTopY + row * BLOCK;
+      const cell = house.cells[row][col];
+
+      drawTintedTile(cell.wall, x, y, house.tintColor, 255);
+
+      if (cell.base) {
+        drawTile(cell.base, x, y);
+      }
+
+      if (cell.window) {
+        image(cell.window, x, y, BLOCK, BLOCK);
+      }
+
+      if (cell.door) {
+        image(cell.door, x, y, BLOCK, BLOCK);
+      }
+
+      if (cell.detail) {
+        image(cell.detail, x, y, BLOCK, BLOCK);
+      }
+    }
+  }
 }
 
-function drawBackground() {
-  background(224, 225, 220);
+function drawRoof(house, roofY, houseDrawX) {
+  if (!house.hasRoof || !house.roofFamily) return;
 
-  noStroke();
+  const roof = assets.roofs[house.roofFamily];
 
-  fill(205, 210, 215, 120);
-  rect(0, groundY - BLOCK * 8, width, BLOCK * 8);
+  for (let col = 0; col < house.widthBlocks; col++) {
+    const x = houseDrawX + col * BLOCK;
 
-  fill(190, 190, 185);
-  rect(0, groundY, width, height - groundY);
+    let roofPart;
 
-  fill(170, 170, 165);
-  rect(0, groundY, width, 2);
+    if (col === 0) {
+      roofPart = roof.left;
+    } else if (col === house.widthBlocks - 1) {
+      roofPart = roof.right;
+    } else {
+      roofPart = roof.mid;
+    }
+
+    drawTile(roofPart, x, roofY);
+  }
 }
+
+function drawTile(img, x, y) {
+  image(
+    img,
+    x - TILE_OVERLAP / 2,
+    y - TILE_OVERLAP / 2,
+    BLOCK + TILE_OVERLAP,
+    BLOCK + TILE_OVERLAP
+  );
+}
+
+function drawTintedTile(img, x, y, tintColor, alpha = 255) {
+  push();
+  tint(tintColor[0], tintColor[1], tintColor[2], alpha);
+
+  image(
+    img,
+    x - TILE_OVERLAP / 2,
+    y - TILE_OVERLAP / 2,
+    BLOCK + TILE_OVERLAP,
+    BLOCK + TILE_OVERLAP
+  );
+
+  pop();
+}
+
+// -----------------------------
+// DEBUG AND CONTROLS
+// -----------------------------
 
 function drawDebugState() {
   fill(20, 90);
   noStroke();
-  rect(16, 16, 210, 82, 8);
+  rect(16, 16, 230, 102, 8);
 
   fill(255);
   textSize(12);
@@ -606,6 +689,7 @@ function drawDebugState() {
   text(`density: ${currentState.density.toFixed(2)}`, 28, 56);
   text(`order: ${currentState.order.toFixed(2)}`, 28, 74);
   text(`memory: ${currentState.memory.toFixed(2)}`, 28, 92);
+  text(`speed: ${scrollSpeed.toFixed(1)}`, 28, 110);
 }
 
 function keyPressed() {
@@ -641,6 +725,14 @@ function keyPressed() {
     currentState.memory = constrain(currentState.memory + 0.1, 0, 1);
   }
 
+  if (key === "-") {
+    scrollSpeed = max(0.2, scrollSpeed - 0.2);
+  }
+
+  if (key === "=" || key === "+") {
+    scrollSpeed = min(5.0, scrollSpeed + 0.2);
+  }
+
   if (key === "r" || key === "R") {
     houses = [];
     initializeCity();
@@ -649,4 +741,8 @@ function keyPressed() {
   if (key === "s" || key === "S") {
     saveCanvas("generated_city", "png");
   }
+}
+
+function pick(arr) {
+  return arr[floor(random(arr.length))];
 }
