@@ -10,17 +10,8 @@
   function initSharedNav() {
     if (document.querySelector(".shared-nav-root")) return;
 
-    const currentPage = window.location.pathname.split("/").pop() || "index.html";
-    const showBackButton = currentPage !== "single-building.html";
-
     const root = document.createElement("div");
     root.className = "shared-nav-root";
-
-    const backButton = document.createElement("button");
-    backButton.className = "shared-nav-back";
-    backButton.type = "button";
-    backButton.textContent = "\u2190";
-    backButton.setAttribute("aria-label", "go back");
 
     const menuButton = document.createElement("button");
     menuButton.className = "shared-nav-button";
@@ -39,15 +30,6 @@
       item.href = link.href;
       item.textContent = link.label;
       panel.appendChild(item);
-    });
-
-    backButton.addEventListener("click", () => {
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-
-      window.location.href = "single-building.html";
     });
 
     menuButton.addEventListener("click", (event) => {
@@ -70,17 +52,8 @@
       }
     });
 
-    if (showBackButton) {
-      root.appendChild(backButton);
-    }
-
     root.append(menuButton, panel);
     document.body.appendChild(root);
-
-    const topLeftUi = document.querySelector("body > .ui");
-    if (showBackButton && topLeftUi) {
-      document.body.classList.add("shared-nav-offset-ui");
-    }
   }
 
   if (document.readyState === "loading") {

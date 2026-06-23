@@ -6,7 +6,6 @@
   font-family: Arial, sans-serif;
 }
 
-.shared-nav-back,
 .shared-nav-button,
 .shared-nav-panel a {
   appearance: none;
@@ -18,7 +17,6 @@
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
 }
 
-.shared-nav-back,
 .shared-nav-button {
   position: fixed;
   top: 18px;
@@ -28,14 +26,6 @@
   pointer-events: auto;
 }
 
-.shared-nav-back {
-  left: 18px;
-  width: 36px;
-  padding: 0;
-  font-size: 18px;
-  line-height: 1;
-}
-
 .shared-nav-button {
   right: 18px;
   padding: 0 14px;
@@ -43,7 +33,6 @@
   letter-spacing: 0.02em;
 }
 
-.shared-nav-back:hover,
 .shared-nav-button:hover,
 .shared-nav-panel a:hover {
   background: rgba(255, 255, 255, 0.94);
@@ -78,8 +67,3 @@
   line-height: 1.2;
   text-decoration: none;
 }
-
-body.shared-nav-offset-ui > .ui {
-  transform: translateY(46px);
-}
-
