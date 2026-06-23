@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poster Generator</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #efede7;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      max-height: 100vh;
+      width: auto !important;
+      height: 100vh !important;
+    }
+
+    .ui {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ui">
+    <button id="generateBtn">generate poster</button>
+    <button id="saveBtn">save png</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+
+  <script>
+    const POSTER_W = 1240;
+    const POSTER_H = 1754;
+
+    const MARGIN_X = POSTER_W * (24 / 210);
+    const MARGIN_Y = POSTER_H * (24 / 297);
+
+    const COLS = 6;
+    const ROWS = 8;
+
+    const WORK_W = POSTER_W - MARGIN_X * 2;
+    const WORK_H = POSTER_H - MARGIN_Y * 2;
+
+    const COL_W = WORK_W / COLS;
+    const ROW_H = WORK_H / ROWS;
+
+    let buildings = [];
+    let currentBuilding = null;
+    let currentLayout = null;
+
+    const posterTitles = [
+      "Almost Tomorrow",
+      "A City That Remembers",
+      "Passing Futures",
+      "In Transit",
+      "Soft Infrastructure",
+      "Future as Memory",
+      "The Shape of Waiting"
+    ];
+
+    const posterTexts = [
+      "A generative study of urban rhythm, memory and repetition.",
+      "The city appears as a moving system of fragments and traces.",
+      "Each facade is built from rules, chance and small acts of variation.",
+      "A speculative street assembled from modular memories.",
+      "The future is not fixed. It is generated, repeated and slightly disturbed."
+    ];
+
+    function setup() {
+      createCanvas(POSTER_W, POSTER_H);
+      pixelDensity(1);
+      imageMode(CORNER);
+      textFont("Arial");
+
+      document.getElementById("generateBtn").addEventListener("click", generatePoster);
+
+      document.getElementById("saveBtn").addEventListener("click", () => {
+        saveCanvas("generated_poster", "png");
+      });
+
+      loadBuildingList();
+    }
+
+    function draw() {
+      drawPoster();
+    }
+
+    async function loadBuildingList() {
+      try {
+        const response = await fetch("/api/buildings");
+        buildings = await response.json();
+
+        if (!buildings.length) {
+          console.warn("No generated buildings found.");
+          return;
+        }
+
+        generatePoster();
+      } catch (error) {
+        console.error("Could not load buildings:", error);
+      }
+    }
+
+    function generatePoster() {
+      if (!buildings.length) {
+        alert("No building PNGs found. Save some buildings first.");
+        return;
+      }
+
+      const buildingData = pick(buildings);
+
+      loadImage(buildingData.path, (img) => {
+        currentBuilding = img;
+        currentLayout = createLayout();
+
+        currentLayout.imageCrop = createImageCrop(
+          img,
+          currentLayout.image,
+          currentLayout.imageMode
+        );
+      });
+    }
+
+    function createLayout() {
+      const archetype = floor(random(1, 7));
+      const title = pick(posterTitles);
+      const bodyText = pick(posterTexts);
+      const caption = "generated facade / modular city system";
+
+      const imageMode = pick([
+        "full",
+        "corner",
+        "topHalf",
+        "bottomHalf",
+        "zoom"
+      ]);
+
+      let layout;
+
+      if (archetype === 1) {
+        layout = {
+          archetype,
+          dominant: "image",
+          title: rectFromGrid(0, 0, 3, 1),
+          text: rectFromGrid(0, 1, 2, 1),
+          image: rectFromGrid(3, 4, 3, 3),
+          caption: "below"
+        };
+      }
+
+      if (archetype === 2) {
+        layout = {
+          archetype,
+          dominant: "image",
+          image: rectFromGrid(3, 0, 3, 3),
+          title: rectFromGrid(0, 3, 3, 1),
+          text: rectFromGrid(0, 4, 2, 1),
+          caption: "below"
+        };
+      }
+
+      if (archetype === 3) {
+        layout = {
+          archetype,
+          dominant: "image",
+          image: rectFromGrid(1, 2, 4, 4),
+          title: rectFromGrid(0, 0, 3, 1),
+          text: rectFromGrid(0, 6, 2, 1),
+          caption: "right"
+        };
+      }
+
+      if (archetype === 4) {
+        layout = {
+          archetype,
+          dominant: "title",
+          title: rectFromGrid(1, 2, 4, 2),
+          text: rectFromGrid(1, 4, 2, 1),
+          image: rectFromGrid(4, 5, 2, 2),
+          caption: "below"
+        };
+      }
+
+      if (archetype === 5) {
+        layout = {
+          archetype,
+          dominant: "image",
+          image: rectFromGrid(3, 1, 3, 5),
+          title: rectFromGrid(0, 1, 3, 1),
+          text: rectFromGrid(0, 2, 2, 2),
+          caption: "left"
+        };
+      }
+
+      if (archetype === 6) {
+        layout = {
+          archetype,
+          dominant: "image",
+          title: rectFromGrid(0, 0, 4, 1),
+          text: rectFromGrid(0, 3, 2, 1),
+          image: rectFromGrid(1, 5, 4, 2),
+          caption: "below"
+        };
+      }
+
+      layout.titleText = title;
+      layout.bodyText = bodyText;
+      layout.captionText = caption;
+      layout.imageMode = imageMode;
+
+      return layout;
+    }
+
+    function drawPoster() {
+      background("#f4f1ea");
+
+      if (!currentLayout || !currentBuilding) {
+        fill("#111111");
+        noStroke();
+        textSize(20);
+        textAlign(LEFT, TOP);
+        text("Save buildings first, then generate poster.", MARGIN_X, MARGIN_Y);
+        return;
+      }
+
+      drawImageBlock(currentBuilding, currentLayout.image, currentLayout.imageCrop);
+      drawTitle(currentLayout.title, currentLayout.titleText, currentLayout.dominant);
+      drawBodyText(currentLayout.text, currentLayout.bodyText);
+      drawCaption(currentLayout);
+
+      // Uncomment for grid debug:
+      // drawGrid();
+    }
+
+    function drawImageBlock(img, r, crop) {
+      if (!img || !crop) return;
+
+      image(
+        img,
+        r.x,
+        r.y,
+        r.w,
+        r.h,
+        crop.sx,
+        crop.sy,
+        crop.sw,
+        crop.sh
+      );
+    }
+
+    function createImageCrop(img, r, mode) {
+      let crop = {
+        sx: 0,
+        sy: 0,
+        sw: img.width,
+        sh: img.height
+      };
+
+      if (mode === "corner") {
+        const corner = pick(["tl", "tr", "bl", "br"]);
+
+        crop.sw = img.width * 0.5;
+        crop.sh = img.height * 0.5;
+
+        if (corner === "tr") {
+          crop.sx = img.width * 0.5;
+        }
+
+        if (corner === "bl") {
+          crop.sy = img.height * 0.5;
+        }
+
+        if (corner === "br") {
+          crop.sx = img.width * 0.5;
+          crop.sy = img.height * 0.5;
+        }
+      }
+
+      if (mode === "topHalf") {
+        crop.sx = 0;
+        crop.sy = 0;
+        crop.sw = img.width;
+        crop.sh = img.height * 0.5;
+      }
+
+      if (mode === "bottomHalf") {
+        crop.sx = 0;
+        crop.sy = img.height * 0.5;
+        crop.sw = img.width;
+        crop.sh = img.height * 0.5;
+      }
+
+      if (mode === "zoom") {
+        const zoom = random(0.45, 0.75);
+
+        crop.sw = img.width * zoom;
+        crop.sh = img.height * zoom;
+        crop.sx = random(0, img.width - crop.sw);
+        crop.sy = random(0, img.height - crop.sh);
+      }
+
+      return fitCropToRectAspect(crop, r, img);
+    }
+
+    function fitCropToRectAspect(crop, r, img) {
+      const targetAspect = r.w / r.h;
+      const cropAspect = crop.sw / crop.sh;
+
+      let sx = crop.sx;
+      let sy = crop.sy;
+      let sw = crop.sw;
+      let sh = crop.sh;
+
+      if (cropAspect > targetAspect) {
+        const newW = sh * targetAspect;
+        sx = sx + (sw - newW) / 2;
+        sw = newW;
+      } else {
+        const newH = sw / targetAspect;
+        sy = sy + (sh - newH) / 2;
+        sh = newH;
+      }
+
+      sx = constrain(sx, 0, img.width - sw);
+      sy = constrain(sy, 0, img.height - sh);
+
+      return {
+        sx,
+        sy,
+        sw,
+        sh
+      };
+    }
+
+    function drawTitle(r, title, dominant) {
+      fill("#111111");
+      noStroke();
+
+      const size = dominant === "title" ? 66 : 42;
+
+      textSize(size);
+      textLeading(size * 0.9);
+      textStyle(BOLD);
+      textAlign(LEFT, TOP);
+
+      text(title, r.x, r.y, r.w, r.h);
+
+      textStyle(NORMAL);
+    }
+
+    function drawBodyText(r, bodyText) {
+      fill("#111111");
+      noStroke();
+
+      textSize(17);
+      textLeading(23);
+      textStyle(NORMAL);
+      textAlign(LEFT, TOP);
+
+      text(bodyText, r.x, r.y, r.w, r.h);
+    }
+
+    function drawCaption(layout) {
+      const imageRect = layout.image;
+
+      let r;
+
+      if (layout.caption === "below") {
+        r = {
+          x: imageRect.x,
+          y: imageRect.y + imageRect.h + ROW_H * 0.15,
+          w: imageRect.w,
+          h: ROW_H * 0.35
+        };
+      }
+
+      if (layout.caption === "left") {
+        r = {
+          x: imageRect.x - COL_W * 1.1,
+          y: imageRect.y,
+          w: COL_W,
+          h: ROW_H
+        };
+      }
+
+      if (layout.caption === "right") {
+        r = {
+          x: imageRect.x + imageRect.w + COL_W * 0.15,
+          y: imageRect.y,
+          w: COL_W * 0.85,
+          h: ROW_H
+        };
+      }
+
+      if (!r) return;
+
+      fill("#111111");
+      noStroke();
+      textSize(10);
+      textLeading(13);
+      textAlign(LEFT, TOP);
+
+      text(layout.captionText, r.x, r.y, r.w, r.h);
+    }
+
+    function rectFromGrid(col, row, colSpan, rowSpan) {
+      return {
+        x: MARGIN_X + col * COL_W,
+        y: MARGIN_Y + row * ROW_H,
+        w: colSpan * COL_W,
+        h: rowSpan * ROW_H
+      };
+    }
+
+    function drawGrid() {
+      stroke(255, 0, 0, 60);
+      noFill();
+
+      for (let c = 0; c <= COLS; c++) {
+        const x = MARGIN_X + c * COL_W;
+        line(x, MARGIN_Y, x, MARGIN_Y + WORK_H);
+      }
+
+      for (let r = 0; r <= ROWS; r++) {
+        const y = MARGIN_Y + r * ROW_H;
+        line(MARGIN_X, y, MARGIN_X + WORK_W, y);
+      }
+    }
+
+    function pick(arr) {
+      return arr[floor(random(arr.length))];
+    }
+  </script>
+</body>
+</html>
