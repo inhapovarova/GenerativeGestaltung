@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Single Building Generator</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #d9d9d6;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .panel {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 290px;
+      background: rgba(20, 20, 20, 0.78);
+      color: white;
+      padding: 14px 14px 10px;
+      border-radius: 12px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .control {
+      margin-bottom: 10px;
+    }
+
+    .control label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      opacity: 0.95;
+    }
+
+    .control input[type="range"] {
+      width: 100%;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .row label {
+      font-size: 12px;
+    }
+
+    button {
+      background: white;
+      color: black;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .meta {
+      margin-top: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      opacity: 0.92;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>Single Building Generator</h2>
+
+    <div class="control">
+      <label for="widthSlider">Width</label>
+      <input id="widthSlider" type="range" min="2" max="6" step="1" value="4" />
+    </div>
+
+    <div class="control">
+      <label for="heightSlider">Height</label>
+      <input id="heightSlider" type="range" min="3" max="9" step="1" value="6" />
+    </div>
+
+    <div class="control">
+      <label for="warmthSlider">Warmth</label>
+      <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+    </div>
+
+    <div class="control">
+      <label for="densitySlider">Density</label>
+      <input id="densitySlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+    </div>
+
+    <div class="control">
+      <label for="orderSlider">Order</label>
+      <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+    </div>
+
+    <div class="control">
+      <label for="memorySlider">Memory</label>
+      <input id="memorySlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+    </div>
+
+    <div class="row">
+      <label>
+        <input id="roofToggle" type="checkbox" checked />
+        allow roof
+      </label>
+
+      <label>
+        <input id="baseToggle" type="checkbox" checked />
+        allow base
+      </label>
+    </div>
+
+    <div class="row">
+      <button id="regenerateBtn">Generate variation</button>
+      <button id="saveBtn">Save PNG</button>
+    </div>
+
+    <div class="meta" id="metaInfo"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script>
+    const BLOCK = 64;
+    const TILE_OVERLAP = 2;
+
+    let assets = {};
+    let groundY;
+    let singleHouse = null;
+
+    let ui = {};
+
+    function preload() {
+      assets = {
+        base: {
+          plain: [
+            loadImage("assets/base/plain/base_plain_01.png"),
+            loadImage("assets/base/plain/base_plain_02.png"),
+          ],
+        },
+
+        roofs: {
+          flat: {
+            left: loadImage("assets/roofs/flat/roof_flat_left.png"),
+            mid: loadImage("assets/roofs/flat/roof_flat_mid.png"),
+            right: loadImage("assets/roofs/flat/roof_flat_right.png"),
+          },
+          cornice: {
+            left: loadImage("assets/roofs/cornice/roof_cornice_left.png"),
+            mid: loadImage("assets/roofs/cornice/roof_cornice_mid.png"),
+            right: loadImage("assets/roofs/cornice/roof_cornice_right.png"),
+          },
+        },
+
+        walls: {
+          smooth: [
+            loadImage("assets/walls/smooth/wall_smooth_01.png"),
+            loadImage("assets/walls/smooth/wall_smooth_02.png"),
+          ],
+          brick: [
+            loadImage("assets/walls/brick/wall_brick_01.png"),
+            loadImage("assets/walls/brick/wall_brick_02.png"),
+          ],
+        },
+
+        windows: {
+          square: {
+            dark: loadImage("assets/windows/square/window_square_dark.png"),
+            lit: loadImage("assets/windows/square/window_square_lit.png"),
+          },
+          tall: {
+            dark: loadImage("assets/windows/tall/window_tall_dark.png"),
+            lit: loadImage("assets/windows/tall/window_tall_lit.png"),
+          },
+          rounded: {
+            dark: loadImage("assets/windows/rounded/window_rounded_dark.png"),
+            lit: loadImage("assets/windows/rounded/window_rounded_lit.png"),
+          },
+        },
+
+        doors: {
+          single: {
+            rect: loadImage("assets/doors/single/door_single_rect.png"),
+            arch: loadImage("assets/doors/single/door_single_arch.png"),
+          },
+          double: {
+            rect: {
+              left: loadImage("assets/doors/double/door_double_rect_left.png"),
+              right: loadImage("assets/doors/double/door_double_rect_right.png"),
+            },
+          },
+        },
+
+        details: {
+          balconies: {
+            rounded: loadImage("assets/details/balconies/detail_balcony_rounded_01.png"),
+            square: loadImage("assets/details/balconies/detail_balcony_square_01.png"),
+            tall: loadImage("assets/details/balconies/detail_balcony_tall_01.png"),
+          },
+        },
+      };
+    }
+
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      pixelDensity(1);
+      imageMode(CORNER);
+      noSmooth();
+
+      groundY = height - BLOCK * 1.25;
+
+      setupUI();
+      regenerateBuilding();
+    }
+
+    function draw() {
+      drawBackground();
+      drawSingleHouse();
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+      groundY = height - BLOCK * 1.25;
+    }
+
+    function setupUI() {
+      ui.widthSlider = document.getElementById("widthSlider");
+      ui.heightSlider = document.getElementById("heightSlider");
+      ui.warmthSlider = document.getElementById("warmthSlider");
+      ui.densitySlider = document.getElementById("densitySlider");
+      ui.orderSlider = document.getElementById("orderSlider");
+      ui.memorySlider = document.getElementById("memorySlider");
+      ui.roofToggle = document.getElementById("roofToggle");
+      ui.baseToggle = document.getElementById("baseToggle");
+      ui.regenerateBtn = document.getElementById("regenerateBtn");
+      ui.saveBtn = document.getElementById("saveBtn");
+      ui.metaInfo = document.getElementById("metaInfo");
+
+      const autoRegenerate = [
+        ui.widthSlider,
+        ui.heightSlider,
+        ui.warmthSlider,
+        ui.densitySlider,
+        ui.orderSlider,
+        ui.memorySlider,
+        ui.roofToggle,
+        ui.baseToggle,
+      ];
+
+      autoRegenerate.forEach((el) => {
+        el.addEventListener("input", regenerateBuilding);
+        el.addEventListener("change", regenerateBuilding);
+      });
+
+      ui.regenerateBtn.addEventListener("click", regenerateBuilding);
+      ui.saveBtn.addEventListener("click", () => saveCanvas("single_building", "png"));
+    }
+
+    function getStateFromUI() {
+      return {
+        widthBlocks: parseInt(ui.widthSlider.value),
+        heightBlocks: parseInt(ui.heightSlider.value),
+        warmth: parseFloat(ui.warmthSlider.value),
+        density: parseFloat(ui.densitySlider.value),
+        order: parseFloat(ui.orderSlider.value),
+        memory: parseFloat(ui.memorySlider.value),
+        allowRoof: ui.roofToggle.checked,
+        allowBase: ui.baseToggle.checked,
+      };
+    }
+
+    function regenerateBuilding() {
+      const state = getStateFromUI();
+      singleHouse = generateSingleHouse(state);
+      updateMeta(singleHouse, state);
+    }
+
+    function updateMeta(house, state) {
+      ui.metaInfo.innerHTML = `
+        width: ${state.widthBlocks}<br>
+        height: ${state.heightBlocks}<br>
+        roof: ${house.hasRoof ? house.roofFamily : "none"}<br>
+        base: ${house.hasBase ? "yes" : "no"}<br>
+        wall family: ${house.wallFamily}<br>
+        window family: ${house.windowFamily}<br>
+        pattern: ${house.windowPattern}<br>
+        accent top window: ${house.topAccentWindow ? house.topAccentWindow.family : "none"}<br>
+        door: ${house.doorTypeLabel}
+      `;
+    }
+
+    function generateSingleHouse(state) {
+      const widthBlocks = state.widthBlocks;
+      const heightBlocks = state.heightBlocks;
+
+      const hasRoof = state.allowRoof ? chooseHasRoof(state) : false;
+      const roofFamily = hasRoof ? pick(Object.keys(assets.roofs)) : null;
+
+      const wallFamily = pick(Object.keys(assets.walls));
+      const windowFamily = pick(Object.keys(assets.windows));
+
+      const topAccentWindow = chooseTopAccentWindow(
+        widthBlocks,
+        hasRoof,
+        state,
+        windowFamily
+      );
+
+      const wallBlock = pick(assets.walls[wallFamily]);
+
+      const hasBase = state.allowBase ? chooseHasBase(state) : false;
+      const baseBlock = hasBase ? pick(assets.base.plain) : null;
+
+      const doorData = chooseDoor(widthBlocks, state);
+      const windowPattern = chooseWindowPattern(widthBlocks, state);
+
+      const tintColor = chooseBuildingTint(state);
+
+      const cells = [];
+
+      for (let row = 0; row < heightBlocks; row++) {
+        const rowCells = [];
+
+        for (let col = 0; col < widthBlocks; col++) {
+          const cell = {
+            wall: wallBlock,
+            base: null,
+            window: null,
+            door: null,
+            detail: null,
+          };
+
+          const isGroundRow = row === heightBlocks - 1;
+          const isMiddleRow = row > 0 && row < heightBlocks - 1;
+          const isTopRow = row === 0;
+
+          if (isGroundRow && baseBlock) {
+            cell.base = baseBlock;
+          }
+
+          if (
+            isTopRow &&
+            topAccentWindow &&
+            col === topAccentWindow.col
+          ) {
+            const accentFamily = topAccentWindow.family;
+            const windowState = random() < 0.45 ? "lit" : "dark";
+            cell.window = assets.windows[accentFamily][windowState];
+            cell.detail = null;
+          }
+
+          if (
+            isMiddleRow &&
+            shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
+          ) {
+            const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
+            const windowState = random() < litChance ? "lit" : "dark";
+            cell.window = assets.windows[windowFamily][windowState];
+
+            const balconyChance = 0.05 + state.memory * 0.22;
+
+            if (random() < balconyChance && assets.details.balconies[windowFamily]) {
+              cell.detail = assets.details.balconies[windowFamily];
+            }
+          }
+
+          rowCells.push(cell);
+        }
+
+        cells.push(rowCells);
+      }
+
+      placeDoor(cells, widthBlocks, heightBlocks, doorData);
+
+      return {
+        widthBlocks,
+        heightBlocks,
+        hasRoof,
+        roofFamily,
+        wallFamily,
+        windowFamily,
+        wallBlock,
+        hasBase,
+        baseBlock,
+        windowPattern,
+        topAccentWindow,
+        tintColor,
+        doorTypeLabel: doorData.label,
+        cells,
+      };
+    }
+
+    function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
+      const groundRow = heightBlocks - 1;
+
+      if (doorData.width === 2 && widthBlocks >= 4) {
+        const startCol = floor((widthBlocks - 2) / 2);
+        cells[groundRow][startCol].door = doorData.asset.left;
+        cells[groundRow][startCol + 1].door = doorData.asset.right;
+        return;
+      }
+
+      const doorCol = floor(widthBlocks / 2);
+      cells[groundRow][doorCol].door = doorData.asset;
+    }
+
+    function chooseHasRoof(state) {
+      const roofChance = 0.7 - state.density * 0.15 + state.memory * 0.1;
+      return random() < roofChance;
+    }
+
+    function chooseHasBase(state) {
+      const baseChance = 0.65 + state.order * 0.1;
+      return random() < baseChance;
+    }
+
+    function chooseDoor(widthBlocks, state) {
+      const canUseDouble = widthBlocks >= 4;
+      const doubleChance = canUseDouble ? 0.25 + state.order * 0.15 : 0;
+
+      if (random() < doubleChance) {
+        return {
+          width: 2,
+          asset: assets.doors.double.rect,
+          label: "double rect",
+        };
+      }
+
+      const singleType = random() < 0.5 ? "rect" : "arch";
+
+      return {
+        width: 1,
+        asset: assets.doors.single[singleType],
+        label: "single " + singleType,
+      };
+    }
+
+    function chooseWindowPattern(widthBlocks, state) {
+      let patterns = [];
+
+      patterns.push("regular");
+      patterns.push("centerColumn");
+
+      if (widthBlocks >= 3) {
+        patterns.push("edgeColumns");
+      }
+
+      patterns.push("everySecond");
+
+      if (widthBlocks >= 3) {
+        patterns.push("checker");
+      }
+
+      if (state.memory > 0.55) {
+        patterns.push("checker");
+        patterns.push("sparse");
+      }
+
+      if (state.order > 0.7) {
+        patterns = ["regular", "centerColumn"];
+
+        if (widthBlocks >= 3) {
+          patterns.push("edgeColumns");
+        }
+      }
+
+      return pick(patterns);
+    }
+
+    function shouldPlaceWindow(row, col, heightBlocks, widthBlocks, pattern) {
+      const bodyRowIndex = row - 1;
+
+      if (pattern === "regular") {
+        return true;
+      }
+
+      if (pattern === "centerColumn") {
+        if (widthBlocks === 2) {
+          return col === 0 || col === 1;
+        }
+
+        return col === floor(widthBlocks / 2);
+      }
+
+      if (pattern === "edgeColumns") {
+        if (widthBlocks <= 2) {
+          return true;
+        }
+
+        if (widthBlocks === 3) {
+          return col === 0 || col === 2;
+        }
+
+        return col === 1 || col === widthBlocks - 2;
+      }
+
+      if (pattern === "everySecond") {
+        if (widthBlocks <= 2) {
+          return col === 0;
+        }
+
+        return col % 2 === 0;
+      }
+
+      if (pattern === "checker") {
+        if (widthBlocks < 3) {
+          return col % 2 === 0;
+        }
+
+        return (col + bodyRowIndex) % 2 === 0;
+      }
+
+      if (pattern === "sparse") {
+        if (widthBlocks <= 2) {
+          return col === floor(widthBlocks / 2);
+        }
+
+        if (widthBlocks === 3) {
+          return col === 1;
+        }
+
+        return col === 1 || col === widthBlocks - 2;
+      }
+
+      return false;
+    }
+
+    function chooseTopAccentWindow(widthBlocks, hasRoof, state, mainWindowFamily) {
+      if (!hasRoof) return null;
+      if (widthBlocks < 3) return null;
+      if (widthBlocks % 2 === 0) return null;
+
+      const accentChance = 0.18 + state.memory * 0.25 - state.order * 0.08;
+
+      if (random() > accentChance) {
+        return null;
+      }
+
+      return {
+        col: floor(widthBlocks / 2),
+        family: chooseDifferentWindowFamily(mainWindowFamily),
+      };
+    }
+
+    function chooseDifferentWindowFamily(mainWindowFamily) {
+      const families = Object.keys(assets.windows).filter((family) => family !== mainWindowFamily);
+      return pick(families);
+    }
+
+    function chooseBuildingTint(state) {
+      const cold = color(150, 165, 180);
+      const warm = color(220, 178, 145);
+      const pastel = color(205, 180, 200);
+
+      let base = lerpColor(cold, warm, state.warmth);
+
+      if (random() < state.memory * 0.45) {
+        base = lerpColor(base, pastel, 0.35);
+      }
+
+      const variation = lerp(22, 8, state.order);
+
+      return [
+        red(base) + random(-variation, variation),
+        green(base) + random(-variation, variation),
+        blue(base) + random(-variation, variation),
+      ];
+    }
+
+    function drawSingleHouse() {
+      if (!singleHouse) return;
+
+      const house = singleHouse;
+      const houseX = Math.round(width / 2 - (house.widthBlocks * BLOCK) / 2);
+      const bodyTopY = Math.round(groundY - house.heightBlocks * BLOCK);
+      const roofY = bodyTopY - BLOCK;
+
+      if (house.hasRoof) {
+        drawRoof(house, roofY, houseX);
+      }
+
+      for (let row = 0; row < house.heightBlocks; row++) {
+        for (let col = 0; col < house.widthBlocks; col++) {
+          const x = houseX + col * BLOCK;
+          const y = bodyTopY + row * BLOCK;
+          const cell = house.cells[row][col];
+
+          drawTintedTile(cell.wall, x, y, house.tintColor, 255);
+
+          if (cell.base) {
+            drawTile(cell.base, x, y);
+          }
+
+          if (cell.window) {
+            image(cell.window, x, y, BLOCK, BLOCK);
+          }
+
+          if (cell.door) {
+            image(cell.door, x, y, BLOCK, BLOCK);
+          }
+
+          if (cell.detail) {
+            image(cell.detail, x, y, BLOCK, BLOCK);
+          }
+        }
+      }
+    }
+
+    function drawRoof(house, roofY, houseX) {
+      if (!house.hasRoof || !house.roofFamily) return;
+
+      const roof = assets.roofs[house.roofFamily];
+
+      for (let col = 0; col < house.widthBlocks; col++) {
+        const x = houseX + col * BLOCK;
+
+        let roofPart;
+
+        if (col === 0) {
+          roofPart = roof.left;
+        } else if (col === house.widthBlocks - 1) {
+          roofPart = roof.right;
+        } else {
+          roofPart = roof.mid;
+        }
+
+        drawTile(roofPart, x, roofY);
+      }
+    }
+
+    function drawTile(img, x, y) {
+      image(
+        img,
+        x - TILE_OVERLAP / 2,
+        y - TILE_OVERLAP / 2,
+        BLOCK + TILE_OVERLAP,
+        BLOCK + TILE_OVERLAP
+      );
+    }
+
+    function drawTintedTile(img, x, y, tintColor, alpha = 255) {
+      push();
+      tint(tintColor[0], tintColor[1], tintColor[2], alpha);
+
+      image(
+        img,
+        x - TILE_OVERLAP / 2,
+        y - TILE_OVERLAP / 2,
+        BLOCK + TILE_OVERLAP,
+        BLOCK + TILE_OVERLAP
+      );
+
+      pop();
+    }
+
+    function drawBackground() {
+      background(218, 218, 214);
+
+      noStroke();
+
+      fill(206, 209, 212, 120);
+      rect(0, groundY - BLOCK * 8, width, BLOCK * 8);
+
+      fill(184, 184, 180);
+      rect(0, groundY, width, height - groundY);
+
+      fill(160, 160, 156);
+      rect(0, groundY, width, 2);
+    }
+
+    function pick(arr) {
+      return arr[floor(random(arr.length))];
+    }
+  </script>
+</body>
+</html>
