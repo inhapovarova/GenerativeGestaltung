@@ -72,28 +72,20 @@
 
     const COL_W = WORK_W / COLS;
     const ROW_H = WORK_H / ROWS;
+    const TEXT_IMAGE_GAP = ROW_H * 0.18;
 
     let buildings = [];
     let currentBuilding = null;
     let currentLayout = null;
 
-    const posterTitles = [
-      "Almost Tomorrow",
-      "A City That Remembers",
-      "Passing Futures",
-      "In Transit",
-      "Soft Infrastructure",
-      "Future as Memory",
-      "The Shape of Waiting"
-    ];
-
-    const posterTexts = [
-      "A generative study of urban rhythm, memory and repetition.",
-      "The city appears as a moving system of fragments and traces.",
-      "Each facade is built from rules, chance and small acts of variation.",
-      "A speculative street assembled from modular memories.",
-      "The future is not fixed. It is generated, repeated and slightly disturbed."
-    ];
+    const posterContent = {
+      title: "THE CITY THAT REMEMBERS FORWARD",
+      textIntro: "A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.",
+      textPoem: "Windows repeat like thoughts.\nDoors appear like invitations.\nStreets rearrange themselves before they can be remembered.",
+      dateAddress: "38.07.2026, 19:30\nOpening Night\n\nThe Museum of Unbuilt Streets\n42 Soft Corner Lane\nOld Future District\n00023 City City\n\n38.07.2026, 38.13.2026",
+      extraInfo: "Generated houses\nRandom streets\nPoster machines\nSaved facades\nA sandbox for slow exploration",
+      extraInfo2: "Free entry",
+    };
 
     function setup() {
       createCanvas(POSTER_W, POSTER_H);
@@ -146,81 +138,119 @@
 
     function createLayout() {
       const archetype = floor(random(1, 7));
-      const title = pick(posterTitles);
-      const bodyText = pick(posterTexts);
-      const caption = "generated facade / modular city system";
+      const showExtraInfo = random() < 0.68;
+      const showExtraInfo2 = random() < 0.5;
 
       let layout;
 
       if (archetype === 1) {
         layout = {
           archetype,
-          dominant: "image",
-          title: rectFromGrid(0, 0, 4, 2),
-          text: rectFromGrid(0, 2.35, 2, 1),
-          image: rectFromGrid(2, 4.35, 4, 2.35),
-          caption: "below"
+          title: titleBlock(0, 0, 6, 2.15, 112),
+          image: rectFromGrid(2.4, 4.55, 3.6, 2.05),
+          textBlocks: [
+            textBlock(0, 2.65, 2.55, 1.45, posterContent.textIntro, 18, 25),
+            textBlock(3.15, 2.65, 2.35, 1.45, posterContent.textPoem, 17, 24),
+          ],
+          date: textBlock(0, 6.25, 1.9, 1.15, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 4.5, 6.9, 1.35, 0.75, posterContent.extraInfo, 11, 15),
+            optionalBlock(showExtraInfo2, 0, 7.55, 1.2, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
         };
       }
 
       if (archetype === 2) {
         layout = {
           archetype,
-          dominant: "image",
-          image: rectFromGrid(3, 0.25, 3, 2.05),
-          title: rectFromGrid(0, 3.15, 4, 2),
-          text: rectFromGrid(0, 5.35, 2, 1),
-          caption: "below"
+          title: titleBlock(0, 2.55, 5.75, 2.2, 124),
+          image: rectFromGrid(3.15, 0.1, 2.85, 1.85),
+          textBlocks: [
+            textBlock(0, 5.15, 2.4, 1.15, posterContent.textIntro, 17, 24),
+            textBlock(0, 6.35, 2.4, 1.1, posterContent.textPoem, 17, 24),
+          ],
+          date: textBlock(3.25, 5.35, 1.75, 1.25, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 4.85, 6.75, 1.15, 0.8, posterContent.extraInfo, 11, 15),
+            optionalBlock(showExtraInfo2, 3.25, 7.45, 1.2, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
         };
       }
 
       if (archetype === 3) {
         layout = {
           archetype,
-          dominant: "image",
-          title: rectFromGrid(0, 0, 5, 2),
-          text: rectFromGrid(0, 2.25, 2, 1),
-          image: rectFromGrid(1, 3.65, 4, 2.5),
-          caption: "below"
+          title: titleBlock(0, 0, 6, 3, 142),
+          image: rectFromGrid(0.6, 4.25, 4.8, 1.85),
+          textBlocks: [
+            textBlock(0, 3.35, 2.55, 0.8, posterContent.textIntro, 15, 21),
+            textBlock(3.2, 3.35, 2.35, 0.8, posterContent.textPoem, 15, 21),
+          ],
+          date: textBlock(0, 6.55, 1.95, 1.05, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 3.2, 6.55, 1.45, 1.05, posterContent.extraInfo, 11, 15),
+            optionalBlock(showExtraInfo2, 4.85, 6.55, 0.9, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
         };
       }
 
       if (archetype === 4) {
         layout = {
           archetype,
-          dominant: "title",
-          title: rectFromGrid(0.5, 1, 5, 2.35),
-          text: rectFromGrid(0.5, 3.65, 2.25, 1),
-          image: rectFromGrid(3.3, 5.25, 2.4, 1.9),
-          caption: "below"
+          title: titleBlock(0.25, 0.6, 5.5, 3.05, 150),
+          image: rectFromGrid(3.15, 5.1, 2.65, 1.9),
+          textBlocks: [
+            textBlock(0.25, 4.15, 2.25, 1.1, posterContent.textIntro, 17, 24),
+            textBlock(0.25, 5.45, 2.25, 1.1, posterContent.textPoem, 17, 24),
+          ],
+          date: textBlock(3.15, 3.85, 1.75, 1.05, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 4.95, 3.85, 0.95, 1.05, posterContent.extraInfo, 10, 14),
+            optionalBlock(showExtraInfo2, 3.15, 7.25, 1.1, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
         };
       }
 
       if (archetype === 5) {
         layout = {
           archetype,
-          dominant: "image",
-          title: rectFromGrid(0, 0.65, 3.2, 2),
-          text: rectFromGrid(0, 3, 2, 1),
-          image: rectFromGrid(3, 3.35, 3, 3.1),
-          caption: "below"
+          title: titleBlock(0, 0.4, 3.25, 2.55, 106),
+          image: rectFromGrid(3.25, 2.85, 2.75, 3.35),
+          textBlocks: [
+            textBlock(0, 3.35, 2.45, 1.25, posterContent.textIntro, 17, 24),
+            textBlock(0, 4.85, 2.45, 1.15, posterContent.textPoem, 17, 24),
+          ],
+          date: textBlock(0, 6.55, 1.95, 1.15, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 3.25, 6.65, 1.35, 0.85, posterContent.extraInfo, 11, 15),
+            optionalBlock(showExtraInfo2, 4.8, 6.65, 0.9, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
         };
       }
 
       if (archetype === 6) {
         layout = {
           archetype,
-          dominant: "image",
-          title: rectFromGrid(0, 0, 5, 2),
-          text: rectFromGrid(0, 2.45, 2.2, 1),
-          image: rectFromGrid(1, 5, 4, 2),
-          caption: "below"
+          title: titleBlock(0, 0, 6, 2.65, 132),
+          image: rectFromGrid(1.1, 5.25, 4.8, 1.9),
+          textBlocks: [
+            textBlock(0, 3.25, 2.55, 1.15, posterContent.textIntro, 17, 24),
+            textBlock(3, 3.25, 2.55, 1.15, posterContent.textPoem, 17, 24),
+          ],
+          date: textBlock(0, 6.6, 1.85, 1.05, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 2.4, 6.65, 1.35, 0.85, posterContent.extraInfo, 11, 15),
+            optionalBlock(showExtraInfo2, 4.4, 6.65, 1, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
         };
       }
 
-      layout.titleText = title;
-      layout.bodyText = bodyText;
-      layout.captionText = caption;
+      layout.titleText = posterContent.title;
+      layout.date.kind = "light";
+      layout.extras = layout.extras.filter(Boolean).map((block) => ({
+        ...block,
+        kind: "extra",
+      }));
 
       return layout;
     }
@@ -237,10 +267,27 @@
         return;
       }
 
+      const imageRect = getImageFitRect(currentBuilding, currentLayout.image);
+      const posterTextBlocks = avoidImageOverlap(
+        [
+          ...currentLayout.textBlocks,
+          currentLayout.date,
+          ...currentLayout.extras,
+        ],
+        imageRect
+      );
+
+      drawTitle(currentLayout.title, currentLayout.titleText);
       drawImageBlock(currentBuilding, currentLayout.image);
-      drawTitle(currentLayout.title, currentLayout.titleText, currentLayout.dominant);
-      drawBodyText(currentLayout.text, currentLayout.bodyText);
-      drawCaption(currentLayout);
+      posterTextBlocks.forEach((block) => {
+        if (block.kind === "light") {
+          drawLightText(block);
+        } else if (block.kind === "extra") {
+          drawExtraText(block);
+        } else {
+          drawBodyText(block);
+        }
+      });
 
       // Uncomment for grid debug:
       // drawGrid();
@@ -249,69 +296,199 @@
     function drawImageBlock(img, r) {
       if (!img) return;
 
+      const imageRect = getImageFitRect(img, r);
+
+      image(
+        img,
+        imageRect.x,
+        imageRect.y,
+        imageRect.w,
+        imageRect.h
+      );
+    }
+
+    function getImageFitRect(img, r) {
       const scale = min(r.w / img.width, r.h / img.height);
       const drawW = img.width * scale;
       const drawH = img.height * scale;
       const x = r.x + (r.w - drawW) / 2;
       const y = r.y + (r.h - drawH) / 2;
 
-      image(
-        img,
+      return {
         x,
         y,
-        drawW,
-        drawH
-      );
+        w: drawW,
+        h: drawH
+      };
     }
 
-    function drawTitle(r, title, dominant) {
+    function drawTitle(block, title) {
       fill("#111111");
       noStroke();
 
-      const size = dominant === "title" ? 92 : 58;
+      const r = block.rect;
       const titleText = title.toUpperCase();
+      const fontSize = fitTitleSize(titleText, r, block.size);
+      const leading = fontSize * 0.82;
+      const lines = wrapTextLines(titleText, r.w, fontSize);
 
       textFont("Arial Black");
-      textSize(size);
-      textLeading(size * 0.86);
+      textSize(fontSize);
+      textLeading(leading);
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      text(titleText, r.x, r.y, r.w, r.h);
+      lines.forEach((line, index) => {
+        text(line, r.x, r.y + index * leading);
+      });
 
       textStyle(NORMAL);
       textFont("Arial");
     }
 
-    function drawBodyText(r, bodyText) {
+    function drawBodyText(block) {
+      const r = block.rect;
+
       fill("#111111");
       noStroke();
 
-      textSize(17);
-      textLeading(23);
+      textFont("Arial");
+      textSize(block.size);
+      textLeading(block.leading);
       textStyle(NORMAL);
       textAlign(LEFT, TOP);
 
-      text(bodyText, r.x, r.y, r.w, r.h);
+      text(block.text, r.x, r.y, r.w, r.h);
     }
 
-    function drawCaption(layout) {
-      const imageRect = layout.image;
-      const posterBottom = MARGIN_Y + WORK_H;
-      const r = {
-        x: imageRect.x,
-        y: min(imageRect.y + imageRect.h + ROW_H * 0.12, posterBottom - ROW_H * 0.35),
-        w: imageRect.w,
-        h: ROW_H * 0.35
-      };
+    function drawLightText(block) {
+      const r = block.rect;
+
+      fill(17, 17, 17, 150);
+      noStroke();
+      textFont("Arial");
+      textSize(block.size);
+      textLeading(block.leading);
+      textStyle(NORMAL);
+      textAlign(LEFT, TOP);
+
+      text(block.text, r.x, r.y, r.w, r.h);
+    }
+
+    function drawExtraText(block) {
+      const r = block.rect;
 
       fill("#111111");
       noStroke();
-      textSize(10);
-      textLeading(13);
+      textFont("Arial");
+      textSize(block.size);
+      textLeading(block.leading);
+      textStyle(NORMAL);
       textAlign(LEFT, TOP);
 
-      text(layout.captionText, r.x, r.y, r.w, r.h);
+      text(block.text, r.x, r.y, r.w, r.h);
+    }
+
+    function fitTitleSize(title, r, preferredSize) {
+      for (let size = preferredSize; size >= 52; size -= 2) {
+        const lines = wrapTextLines(title, r.w, size);
+        const leading = size * 0.82;
+        const textHeight = lines.length * leading;
+
+        if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
+          return size;
+        }
+      }
+
+      return 52;
+    }
+
+    function wrapTextLines(textValue, maxWidth, size) {
+      textFont("Arial Black");
+      textSize(size);
+
+      const words = textValue.split(" ");
+      const lines = [];
+      let currentLine = "";
+
+      for (let word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines;
+    }
+
+    function titleBlock(col, row, colSpan, rowSpan, size) {
+      return {
+        rect: rectFromGrid(col, row, colSpan, rowSpan),
+        size,
+      };
+    }
+
+    function textBlock(col, row, colSpan, rowSpan, textValue, size, leading) {
+      return {
+        rect: rectFromGrid(col, row, colSpan, rowSpan),
+        text: textValue,
+        size,
+        leading,
+      };
+    }
+
+    function avoidImageOverlap(blocks, imageRect) {
+      let nextY = imageRect.y + imageRect.h + TEXT_IMAGE_GAP;
+
+      return blocks.map((block) => {
+        const movedBlock = copyTextBlock(block);
+
+        if (rectsOverlap(expandRect(movedBlock.rect, 10), imageRect)) {
+          const maxY = MARGIN_Y + WORK_H - movedBlock.rect.h;
+          movedBlock.rect.y = min(nextY, maxY);
+          nextY = movedBlock.rect.y + movedBlock.rect.h + TEXT_IMAGE_GAP * 0.5;
+        }
+
+        return movedBlock;
+      });
+    }
+
+    function copyTextBlock(block) {
+      return {
+        ...block,
+        rect: { ...block.rect },
+      };
+    }
+
+    function expandRect(r, amount) {
+      return {
+        x: r.x - amount,
+        y: r.y - amount,
+        w: r.w + amount * 2,
+        h: r.h + amount * 2,
+      };
+    }
+
+    function rectsOverlap(a, b) {
+      return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+      );
+    }
+
+    function optionalBlock(show, col, row, colSpan, rowSpan, textValue, size, leading) {
+      if (!show) return null;
+      return textBlock(col, row, colSpan, rowSpan, textValue, size, leading);
     }
 
     function rectFromGrid(col, row, colSpan, rowSpan) {
