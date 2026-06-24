@@ -22,8 +22,57 @@
       top: 18px;
       left: 18px;
       z-index: 10;
+      width: 280px;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      padding: 16px;
+      box-sizing: border-box;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+    }
+
+    .title {
+      color: #222;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      margin-bottom: 14px;
+      opacity: 0.82;
+    }
+
+    .control {
+      margin-bottom: 12px;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      color: #222;
+      font-size: 12px;
+      opacity: 0.82;
+    }
+
+    .control-hint {
+      margin-top: 3px;
+      color: #222;
+      font-size: 10px;
+      line-height: 1.3;
+      opacity: 0.48;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #222;
+    }
+
+    .buttons {
       display: flex;
       gap: 8px;
+      margin-top: 8px;
     }
 
     button {
@@ -46,8 +95,66 @@
 </head>
 <body>
   <div class="ui">
-    <button id="randomBtn">random</button>
-    <button id="saveRowBtn">save row</button>
+    <div class="title">random street</div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>warmth</span>
+        <span id="warmthValue">0.50</span>
+      </div>
+      <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+      <div class="control-hint">cold to warm color</div>
+    </div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>decoration</span>
+        <span id="decorationValue">0.35</span>
+      </div>
+      <input id="decorationSlider" type="range" min="0" max="1" step="0.01" value="0.35" />
+      <div class="control-hint">plain to detailed</div>
+    </div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>glow</span>
+        <span id="glowValue">0.45</span>
+      </div>
+      <input id="glowSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+      <div class="control-hint">dark to lit windows</div>
+    </div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>order</span>
+        <span id="orderValue">0.45</span>
+      </div>
+      <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+      <div class="control-hint">loose to regular grid</div>
+    </div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>memory</span>
+        <span id="memoryValue">0.45</span>
+      </div>
+      <input id="memorySlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+      <div class="control-hint">varied to repeated</div>
+    </div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>tempo</span>
+        <span id="tempoValue">0.50</span>
+      </div>
+      <input id="tempoSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+      <div class="control-hint">slow to fast motion</div>
+    </div>
+
+    <div class="buttons">
+      <button id="randomBtn">random</button>
+      <button id="saveRowBtn">save row</button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
@@ -57,15 +164,19 @@
 
     let assets = {};
     let houses = [];
+    let ui = {};
+    let streetMemoryChoices = {};
 
     let groundY;
     let scrollSpeed = 1.8;
 
     let currentState = {
       warmth: 0.5,
-      density: 0.5,
+      decoration: 0.35,
+      glow: 0.45,
       order: 0.45,
       memory: 0.45,
+      tempo: 0.5,
     };
 
     function preload() {
@@ -147,8 +258,7 @@
 
       groundY = height - BLOCK * 1.1;
 
-      document.getElementById("randomBtn").addEventListener("click", randomizeStreet);
-      document.getElementById("saveRowBtn").addEventListener("click", saveRowToFolder);
+      setupUI();
 
       randomizeStreet();
     }
@@ -179,20 +289,83 @@
       rect(0, groundY, width, 2);
     }
 
-    function randomizeStreet() {
-      currentState = {
-        warmth: random(0, 1),
-        density: random(0, 1),
-        order: random(0, 1),
-        memory: random(0, 1),
-      };
+    function setupUI() {
+      ui.warmthSlider = document.getElementById("warmthSlider");
+      ui.decorationSlider = document.getElementById("decorationSlider");
+      ui.glowSlider = document.getElementById("glowSlider");
+      ui.orderSlider = document.getElementById("orderSlider");
+      ui.memorySlider = document.getElementById("memorySlider");
+      ui.tempoSlider = document.getElementById("tempoSlider");
 
-      scrollSpeed = random(1.5, 2.5);
+      ui.warmthValue = document.getElementById("warmthValue");
+      ui.decorationValue = document.getElementById("decorationValue");
+      ui.glowValue = document.getElementById("glowValue");
+      ui.orderValue = document.getElementById("orderValue");
+      ui.memoryValue = document.getElementById("memoryValue");
+      ui.tempoValue = document.getElementById("tempoValue");
+
+      const controls = [
+        ui.warmthSlider,
+        ui.decorationSlider,
+        ui.glowSlider,
+        ui.orderSlider,
+        ui.memorySlider,
+        ui.tempoSlider,
+      ];
+
+      controls.forEach((el) => {
+        el.addEventListener("input", updateStreetFromUI);
+        el.addEventListener("change", updateStreetFromUI);
+      });
+
+      document.getElementById("randomBtn").addEventListener("click", randomizeStreet);
+      document.getElementById("saveRowBtn").addEventListener("click", saveRowToFolder);
+    }
+
+    function getStateFromUI() {
+      return {
+        warmth: parseFloat(ui.warmthSlider.value),
+        decoration: parseFloat(ui.decorationSlider.value),
+        glow: parseFloat(ui.glowSlider.value),
+        order: parseFloat(ui.orderSlider.value),
+        memory: parseFloat(ui.memorySlider.value),
+        tempo: parseFloat(ui.tempoSlider.value),
+      };
+    }
+
+    function updateUIValues(state) {
+      ui.warmthValue.textContent = state.warmth.toFixed(2);
+      ui.decorationValue.textContent = state.decoration.toFixed(2);
+      ui.glowValue.textContent = state.glow.toFixed(2);
+      ui.orderValue.textContent = state.order.toFixed(2);
+      ui.memoryValue.textContent = state.memory.toFixed(2);
+      ui.tempoValue.textContent = state.tempo.toFixed(2);
+    }
+
+    function updateStreetFromUI() {
+      currentState = getStateFromUI();
+      updateUIValues(currentState);
+      scrollSpeed = tempoToSpeed(currentState.tempo);
       initializeCity();
+    }
+
+    function randomizeStreet() {
+      ui.warmthSlider.value = random(0, 1).toFixed(2);
+      ui.decorationSlider.value = random(0, 1).toFixed(2);
+      ui.glowSlider.value = random(0, 1).toFixed(2);
+      ui.orderSlider.value = random(0, 1).toFixed(2);
+      ui.memorySlider.value = random(0, 1).toFixed(2);
+      ui.tempoSlider.value = random(0, 1).toFixed(2);
+      updateStreetFromUI();
+    }
+
+    function tempoToSpeed(tempo) {
+      return lerp(0.6, 3.0, tempo);
     }
 
     function initializeCity() {
       houses = [];
+      streetMemoryChoices = createStreetMemoryChoices(currentState);
 
       let x = -BLOCK * 2;
 
@@ -203,6 +376,30 @@
         // no gaps, houses touch each other
         x += house.widthBlocks * BLOCK;
       }
+    }
+
+    function createStreetMemoryChoices(state) {
+      return {
+        widthBlocks: floor(random(2, 7)),
+        heightBlocks: floor(random(3, 10)),
+        roofFamily: pick(Object.keys(assets.roofs)),
+        wallFamily: pick(Object.keys(assets.walls)),
+        windowFamily: pick(Object.keys(assets.windows)),
+        wallBlock: null,
+      };
+    }
+
+    function chooseRemembered(key, fallback, state) {
+      if (random() > state.memory) {
+        return fallback;
+      }
+
+      if (key === "wallBlock" && !streetMemoryChoices.wallBlock) {
+        const family = streetMemoryChoices.wallFamily;
+        streetMemoryChoices.wallBlock = pick(assets.walls[family]);
+      }
+
+      return streetMemoryChoices[key] || fallback;
     }
 
     function updateCity() {
@@ -302,11 +499,11 @@
           width: totalWidth,
           height: maxHeight,
           warmth: currentState.warmth,
-          decoration: null,
-          glow: null,
-          density: currentState.density,
+          decoration: currentState.decoration,
+          glow: currentState.glow,
           order: currentState.order,
           memory: currentState.memory,
+          tempo: currentState.tempo,
           speed: scrollSpeed,
           buildingCount: rowHouses.length,
         },
@@ -363,10 +560,12 @@
       const heightBlocks = chooseHeight(state);
 
       const hasRoof = chooseHasRoof(state);
-      const roofFamily = hasRoof ? pick(Object.keys(assets.roofs)) : null;
+      const roofFamily = hasRoof
+        ? chooseRemembered("roofFamily", pick(Object.keys(assets.roofs)), state)
+        : null;
 
-      const wallFamily = pick(Object.keys(assets.walls));
-      const windowFamily = pick(Object.keys(assets.windows));
+      const wallFamily = chooseRemembered("wallFamily", pick(Object.keys(assets.walls)), state);
+      const windowFamily = chooseRemembered("windowFamily", pick(Object.keys(assets.windows)), state);
 
       const topAccentWindow = chooseTopAccentWindow(
         widthBlocks,
@@ -375,7 +574,7 @@
         windowFamily
       );
 
-      const wallBlock = pick(assets.walls[wallFamily]);
+      const wallBlock = chooseRemembered("wallBlock", pick(assets.walls[wallFamily]), state);
 
       const hasBase = chooseHasBase(state);
       const baseBlock = hasBase ? pick(assets.base.plain) : null;
@@ -384,6 +583,10 @@
       const windowPattern = chooseWindowPattern(widthBlocks, state);
 
       const tintColor = chooseBuildingTint(state);
+      const repeatedWindowState = random() < state.memory
+        ? chooseWindowState(state)
+        : null;
+      const repeatedDetail = chooseRepeatedDetail(windowFamily, state);
 
       const cells = [];
 
@@ -413,7 +616,7 @@
             col === topAccentWindow.col
           ) {
             const accentFamily = topAccentWindow.family;
-            const windowState = random() < 0.45 ? "lit" : "dark";
+            const windowState = repeatedWindowState || chooseWindowState(state);
             cell.window = assets.windows[accentFamily][windowState];
           }
 
@@ -421,13 +624,12 @@
             isMiddleRow &&
             shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
           ) {
-            const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
-            const windowState = random() < litChance ? "lit" : "dark";
+            const windowState = repeatedWindowState || chooseWindowState(state);
             cell.window = assets.windows[windowFamily][windowState];
 
-            const balconyChance = 0.05 + state.memory * 0.22;
+            const balconyChance = lerp(0, 0.42, state.decoration);
             if (random() < balconyChance && assets.details.balconies[windowFamily]) {
-              cell.detail = assets.details.balconies[windowFamily];
+              cell.detail = repeatedDetail || assets.details.balconies[windowFamily];
             }
           }
 
@@ -473,46 +675,34 @@
     }
 
     function chooseHasRoof(state) {
-      const roofChance = 0.7 - state.density * 0.15 + state.memory * 0.1;
+      const roofChance = 0.72;
       return random() < roofChance;
     }
 
     function chooseHasBase(state) {
-      const baseChance = 0.65 + state.order * 0.1;
+      const baseChance = 0.68;
       return random() < baseChance;
     }
 
     function chooseWidth(state) {
-      let minW = 2;
-      let maxW = 5;
-
-      if (state.density > 0.65) {
-        maxW = 6;
+      if (random() < state.memory) {
+        return streetMemoryChoices.widthBlocks;
       }
 
-      if (state.order > 0.7) {
-        return pick([3, 4]);
-      }
-
-      return floor(random(minW, maxW + 1));
+      return floor(random(2, 7));
     }
 
     function chooseHeight(state) {
-      let minH = floor(lerp(3, 5, state.density));
-      let maxH = floor(lerp(5, 9, state.density));
-
-      let h = floor(random(minH, maxH + 1));
-
-      if (state.memory > 0.7 && random() < 0.35) {
-        h = max(3, h - 1);
+      if (random() < state.memory) {
+        return streetMemoryChoices.heightBlocks;
       }
 
-      return h;
+      return floor(random(3, 10));
     }
 
     function chooseDoor(widthBlocks, state) {
       const canUseDouble = widthBlocks >= 4;
-      const doubleChance = canUseDouble ? 0.25 + state.order * 0.15 : 0;
+      const doubleChance = canUseDouble ? 0.28 : 0;
 
       if (random() < doubleChance) {
         return {
@@ -532,25 +722,27 @@
     function chooseWindowPattern(widthBlocks, state) {
       let patterns = [];
 
-      patterns.push("regular");
-      patterns.push("centerColumn");
+      if (state.order < 0.35) {
+        patterns.push("scattered");
+        patterns.push("checker");
+        patterns.push("sparse");
+        patterns.push("everySecond");
+        return pick(patterns);
+      }
+
+      patterns.push("checker");
+      patterns.push("everySecond");
 
       if (widthBlocks >= 3) {
         patterns.push("edgeColumns");
       }
 
-      patterns.push("everySecond");
-
-      if (widthBlocks >= 3) {
-        patterns.push("checker");
+      if (state.order > 0.45) {
+        patterns.push("regular");
+        patterns.push("centerColumn");
       }
 
-      if (state.memory > 0.55) {
-        patterns.push("checker");
-        patterns.push("sparse");
-      }
-
-      if (state.order > 0.7) {
+      if (state.order > 0.72) {
         patterns = ["regular", "centerColumn"];
         if (widthBlocks >= 3) {
           patterns.push("edgeColumns");
@@ -608,6 +800,10 @@
         return col === 1 || col === widthBlocks - 2;
       }
 
+      if (pattern === "scattered") {
+        return random() < 0.52;
+      }
+
       return false;
     }
 
@@ -616,7 +812,7 @@
       if (widthBlocks < 3) return null;
       if (widthBlocks % 2 === 0) return null;
 
-      const accentChance = 0.18 + state.memory * 0.25 - state.order * 0.08;
+      const accentChance = lerp(0, 0.45, state.decoration);
 
       if (random() > accentChance) {
         return null;
@@ -633,18 +829,24 @@
       return pick(families);
     }
 
+    function chooseWindowState(state) {
+      return random() < state.glow ? "lit" : "dark";
+    }
+
+    function chooseRepeatedDetail(windowFamily, state) {
+      if (random() > state.memory) return null;
+      if (!assets.details.balconies[windowFamily]) return null;
+
+      // Decoration currently reuses balcony assets; future asset packs can plug in here.
+      return assets.details.balconies[windowFamily];
+    }
+
     function chooseBuildingTint(state) {
       const cold = color(150, 165, 180);
       const warm = color(220, 178, 145);
-      const pastel = color(205, 180, 200);
+      const base = lerpColor(cold, warm, state.warmth);
 
-      let base = lerpColor(cold, warm, state.warmth);
-
-      if (random() < state.memory * 0.45) {
-        base = lerpColor(base, pastel, 0.35);
-      }
-
-      const variation = lerp(22, 8, state.order);
+      const variation = lerp(24, 4, state.memory);
 
       return [
         red(base) + random(-variation, variation),

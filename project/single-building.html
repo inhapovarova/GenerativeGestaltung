@@ -24,6 +24,8 @@
       left: 18px;
       z-index: 10;
       width: 280px;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
       padding: 16px;
       box-sizing: border-box;
       background: rgba(255, 255, 255, 0.72);
@@ -51,6 +53,13 @@
       margin-bottom: 5px;
       font-size: 12px;
       opacity: 0.82;
+    }
+
+    .control-hint {
+      margin-top: 3px;
+      font-size: 10px;
+      line-height: 1.3;
+      opacity: 0.48;
     }
 
     input[type="range"] {
@@ -131,14 +140,25 @@
         <span id="warmthValue">0.50</span>
       </div>
       <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+      <div class="control-hint">cold to warm color</div>
     </div>
 
     <div class="control">
       <div class="control-row">
-        <span>density</span>
-        <span id="densityValue">0.50</span>
+        <span>decoration</span>
+        <span id="decorationValue">0.35</span>
       </div>
-      <input id="densitySlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+      <input id="decorationSlider" type="range" min="0" max="1" step="0.01" value="0.35" />
+      <div class="control-hint">plain to detailed</div>
+    </div>
+
+    <div class="control">
+      <div class="control-row">
+        <span>glow</span>
+        <span id="glowValue">0.45</span>
+      </div>
+      <input id="glowSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+      <div class="control-hint">dark to lit windows</div>
     </div>
 
     <div class="control">
@@ -147,6 +167,7 @@
         <span id="orderValue">0.45</span>
       </div>
       <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+      <div class="control-hint">loose to regular grid</div>
     </div>
 
     <div class="control">
@@ -155,6 +176,7 @@
         <span id="memoryValue">0.45</span>
       </div>
       <input id="memorySlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+      <div class="control-hint">varied to repeated</div>
     </div>
 
     <div class="toggles">
@@ -286,14 +308,16 @@
       ui.widthSlider = document.getElementById("widthSlider");
       ui.heightSlider = document.getElementById("heightSlider");
       ui.warmthSlider = document.getElementById("warmthSlider");
-      ui.densitySlider = document.getElementById("densitySlider");
+      ui.decorationSlider = document.getElementById("decorationSlider");
+      ui.glowSlider = document.getElementById("glowSlider");
       ui.orderSlider = document.getElementById("orderSlider");
       ui.memorySlider = document.getElementById("memorySlider");
 
       ui.widthValue = document.getElementById("widthValue");
       ui.heightValue = document.getElementById("heightValue");
       ui.warmthValue = document.getElementById("warmthValue");
-      ui.densityValue = document.getElementById("densityValue");
+      ui.decorationValue = document.getElementById("decorationValue");
+      ui.glowValue = document.getElementById("glowValue");
       ui.orderValue = document.getElementById("orderValue");
       ui.memoryValue = document.getElementById("memoryValue");
 
@@ -309,7 +333,8 @@
         ui.widthSlider,
         ui.heightSlider,
         ui.warmthSlider,
-        ui.densitySlider,
+        ui.decorationSlider,
+        ui.glowSlider,
         ui.orderSlider,
         ui.memorySlider,
         ui.roofToggle,
@@ -331,7 +356,8 @@
         widthBlocks: parseInt(ui.widthSlider.value),
         heightBlocks: parseInt(ui.heightSlider.value),
         warmth: parseFloat(ui.warmthSlider.value),
-        density: parseFloat(ui.densitySlider.value),
+        decoration: parseFloat(ui.decorationSlider.value),
+        glow: parseFloat(ui.glowSlider.value),
         order: parseFloat(ui.orderSlider.value),
         memory: parseFloat(ui.memorySlider.value),
         allowRoof: ui.roofToggle.checked,
@@ -343,7 +369,8 @@
       ui.widthValue.textContent = state.widthBlocks;
       ui.heightValue.textContent = state.heightBlocks;
       ui.warmthValue.textContent = state.warmth.toFixed(2);
-      ui.densityValue.textContent = state.density.toFixed(2);
+      ui.decorationValue.textContent = state.decoration.toFixed(2);
+      ui.glowValue.textContent = state.glow.toFixed(2);
       ui.orderValue.textContent = state.order.toFixed(2);
       ui.memoryValue.textContent = state.memory.toFixed(2);
     }
@@ -353,7 +380,8 @@
       ui.widthSlider.value = floor(random(2, 7));
       ui.heightSlider.value = floor(random(3, 10));
       ui.warmthSlider.value = random(0, 1).toFixed(2);
-      ui.densitySlider.value = random(0, 1).toFixed(2);
+      ui.decorationSlider.value = random(0, 1).toFixed(2);
+      ui.glowSlider.value = random(0, 1).toFixed(2);
       ui.orderSlider.value = random(0, 1).toFixed(2);
       ui.memorySlider.value = random(0, 1).toFixed(2);
 
@@ -409,9 +437,8 @@
           width: house.widthBlocks,
           height: house.heightBlocks,
           warmth: state.warmth,
-          decoration: null,
-          glow: null,
-          density: state.density,
+          decoration: state.decoration,
+          glow: state.glow,
           order: state.order,
           memory: state.memory,
           allowRoof: state.allowRoof,
@@ -547,6 +574,10 @@
       const windowPattern = chooseWindowPattern(widthBlocks, state);
 
       const tintColor = chooseBuildingTint(state);
+      const repeatedWindowState = random() < state.memory
+        ? chooseWindowState(state)
+        : null;
+      const repeatedDetail = chooseRepeatedDetail(windowFamily, state);
 
       const cells = [];
 
@@ -576,7 +607,7 @@
             col === topAccentWindow.col
           ) {
             const accentFamily = topAccentWindow.family;
-            const windowState = random() < 0.45 ? "lit" : "dark";
+            const windowState = repeatedWindowState || chooseWindowState(state);
             cell.window = assets.windows[accentFamily][windowState];
             cell.detail = null;
           }
@@ -585,15 +616,14 @@
             isMiddleRow &&
             shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
           ) {
-            const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
-            const windowState = random() < litChance ? "lit" : "dark";
+            const windowState = repeatedWindowState || chooseWindowState(state);
 
             cell.window = assets.windows[windowFamily][windowState];
 
-            const balconyChance = 0.05 + state.memory * 0.22;
+            const balconyChance = lerp(0, 0.42, state.decoration);
 
             if (random() < balconyChance && assets.details.balconies[windowFamily]) {
-              cell.detail = assets.details.balconies[windowFamily];
+              cell.detail = repeatedDetail || assets.details.balconies[windowFamily];
             }
           }
 
@@ -640,18 +670,18 @@
     }
 
     function chooseHasRoof(state) {
-      const roofChance = 0.7 - state.density * 0.15 + state.memory * 0.1;
+      const roofChance = 0.72;
       return random() < roofChance;
     }
 
     function chooseHasBase(state) {
-      const baseChance = 0.65 + state.order * 0.1;
+      const baseChance = 0.68;
       return random() < baseChance;
     }
 
     function chooseDoor(widthBlocks, state) {
       const canUseDouble = widthBlocks >= 4;
-      const doubleChance = canUseDouble ? 0.25 + state.order * 0.15 : 0;
+      const doubleChance = canUseDouble ? 0.28 : 0;
 
       if (random() < doubleChance) {
         return {
@@ -673,25 +703,27 @@
     function chooseWindowPattern(widthBlocks, state) {
       let patterns = [];
 
-      patterns.push("regular");
-      patterns.push("centerColumn");
+      if (state.order < 0.35) {
+        patterns.push("scattered");
+        patterns.push("checker");
+        patterns.push("sparse");
+        patterns.push("everySecond");
+        return pick(patterns);
+      }
+
+      patterns.push("checker");
+      patterns.push("everySecond");
 
       if (widthBlocks >= 3) {
         patterns.push("edgeColumns");
       }
 
-      patterns.push("everySecond");
-
-      if (widthBlocks >= 3) {
-        patterns.push("checker");
+      if (state.order > 0.45) {
+        patterns.push("regular");
+        patterns.push("centerColumn");
       }
 
-      if (state.memory > 0.55) {
-        patterns.push("checker");
-        patterns.push("sparse");
-      }
-
-      if (state.order > 0.7) {
+      if (state.order > 0.72) {
         patterns = ["regular", "centerColumn"];
 
         if (widthBlocks >= 3) {
@@ -757,6 +789,10 @@
         return col === 1 || col === widthBlocks - 2;
       }
 
+      if (pattern === "scattered") {
+        return random() < 0.52;
+      }
+
       return false;
     }
 
@@ -765,7 +801,7 @@
       if (widthBlocks < 3) return null;
       if (widthBlocks % 2 === 0) return null;
 
-      const accentChance = 0.18 + state.memory * 0.25 - state.order * 0.08;
+      const accentChance = lerp(0, 0.45, state.decoration);
 
       if (random() > accentChance) {
         return null;
@@ -785,18 +821,24 @@
       return pick(families);
     }
 
+    function chooseWindowState(state) {
+      return random() < state.glow ? "lit" : "dark";
+    }
+
+    function chooseRepeatedDetail(windowFamily, state) {
+      if (random() > state.memory) return null;
+      if (!assets.details.balconies[windowFamily]) return null;
+
+      // Decoration currently reuses balcony assets; future asset packs can plug in here.
+      return assets.details.balconies[windowFamily];
+    }
+
     function chooseBuildingTint(state) {
       const cold = color(150, 165, 180);
       const warm = color(220, 178, 145);
-      const pastel = color(205, 180, 200);
+      const base = lerpColor(cold, warm, state.warmth);
 
-      let base = lerpColor(cold, warm, state.warmth);
-
-      if (random() < state.memory * 0.45) {
-        base = lerpColor(base, pastel, 0.35);
-      }
-
-      const variation = lerp(22, 8, state.order);
+      const variation = lerp(24, 4, state.memory);
 
       return [
         red(base) + random(-variation, variation),
