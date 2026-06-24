@@ -44,6 +44,32 @@
       opacity: 0.55;
     }
 
+    .gallery-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .filter-button {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.36);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      padding: 7px 12px;
+      transition: background 160ms ease, border-color 160ms ease;
+    }
+
+    .filter-button:hover,
+    .filter-button.is-active {
+      background: rgba(255, 255, 255, 0.72);
+      border-color: rgba(0, 0, 0, 0.24);
+    }
+
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -92,6 +118,12 @@
         gap: 10px;
       }
 
+      .gallery-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
       .building-card {
         min-height: 170px;
         padding: 10px;
@@ -108,6 +140,12 @@
       <div class="gallery-count" id="galleryCount"></div>
     </header>
 
+    <div class="gallery-controls" aria-label="gallery filters">
+      <button class="filter-button is-active" type="button" data-filter="all">View All</button>
+      <button class="filter-button" type="button" data-filter="building">Buildings</button>
+      <button class="filter-button" type="button" data-filter="street">Streets</button>
+    </div>
+
     <div class="gallery-grid" id="galleryGrid"></div>
     <div class="empty-message" id="emptyMessage" hidden>no saved buildings yet</div>
     <div class="error-message" id="errorMessage" hidden>could not load saved buildings</div>
@@ -118,6 +156,10 @@
     const galleryCount = document.getElementById("galleryCount");
     const emptyMessage = document.getElementById("emptyMessage");
     const errorMessage = document.getElementById("errorMessage");
+    const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
+
+    let galleryItems = [];
+    let activeFilter = "all";
 
     async function loadGallery() {
       try {
@@ -127,37 +169,94 @@
           throw new Error("Could not load buildings");
         }
 
-        const buildings = await response.json();
+        const items = await response.json();
+        galleryItems = items.map(normalizeGalleryItem);
 
-        if (!buildings.length) {
-          emptyMessage.hidden = false;
-          galleryCount.textContent = "";
-          return;
-        }
-
-        galleryCount.textContent = `${buildings.length} saved`;
-
-        buildings.forEach((building) => {
-          const card = document.createElement("a");
-          card.className = "building-card";
-          card.href = building.path;
-          card.target = "_blank";
-          card.rel = "noopener";
-          card.setAttribute("aria-label", `open ${building.filename}`);
-
-          const image = document.createElement("img");
-          image.src = building.path;
-          image.alt = building.filename;
-          image.loading = "lazy";
-
-          card.appendChild(image);
-          galleryGrid.appendChild(card);
-        });
+        renderGallery();
       } catch (error) {
         console.error(error);
         errorMessage.hidden = false;
       }
     }
+
+    function renderGallery() {
+      const visibleItems = getFilteredItems();
+
+      galleryGrid.innerHTML = "";
+      updateFilterButtons();
+      updateCounts();
+
+      emptyMessage.hidden = visibleItems.length > 0;
+      emptyMessage.textContent = galleryItems.length
+        ? `no saved ${activeFilter === "all" ? "items" : `${activeFilter}s`} yet`
+        : "no saved items yet";
+
+      visibleItems.forEach((item) => {
+        const card = document.createElement("a");
+        card.className = "building-card";
+        card.href = item.path;
+        card.target = "_blank";
+        card.rel = "noopener";
+        card.setAttribute("aria-label", `open ${item.filename}`);
+
+        const image = document.createElement("img");
+        image.src = item.path;
+        image.alt = item.filename;
+        image.loading = "lazy";
+
+        card.appendChild(image);
+        galleryGrid.appendChild(card);
+      });
+    }
+
+    function normalizeGalleryItem(item) {
+      if (typeof item === "string") {
+        return {
+          filename: "saved item",
+          path: item,
+          type: null,
+        };
+      }
+
+      return {
+        ...item,
+        filename: item.filename || item.id || "saved item",
+        path: item.path || item.imageData,
+        type: item.type === "building" || item.type === "street" ? item.type : null,
+      };
+    }
+
+    function getFilteredItems() {
+      if (activeFilter === "all") {
+        return galleryItems;
+      }
+
+      return galleryItems.filter((item) => item.type === activeFilter);
+    }
+
+    function updateCounts() {
+      const totalCount = galleryItems.length;
+      const buildingCount = galleryItems.filter((item) => item.type === "building").length;
+      const streetCount = galleryItems.filter((item) => item.type === "street").length;
+
+      galleryCount.textContent = `${totalCount} saved · ${buildingCount} buildings · ${streetCount} streets`;
+    }
+
+    function updateFilterButtons() {
+      filterButtons.forEach((button) => {
+        const isActive = button.dataset.filter === activeFilter;
+
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.filter;
+        renderGallery();
+      });
+    });
 
     loadGallery();
   </script>
