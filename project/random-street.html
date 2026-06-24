@@ -250,6 +250,7 @@
       if (!visibleHouses.length) return;
 
       const imageData = createTransparentRowPNG(visibleHouses);
+      const savedItem = createSavedStreetItem(imageData, visibleHouses);
       const saveButton = document.getElementById("saveRowBtn");
       const originalLabel = saveButton.textContent;
 
@@ -261,7 +262,7 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ imageData }),
+          body: JSON.stringify(savedItem),
         });
 
         const result = await response.json();
@@ -282,6 +283,35 @@
         saveButton.textContent = originalLabel;
         alert("Server is not running. Start it with: node server.js");
       }
+    }
+
+    function createSavedStreetItem(imageData, rowHouses) {
+      const maxHeight = rowHouses.reduce((highest, house) => {
+        return max(highest, house.heightBlocks);
+      }, 0);
+      const totalWidth = rowHouses.reduce((sum, house) => {
+        return sum + house.widthBlocks;
+      }, 0);
+
+      return {
+        type: "street",
+        sourcePage: "random-street",
+        aesthetic: "neutral",
+        palette: "default",
+        parameters: {
+          width: totalWidth,
+          height: maxHeight,
+          warmth: currentState.warmth,
+          decoration: null,
+          glow: null,
+          density: currentState.density,
+          order: currentState.order,
+          memory: currentState.memory,
+          speed: scrollSpeed,
+          buildingCount: rowHouses.length,
+        },
+        imageData,
+      };
     }
 
     function createTransparentRowPNG(rowHouses) {
