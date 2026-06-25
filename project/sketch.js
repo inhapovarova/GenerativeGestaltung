@@ -1314,8 +1314,6 @@ function drawHouse(house, target = null, layer = null) {
     drawRoof(house, roofY, houseDrawX, target);
   }
 
-  drawHouseSpans(house, houseDrawX, bodyTopY, target);
-
   for (let row = 0; row < house.heightBlocks; row++) {
     for (let col = 0; col < house.widthBlocks; col++) {
       const x = houseDrawX + col * BLOCK;
@@ -1356,6 +1354,8 @@ function drawHouse(house, target = null, layer = null) {
       }
     }
   }
+
+  drawHouseSpans(house, houseDrawX, bodyTopY, target);
 }
 
 function drawHouseSpans(house, houseDrawX, bodyTopY, target = null) {
