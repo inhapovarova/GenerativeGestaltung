@@ -209,9 +209,6 @@ function preload() {
           loadImage("assets/decor/appliances/ac_wall_02.png"),
         ],
       },
-      wallDamage: [
-        loadImage("assets/decor/wall_damage/wall_damage_crack_01.png"),
-      ],
       posters: {
         ground: [
           loadImage("assets/decor/posters/ground/poster_ground_small_01.png"),
@@ -655,7 +652,6 @@ function generateHouse(x, state, layer = {}) {
   placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer);
   placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer);
   placePosterDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeWallDamageDecor(cells, widthBlocks, heightBlocks, state, layer);
   const spans = chooseHouseSpanDecor(widthBlocks, state, hasRoof, layer);
 
   return {
@@ -1055,30 +1051,6 @@ function placeRectBackDecor(cells, startRow, startCol, rows) {
   for (let row = 0; row < rows.length; row++) {
     for (let col = 0; col < rows[row].length; col++) {
       cells[startRow + row][startCol + col].decorBack = rows[row][col];
-    }
-  }
-}
-
-function placeWallDamageDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
-  if (layer.tint) return;
-  if (heightBlocks < 3) return;
-
-  const wallDamage = assets.decor && assets.decor.wallDamage;
-  if (!wallDamage || wallDamage.length === 0) return;
-
-  const decoration = getDecorationAmount(state);
-  if (decoration <= 0) return;
-
-  const chance = lerp(0, 0.09, decoration);
-
-  for (let row = 1; row < heightBlocks - 1; row++) {
-    for (let col = 0; col < widthBlocks; col++) {
-      const cell = cells[row][col];
-
-      if (!isOpenWallCell(cell)) continue;
-      if (random() > chance) continue;
-
-      cell.decorBack = pick(wallDamage);
     }
   }
 }
