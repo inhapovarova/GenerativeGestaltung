@@ -47,9 +47,9 @@ Main controls:
 - variation
 - save
 
-What it generates: one building made from tile assets: walls, roof parts, base pieces, windows, doors, and balcony details.
+What it generates: one building made from tile assets: walls, roof parts, base pieces, windows, doors, balcony details, and facade decor.
 
-How it connects to saved items or assets: `save` creates a transparent PNG data URL and posts it to `/api/save-building`. The server writes a PNG and matching lightweight JSON metadata file in `project/assets/generated-buildings/`.
+How it connects to saved items or assets: `save` creates a transparent PNG data URL and posts it to `/api/save-building`. The transparent export includes the current decor layers. The server writes a PNG and matching lightweight JSON metadata file in `project/assets/generated-buildings/`.
 
 ### `project/random-street.html`
 
@@ -66,9 +66,9 @@ Main controls:
 - random
 - save row
 
-What it generates: a horizontally moving row of generated buildings. Buildings touch each other with no gaps in this page.
+What it generates: a horizontally moving row of generated buildings. Buildings touch each other with no gaps in this page. Each building uses the same facade decor system as the single-building page.
 
-How it connects to saved items or assets: `save row` captures the visible houses as a transparent PNG and posts a street archive item to `/api/save-building`.
+How it connects to saved items or assets: `save row` captures the visible houses, including facade decor layers, as a transparent PNG and posts a street archive item to `/api/save-building`.
 
 ### `project/gallery.html`
 
@@ -124,9 +124,24 @@ Current logic: `chooseBuildingTint()` blends between cold and warm colors. Warmt
 
 Controls the amount of decorative elements.
 
-At `0`, buildings feel empty and plain. At `1`, there should be more details such as plants, lamps, cracks, curtains, balconies, wires, or ornaments.
+At `0`, buildings feel empty and plain. At `1`, there should be more facade details such as plants, posters, cracks, balcony flowers, street props, laundry, AC units, and roof spans.
 
-Current logic: decoration mainly affects balcony/detail chance and top accent window chance. Plants, lamps, cracks, curtains, wires, and ornaments are intended future asset categories; only balcony detail PNGs are currently loaded by the generators.
+Current logic: decoration affects balcony/detail chance, top accent window chance, and the newer facade decor passes in `project/sketch.js`, `single-building.html`, and `random-street.html`.
+
+Active decor categories:
+
+- roof vines / roof plants
+- ground plants and bushes
+- wall plants
+- balcony flower overlays
+- AC units
+- small street props such as benches, bins, and bikes
+- poster tiles on lower and upper facade areas
+- laundry spans around suitable window positions
+- roof-adjacent spans such as lights and flags
+- wall damage marks
+
+Decor placement should stay believable: ground props stay near the ground row, roof plants require a roof and open vertical wall cells, AC units attach near windows, posters and wall damage use open wall blocks, laundry spans require enough room around windows, and roof spans only appear on suitable roofed buildings.
 
 ### Glow
 
@@ -320,10 +335,21 @@ project/assets/
     bg_mid_loop.png
   base/
     plain/
+  decor/
+    appliances/
+    balconies/
+    plants/
+      ground/
+      roof/
+      wall/
+    posters/
+      ground/
+      upper/
+    spans/
+    street/
+    wall_damage/
   details/
     balconies/
-    lamps/
-    plants/
   doors/
     double/
     single/
@@ -348,8 +374,15 @@ Current loaded asset families:
 - roofs: `flat`, `cornice`
 - base: `plain`
 - details: `balconies`
+- decor: roof/ground/wall plants, balcony flowers, AC units, ground and upper posters, street props, roof spans, laundry spans, wall damage
 
-The `details/lamps/` and `details/plants/` folders exist, but the current generator preload code only loads balcony detail assets.
+The main sandbox, single-building page, and random-street page should stay in sync when adding new neutral decor assets. If a new PNG is added under `project/assets/decor/`, update all generator manifests or extract a shared manifest/helper so the asset is reachable across interfaces.
+
+Current decor layering:
+
+- `decorBack`: drawn after the tinted wall/base tile but before windows, doors, and balcony details. Use this for posters, wall damage, and other wall-attached marks.
+- `decorFront`: drawn after windows, doors, and balcony details. Use this for plants, AC units, street props, laundry, roof vines, and flower overlays.
+- `spans`: drawn around the roof/body edge before the cell loop. Use this for roof-adjacent multi-tile lights and flags.
 
 Intended future structure for aesthetic categories:
 
@@ -520,11 +553,10 @@ Possible future improvements:
 - editable text fields
 - image source selector: building or street
 - aesthetic selector: neutral / gothic / grunge / cute
-- decoration density logic beyond balconies
+- shared decor manifest/helper to reduce duplicated preload and placement logic across generator pages
 - glow window logic refinements
 - asset guide for classmates
 - social media content generator
 - improved export settings
 - neutral fallbacks for missing aesthetic assets
 - cleanup of `.DS_Store` files from the project tree
-
