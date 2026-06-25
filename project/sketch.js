@@ -121,6 +121,179 @@ function preload() {
         tall: loadImage("assets/details/balconies/detail_balcony_tall_01.png"),
       },
     },
+
+    decor: {
+      plants: {
+        roof: [
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_vine_01_top.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_01_upper.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_01_lower.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_01_bottom.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_vine_02_top.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_02_mid.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_02_bottom.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_vine_03_top.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_03_bottom.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_vine_04_top.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_04_bottom.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_vine_05_top.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_05_mid.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_vine_05_bottom.png"),
+            ],
+          },
+        ],
+        ground: [
+          {
+            parts: [
+              loadImage("assets/decor/plants/ground/plant_ground_pot_01.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/ground/plant_ground_pot_02.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/ground/plant_ground_pot_03.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/ground/plant_ground_pot_04.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/ground/plant_ground_bush_01_left.png"),
+              loadImage("assets/decor/plants/ground/plant_ground_bush_01_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/ground/plant_ground_bush_02_left.png"),
+              loadImage("assets/decor/plants/ground/plant_ground_bush_02_right.png"),
+            ],
+          },
+        ],
+        wall: [
+          loadImage("assets/decor/plants/wall/plant_wall_climber_01.png"),
+          loadImage("assets/decor/plants/wall/plant_wall_climber_02.png"),
+        ],
+      },
+      balconies: [
+        loadImage("assets/decor/balconies/balcony_window_flower_01.png"),
+        loadImage("assets/decor/balconies/balcony_window_flower_02.png"),
+      ],
+      appliances: {
+        ac: [
+          loadImage("assets/decor/appliances/ac_wall_01.png"),
+          loadImage("assets/decor/appliances/ac_wall_02.png"),
+        ],
+      },
+      posters: {
+        ground: [
+          loadImage("assets/decor/posters/ground/poster_ground_small_01.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_02.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_03.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_04.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_05.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_06.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_07.png"),
+          loadImage("assets/decor/posters/ground/poster_ground_small_09.png"),
+        ],
+        upper: [
+          {
+            type: "vertical",
+            parts: [
+              loadImage("assets/decor/posters/upper/poster_upper_tall_02_top.png"),
+              loadImage("assets/decor/posters/upper/poster_upper_tall_02_bottom.png"),
+            ],
+          },
+          {
+            type: "vertical",
+            parts: [
+              loadImage("assets/decor/posters/upper/poster_upper_tall_03_top.png"),
+              loadImage("assets/decor/posters/upper/poster_upper_tall_03_bottom.png"),
+            ],
+          },
+          {
+            type: "vertical",
+            parts: [
+              loadImage("assets/decor/posters/upper/poster_upper_tall_04_top.png"),
+              loadImage("assets/decor/posters/upper/poster_upper_tall_04_bottom.png"),
+            ],
+          },
+          {
+            type: "rect",
+            rows: [
+              [
+                loadImage("assets/decor/posters/upper/poster_upper_large_01_top_left.png"),
+                loadImage("assets/decor/posters/upper/poster_upper_large_01_top_right.png"),
+              ],
+              [
+                loadImage("assets/decor/posters/upper/poster_upper_large_01_bottom_left.png"),
+                loadImage("assets/decor/posters/upper/poster_upper_large_01_bottom_right.png"),
+              ],
+            ],
+          },
+        ],
+      },
+      street: [
+        loadImage("assets/decor/street/street_bench_01.png"),
+        loadImage("assets/decor/street/street_bench_02.png"),
+        loadImage("assets/decor/street/street_bike_01.png"),
+        loadImage("assets/decor/street/street_bin_01.png"),
+        loadImage("assets/decor/street/street_bin_02.png"),
+        loadImage("assets/decor/street/street_bin_03.png"),
+      ],
+      spans: {
+        roof: [
+          {
+            parts: [
+              loadImage("assets/decor/spans/span_between_lights_01_left.png"),
+              loadImage("assets/decor/spans/span_between_lights_01_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/spans/span_between_flags_01_left.png"),
+              loadImage("assets/decor/spans/span_between_flags_01_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/spans/span_between_lights_01_01.png"),
+              loadImage("assets/decor/spans/span_between_lights_01_02.png"),
+              loadImage("assets/decor/spans/span_between_lights_01_03.png"),
+              loadImage("assets/decor/spans/span_between_lights_01_04.png"),
+              loadImage("assets/decor/spans/span_between_lights_01_05.png"),
+            ],
+          },
+        ],
+        laundry: [
+          loadImage("assets/decor/spans/span_between_laundry_01.png"),
+        ],
+      },
+    },
   };
 }
 
@@ -421,6 +594,11 @@ function generateHouse(x, state, layer = {}) {
         window: null,
         door: null,
         detail: null,
+        decorBack: null,
+        decorFront: null,
+        decorFrontOffsetY: 0,
+        decorFrontWidth: BLOCK,
+        decorFrontHeight: BLOCK,
       };
 
       const isGroundRow = row === heightBlocks - 1;
@@ -466,6 +644,15 @@ function generateHouse(x, state, layer = {}) {
   }
 
   placeDoor(cells, widthBlocks, heightBlocks, doorData);
+  placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, layer);
+  placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
+  placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer);
+  placeBalconyDecor(cells, widthBlocks, heightBlocks, state, layer);
+  placeWallPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
+  placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer);
+  placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer);
+  placePosterDecor(cells, widthBlocks, heightBlocks, state, layer);
+  const spans = chooseHouseSpanDecor(widthBlocks, state, hasRoof, layer);
 
   return {
     x,
@@ -482,6 +669,7 @@ function generateHouse(x, state, layer = {}) {
     windowPattern,
     topAccentWindow,
     tintColor,
+    spans,
     cells,
   };
 }
@@ -500,6 +688,409 @@ function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
 
   const doorCol = floor(widthBlocks / 2);
   cells[groundRow][doorCol].door = doorData.asset;
+}
+
+function placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, layer = {}) {
+  if (!hasRoof) return;
+  if (heightBlocks < 2) return;
+  if (layer.tint) return;
+
+  const roofPlants = assets.decor && assets.decor.plants && assets.decor.plants.roof;
+  if (!roofPlants || roofPlants.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const chance = lerp(0, 0.72, decoration);
+  const candidates = [];
+  let placedCount = 0;
+
+  for (let col = 0; col < widthBlocks; col++) {
+    const freeLength = countOpenVerticalCells(cells, 0, col);
+    const fittingVines = roofPlants.filter((vine) => vine.parts.length <= freeLength);
+
+    if (fittingVines.length === 0) continue;
+
+    candidates.push({ col, fittingVines });
+    if (random() > chance) continue;
+
+    const vine = pick(fittingVines);
+    placeVerticalDecor(cells, 0, col, vine.parts);
+    placedCount++;
+  }
+
+  if (placedCount === 0 && decoration > 0.35 && candidates.length > 0) {
+    const candidate = pick(candidates);
+    const vine = pick(candidate.fittingVines);
+    placeVerticalDecor(cells, 0, candidate.col, vine.parts);
+  }
+}
+
+function placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+
+  const groundPlants = assets.decor && assets.decor.plants && assets.decor.plants.ground;
+  if (!groundPlants || groundPlants.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const groundRow = heightBlocks - 1;
+  const chance = lerp(0, 0.34, decoration);
+
+  for (let col = 0; col < widthBlocks; col++) {
+    if (random() > chance) continue;
+
+    const plant = pick(groundPlants);
+    if (!canPlaceHorizontalDecor(cells, groundRow, col, plant.parts.length)) continue;
+
+    placeHorizontalDecor(cells, groundRow, col, plant.parts);
+  }
+}
+
+function canPlaceHorizontalDecor(cells, row, startCol, length) {
+  if (startCol + length > cells[row].length) return false;
+
+  for (let i = 0; i < length; i++) {
+    if (!isOpenWallCell(cells[row][startCol + i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function placeHorizontalDecor(cells, row, startCol, parts) {
+  for (let i = 0; i < parts.length; i++) {
+    cells[row][startCol + i].decorFront = parts[i];
+  }
+}
+
+function placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+
+  const streetProps = assets.decor && assets.decor.street;
+  if (!streetProps || streetProps.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const groundRow = heightBlocks - 1;
+  const chance = lerp(0, 0.2, decoration);
+
+  for (let col = 0; col < widthBlocks; col++) {
+    const cell = cells[groundRow][col];
+
+    if (!isOpenWallCell(cell)) continue;
+    if (random() > chance) continue;
+
+    cell.decorFront = pick(streetProps);
+  }
+}
+
+function placeBalconyDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const balconies = assets.decor && assets.decor.balconies;
+  if (!balconies || balconies.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const chance = lerp(0, 0.16, decoration);
+
+  for (let row = 1; row < heightBlocks - 1; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      const cell = cells[row][col];
+
+      if (!cell.window) continue;
+      if (cell.detail || cell.decorFront) continue;
+      if (random() > chance) continue;
+
+      cell.decorFront = pick(balconies);
+    }
+  }
+}
+
+function placeWallPlantDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const wallPlants = assets.decor && assets.decor.plants && assets.decor.plants.wall;
+  if (!wallPlants || wallPlants.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const chance = lerp(0, 0.12, decoration);
+
+  for (let row = 1; row < heightBlocks - 1; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      const cell = cells[row][col];
+
+      if (!cell.window) continue;
+      if (cell.detail || cell.decorFront) continue;
+      if (row + 1 < heightBlocks && cells[row + 1][col].decorFront) continue;
+      if (random() > chance) continue;
+
+      cell.decorFront = pick(wallPlants);
+      cell.decorFrontOffsetY = BLOCK * 0.38;
+    }
+  }
+}
+
+function placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const laundrySpans = assets.decor && assets.decor.spans && assets.decor.spans.laundry;
+  if (!laundrySpans || laundrySpans.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const chance = lerp(0, 0.08, decoration);
+
+  for (let row = 1; row < heightBlocks - 1; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      const cell = cells[row][col];
+
+      if (!cell.window) continue;
+      if (cell.detail || cell.decorFront) continue;
+      if (!hasRoomForWindowSpan(cells, row, col)) continue;
+      if (random() > chance) continue;
+
+      cell.decorFront = pick(laundrySpans);
+      cell.decorFrontWidth = BLOCK * 2;
+      cell.decorFrontHeight = BLOCK * 2;
+      cell.decorFrontOffsetY = BLOCK * 0.12;
+    }
+  }
+}
+
+function hasRoomForWindowSpan(cells, row, col) {
+  const widthBlocks = cells[row].length;
+  const heightBlocks = cells.length;
+
+  if (col + 1 >= widthBlocks) return false;
+  if (row + 1 >= heightBlocks) return false;
+
+  return (
+    !cells[row][col + 1].door &&
+    !cells[row][col + 1].detail &&
+    !cells[row][col + 1].decorFront &&
+    !cells[row + 1][col].door &&
+    !cells[row + 1][col].detail &&
+    !cells[row + 1][col].decorFront
+  );
+}
+
+function placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const acUnits = assets.decor && assets.decor.appliances && assets.decor.appliances.ac;
+  if (!acUnits || acUnits.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const chance = lerp(0, 0.1, decoration);
+
+  for (let row = 1; row < heightBlocks - 1; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      const cell = cells[row][col];
+
+      if (!cell.window) continue;
+      if (random() > chance) continue;
+
+      const sideCols = random() < 0.5 ? [col - 1, col + 1] : [col + 1, col - 1];
+
+      for (let sideCol of sideCols) {
+        if (sideCol < 0 || sideCol >= widthBlocks) continue;
+        if (!isOpenWallCell(cells[row][sideCol])) continue;
+
+        cells[row][sideCol].decorFront = pick(acUnits);
+        break;
+      }
+    }
+  }
+}
+
+function chooseHouseSpanDecor(widthBlocks, state, hasRoof, layer = {}) {
+  if (!hasRoof) return [];
+  if (layer.tint) return [];
+  if (widthBlocks < 3) return [];
+
+  const roofSpans = assets.decor && assets.decor.spans && assets.decor.spans.roof;
+  if (!roofSpans || roofSpans.length === 0) return [];
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return [];
+  if (random() > lerp(0, 0.18, decoration)) return [];
+
+  return [
+    {
+      asset: pick(roofSpans),
+      offsetY: -BLOCK * 0.35,
+      height: BLOCK * 2,
+    },
+  ];
+}
+
+function placePosterDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const posters = assets.decor && assets.decor.posters;
+  if (!posters) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  placeGroundPosterDecor(cells, widthBlocks, heightBlocks, posters.ground, decoration);
+  placeUpperPosterDecor(cells, widthBlocks, heightBlocks, posters.upper, decoration);
+}
+
+function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters, decoration) {
+  if (!groundPosters || groundPosters.length === 0) return;
+
+  const chance = lerp(0, 0.18, decoration);
+  const rowStart = max(1, heightBlocks - 2);
+
+  for (let row = rowStart; row < heightBlocks; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      const cell = cells[row][col];
+
+      if (!isOpenWallCell(cell)) continue;
+      if (random() > chance) continue;
+
+      cell.decorBack = pick(groundPosters);
+    }
+  }
+}
+
+function placeUpperPosterDecor(cells, widthBlocks, heightBlocks, upperPosters, decoration) {
+  if (!upperPosters || upperPosters.length === 0) return;
+
+  const chance = lerp(0, 0.1, decoration);
+  const maxStartRow = max(1, heightBlocks - 3);
+
+  for (let row = 1; row <= maxStartRow; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      if (random() > chance) continue;
+
+      const fittingPosters = upperPosters.filter((poster) => {
+        if (poster.type === "vertical") {
+          return canPlaceVerticalBackDecor(cells, row, col, poster.parts.length);
+        }
+
+        if (!isWithinMaxFloor(row, heightBlocks, 3)) {
+          return false;
+        }
+
+        return canPlaceRectBackDecor(cells, row, col, poster.rows);
+      });
+
+      if (fittingPosters.length === 0) continue;
+
+      const poster = pick(fittingPosters);
+
+      if (poster.type === "vertical") {
+        placeVerticalBackDecor(cells, row, col, poster.parts);
+      } else {
+        placeRectBackDecor(cells, row, col, poster.rows);
+      }
+    }
+  }
+}
+
+function isWithinMaxFloor(row, heightBlocks, maxFloor) {
+  const floorFromGround = heightBlocks - row;
+  return floorFromGround <= maxFloor;
+}
+
+function canPlaceVerticalBackDecor(cells, startRow, col, length) {
+  if (startRow + length > cells.length) return false;
+
+  for (let i = 0; i < length; i++) {
+    if (!isOpenWallCell(cells[startRow + i][col])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function placeVerticalBackDecor(cells, startRow, col, parts) {
+  for (let i = 0; i < parts.length; i++) {
+    cells[startRow + i][col].decorBack = parts[i];
+  }
+}
+
+function canPlaceRectBackDecor(cells, startRow, startCol, rows) {
+  const rectHeight = rows.length;
+  const rectWidth = rows[0].length;
+
+  if (startRow + rectHeight > cells.length) return false;
+  if (startCol + rectWidth > cells[0].length) return false;
+
+  for (let row = 0; row < rectHeight; row++) {
+    for (let col = 0; col < rectWidth; col++) {
+      if (!isOpenWallCell(cells[startRow + row][startCol + col])) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function placeRectBackDecor(cells, startRow, startCol, rows) {
+  for (let row = 0; row < rows.length; row++) {
+    for (let col = 0; col < rows[row].length; col++) {
+      cells[startRow + row][startCol + col].decorBack = rows[row][col];
+    }
+  }
+}
+
+function countOpenVerticalCells(cells, startRow, col) {
+  let count = 0;
+
+  for (let row = startRow; row < cells.length; row++) {
+    if (!isOpenWallCell(cells[row][col])) {
+      break;
+    }
+
+    count++;
+  }
+
+  return count;
+}
+
+function placeVerticalDecor(cells, startRow, col, parts) {
+  for (let i = 0; i < parts.length; i++) {
+    cells[startRow + i][col].decorFront = parts[i];
+  }
+}
+
+function isOpenWallCell(cell) {
+  return (
+    !cell.window &&
+    !cell.door &&
+    !cell.detail &&
+    !cell.decorBack &&
+    !cell.decorFront
+  );
+}
+
+function getDecorationAmount(state) {
+  if (state.decoration !== undefined) {
+    return constrain(state.decoration, 0, 1);
+  }
+
+  return constrain(state.memory, 0, 1);
 }
 
 // -----------------------------
@@ -731,6 +1322,10 @@ function drawHouse(house, target = null, layer = null) {
 
       drawTintedTile(cell.wall, x, y, house.tintColor, 255, target);
 
+      if (cell.decorBack) {
+        drawImage(cell.decorBack, x, y, BLOCK, BLOCK, target);
+      }
+
       if (cell.base) {
         drawTile(cell.base, x, y, target);
       }
@@ -746,7 +1341,45 @@ function drawHouse(house, target = null, layer = null) {
       if (cell.detail) {
         drawImage(cell.detail, x, y, BLOCK, BLOCK, target);
       }
+
+      if (cell.decorFront) {
+        drawImage(
+          cell.decorFront,
+          x,
+          y + cell.decorFrontOffsetY,
+          cell.decorFrontWidth,
+          cell.decorFrontHeight,
+          target
+        );
+      }
     }
+  }
+
+  drawHouseSpans(house, houseDrawX, bodyTopY, target);
+}
+
+function drawHouseSpans(house, houseDrawX, bodyTopY, target = null) {
+  if (!house.spans || house.spans.length === 0) return;
+
+  for (let span of house.spans) {
+    drawSpanParts(
+      span.asset.parts,
+      houseDrawX,
+      bodyTopY + span.offsetY,
+      house.widthBlocks * BLOCK,
+      span.height,
+      target
+    );
+  }
+}
+
+function drawSpanParts(parts, x, y, totalWidth, height, target = null) {
+  if (!parts || parts.length === 0) return;
+
+  const partWidth = totalWidth / parts.length;
+
+  for (let i = 0; i < parts.length; i++) {
+    drawImage(parts[i], x + i * partWidth, y, partWidth, height, target);
   }
 }
 
