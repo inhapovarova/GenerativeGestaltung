@@ -920,5 +920,5 @@ function keyPressed() {
 }
 
 function pick(arr) {
-  return arr[floor(random(arr.length))];
+  return arr[Math.floor(Math.random() * arr.length)];
 }

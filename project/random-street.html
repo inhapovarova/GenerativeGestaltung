@@ -90,6 +90,7 @@
     button:hover {
       background: white;
     }
+
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>
@@ -157,7 +158,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script src="/node_modules/p5/lib/p5.min.js"></script>
   <script>
     const BLOCK = 64;
     const TILE_OVERLAP = 2;
@@ -1016,7 +1017,7 @@
     }
 
     function pick(arr) {
-      return arr[floor(random(arr.length))];
+      return arr[Math.floor(Math.random() * arr.length)];
     }
   </script>
   <script src="shared-nav.js"></script>

@@ -200,7 +200,7 @@
     <div class="meta" id="metaInfo"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script src="/node_modules/p5/lib/p5.min.js"></script>
 
   <script>
     const BLOCK = 64;
@@ -949,7 +949,7 @@
     }
 
     function pick(arr) {
-      return arr[floor(random(arr.length))];
+      return arr[Math.floor(Math.random() * arr.length)];
     }
   </script>
   <script src="shared-nav.js"></script>
