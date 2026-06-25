@@ -1467,6 +1467,8 @@ function drawImage(img, x, y, w, h, target = null) {
 // -----------------------------
 
 function setupUI() {
+  setupPanelToggle();
+
   ui.warmthSlider = document.getElementById("warmthSlider");
   ui.densitySlider = document.getElementById("densitySlider");
   ui.decorationSlider = document.getElementById("decorationSlider");
@@ -1502,6 +1504,26 @@ function setupUI() {
   });
 
   syncUIFromState();
+}
+
+function setupPanelToggle() {
+  const panel = document.querySelector(".ui");
+  const toggle = document.querySelector(".panel-toggle");
+  if (!panel || !toggle) return;
+
+  const syncPanelToggle = () => {
+    const isCollapsed = panel.classList.contains("is-collapsed");
+    toggle.textContent = isCollapsed ? "⋮" : "←";
+    toggle.setAttribute("aria-label", isCollapsed ? "expand controls" : "collapse controls");
+    toggle.setAttribute("aria-expanded", String(!isCollapsed));
+  };
+
+  syncPanelToggle();
+
+  toggle.addEventListener("click", () => {
+    panel.classList.toggle("is-collapsed");
+    syncPanelToggle();
+  });
 }
 
 function getStateFromUI() {

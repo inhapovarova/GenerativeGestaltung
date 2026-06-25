@@ -24,7 +24,28 @@
       left: 18px;
       z-index: 10;
       width: 280px;
-      max-height: calc(100vh - 36px);
+    }
+
+    .ui.is-collapsed {
+      width: auto;
+    }
+
+    .ui-header {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .title {
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      opacity: 0.82;
+    }
+
+    .ui-content {
+      max-height: calc(100vh - 88px);
       overflow-y: auto;
       padding: 16px;
       box-sizing: border-box;
@@ -35,11 +56,32 @@
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
     }
 
-    .title {
-      font-size: 13px;
-      letter-spacing: 0.02em;
-      margin-bottom: 14px;
-      opacity: 0.82;
+    .panel-toggle {
+      appearance: none;
+      border: 1px solid rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.78);
+      color: #222;
+      min-width: 34px;
+      height: 36px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .panel-toggle:hover {
+      background: rgba(255,255,255,0.95);
+    }
+
+    .ui.is-collapsed .ui-header {
+      margin-bottom: 0;
+    }
+
+    .ui.is-collapsed .title,
+    .ui.is-collapsed .ui-content {
+      display: none;
     }
 
     .control {
@@ -115,89 +157,94 @@
   <link rel="stylesheet" href="shared-nav.css">
 </head>
 <body>
-  <div class="ui">
-    <div class="title">single building</div>
+  <div class="ui is-collapsed">
+    <div class="ui-header">
+      <button class="panel-toggle" type="button" aria-label="expand controls" aria-expanded="false">⋮</button>
+      <div class="title">single building</div>
+    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>width</span>
-        <span id="widthValue">4</span>
+    <div class="ui-content">
+      <div class="control">
+        <div class="control-row">
+          <span>width</span>
+          <span id="widthValue">4</span>
+        </div>
+        <input id="widthSlider" type="range" min="2" max="6" step="1" value="4" />
       </div>
-      <input id="widthSlider" type="range" min="2" max="6" step="1" value="4" />
-    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>height</span>
-        <span id="heightValue">6</span>
+      <div class="control">
+        <div class="control-row">
+          <span>height</span>
+          <span id="heightValue">6</span>
+        </div>
+        <input id="heightSlider" type="range" min="3" max="9" step="1" value="6" />
       </div>
-      <input id="heightSlider" type="range" min="3" max="9" step="1" value="6" />
-    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>warmth</span>
-        <span id="warmthValue">0.50</span>
+      <div class="control">
+        <div class="control-row">
+          <span>warmth</span>
+          <span id="warmthValue">0.50</span>
+        </div>
+        <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
+        <div class="control-hint">cold to warm color</div>
       </div>
-      <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
-      <div class="control-hint">cold to warm color</div>
-    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>decoration</span>
-        <span id="decorationValue">0.35</span>
+      <div class="control">
+        <div class="control-row">
+          <span>decoration</span>
+          <span id="decorationValue">0.35</span>
+        </div>
+        <input id="decorationSlider" type="range" min="0" max="1" step="0.01" value="0.35" />
+        <div class="control-hint">plain to detailed</div>
       </div>
-      <input id="decorationSlider" type="range" min="0" max="1" step="0.01" value="0.35" />
-      <div class="control-hint">plain to detailed</div>
-    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>glow</span>
-        <span id="glowValue">0.45</span>
+      <div class="control">
+        <div class="control-row">
+          <span>glow</span>
+          <span id="glowValue">0.45</span>
+        </div>
+        <input id="glowSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+        <div class="control-hint">dark to lit windows</div>
       </div>
-      <input id="glowSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
-      <div class="control-hint">dark to lit windows</div>
-    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>order</span>
-        <span id="orderValue">0.45</span>
+      <div class="control">
+        <div class="control-row">
+          <span>order</span>
+          <span id="orderValue">0.45</span>
+        </div>
+        <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+        <div class="control-hint">loose to regular grid</div>
       </div>
-      <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
-      <div class="control-hint">loose to regular grid</div>
-    </div>
 
-    <div class="control">
-      <div class="control-row">
-        <span>memory</span>
-        <span id="memoryValue">0.45</span>
+      <div class="control">
+        <div class="control-row">
+          <span>memory</span>
+          <span id="memoryValue">0.45</span>
+        </div>
+        <input id="memorySlider" type="range" min="0" max="1" step="0.01" value="0.45" />
+        <div class="control-hint">varied to repeated</div>
       </div>
-      <input id="memorySlider" type="range" min="0" max="1" step="0.01" value="0.45" />
-      <div class="control-hint">varied to repeated</div>
+
+      <div class="toggles">
+        <label>
+          <input id="roofToggle" type="checkbox" checked />
+          roof
+        </label>
+
+        <label>
+          <input id="baseToggle" type="checkbox" checked />
+          base
+        </label>
+      </div>
+
+      <div class="buttons">
+        <button id="randomBtn">random</button>
+        <button id="variationBtn">variation</button>
+        <button id="saveBtn">save</button>
+      </div>
+
+      <div class="meta" id="metaInfo"></div>
     </div>
-
-    <div class="toggles">
-      <label>
-        <input id="roofToggle" type="checkbox" checked />
-        roof
-      </label>
-
-      <label>
-        <input id="baseToggle" type="checkbox" checked />
-        base
-      </label>
-    </div>
-
-    <div class="buttons">
-      <button id="randomBtn">random</button>
-      <button id="variationBtn">variation</button>
-      <button id="saveBtn">save</button>
-    </div>
-
-    <div class="meta" id="metaInfo"></div>
   </div>
 
   <script src="/node_modules/p5/lib/p5.min.js"></script>
@@ -467,6 +514,8 @@
     }
 
     function setupUI() {
+      setupPanelToggle();
+
       ui.widthSlider = document.getElementById("widthSlider");
       ui.heightSlider = document.getElementById("heightSlider");
       ui.warmthSlider = document.getElementById("warmthSlider");
@@ -511,6 +560,26 @@
       ui.randomBtn.addEventListener("click", randomizeAll);
       ui.variationBtn.addEventListener("click", regenerateBuilding);
       ui.saveBtn.addEventListener("click", saveBuildingToFolder);
+    }
+
+    function setupPanelToggle() {
+      const panel = document.querySelector(".ui");
+      const toggle = document.querySelector(".panel-toggle");
+      if (!panel || !toggle) return;
+
+      const syncPanelToggle = () => {
+        const isCollapsed = panel.classList.contains("is-collapsed");
+        toggle.textContent = isCollapsed ? "⋮" : "←";
+        toggle.setAttribute("aria-label", isCollapsed ? "expand controls" : "collapse controls");
+        toggle.setAttribute("aria-expanded", String(!isCollapsed));
+      };
+
+      syncPanelToggle();
+
+      toggle.addEventListener("click", () => {
+        panel.classList.toggle("is-collapsed");
+        syncPanelToggle();
+      });
     }
 
     function getStateFromUI() {
