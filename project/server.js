@@ -7,7 +7,7 @@ const PORT = 8000;
 
 const generatedDir = path.join(__dirname, "assets", "generated-buildings");
 const DEFAULT_AESTHETIC = "neutral";
-const DEFAULT_PALETTE = "default";
+const DEFAULT_PALETTE = "originalNeutral";
 
 function ensureGeneratedDir() {
   fs.mkdirSync(generatedDir, { recursive: true });
@@ -47,6 +47,8 @@ function createSavedItem(payload = {}) {
 function normalizeSavedItem(item, fallback = {}) {
   const source = item || {};
   const imageData = typeof source === "string" ? source : source.imageData;
+  const hasSavedFile = Boolean(fallback.path);
+  const imageUrl = fallback.imageUrl || fallback.path || source.imageUrl || source.src || null;
   const createdAt = item && typeof item === "object" && item.createdAt
     ? item.createdAt
     : fallback.createdAt || null;
@@ -54,7 +56,7 @@ function normalizeSavedItem(item, fallback = {}) {
     ? item.id
     : fallback.id || fallback.filename || "archive_item";
 
-  return {
+  const normalizedItem = {
     id,
     type: source && source.type === "street" ? "street" : "building",
     createdAt,
@@ -62,14 +64,27 @@ function normalizeSavedItem(item, fallback = {}) {
     aesthetic: source && source.aesthetic ? source.aesthetic : DEFAULT_AESTHETIC,
     palette: source && source.palette ? source.palette : DEFAULT_PALETTE,
     parameters: source && source.parameters ? source.parameters : {},
-    imageData: imageData || null,
     filename: fallback.filename || `${id}.png`,
     path: fallback.path || null,
+    imageUrl,
+    src: imageUrl || imageData || null,
   };
+
+  if (!hasSavedFile) {
+    normalizedItem.imageData = imageData || null;
+  }
+
+  return normalizedItem;
 }
 
 function isPngDataUrl(imageData) {
   return typeof imageData === "string" && imageData.startsWith("data:image/png;base64,");
+}
+
+function createMetadataItem(savedItem) {
+  const { imageData, ...metadataItem } = savedItem;
+
+  return metadataItem;
 }
 
 app.post("/api/save-building", (req, res) => {
@@ -102,7 +117,7 @@ app.post("/api/save-building", (req, res) => {
       return res.status(500).json({ error: "Could not save file" });
     }
 
-    fs.writeFile(metadataPath, JSON.stringify(savedItem, null, 2), "utf8", (metadataErr) => {
+    fs.writeFile(metadataPath, JSON.stringify(createMetadataItem(savedItem), null, 2), "utf8", (metadataErr) => {
       if (metadataErr) {
         console.error(metadataErr);
         return res.status(500).json({ error: "Could not save metadata" });
@@ -112,7 +127,8 @@ app.post("/api/save-building", (req, res) => {
         ok: true,
         ...normalizeSavedItem(savedItem, {
           filename,
-          path: `/generated-buildings/${filename}`,
+          path: `/assets/generated-buildings/${filename}`,
+          imageUrl: `/assets/generated-buildings/${filename}`,
         }),
         metadataFilename,
       });
@@ -147,7 +163,8 @@ app.get("/api/buildings", (req, res) => {
         metadataImageFiles.add(pngFilename);
         metadataItems.push(normalizeSavedItem(parsed, {
           filename: pngFilename,
-          path: `/generated-buildings/${pngFilename}`,
+          path: `/assets/generated-buildings/${pngFilename}`,
+          imageUrl: `/assets/generated-buildings/${pngFilename}`,
         }));
       } catch (error) {
         console.error(`Could not read metadata file ${file}:`, error);
@@ -160,7 +177,8 @@ app.get("/api/buildings", (req, res) => {
       .map((file) => normalizeSavedItem({}, {
         id: path.basename(file, ".png"),
         filename: file,
-        path: `/generated-buildings/${file}`,
+        path: `/assets/generated-buildings/${file}`,
+        imageUrl: `/assets/generated-buildings/${file}`,
       }));
 
     const items = [...metadataItems, ...legacyPngItems].sort((a, b) => {

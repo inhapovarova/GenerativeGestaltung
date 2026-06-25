@@ -192,15 +192,20 @@
         : "no saved items yet";
 
       visibleItems.forEach((item) => {
+        if (!item.imageSource) {
+          console.warn("Skipping gallery item without an image source:", item);
+          return;
+        }
+
         const card = document.createElement("a");
         card.className = "building-card";
-        card.href = item.path;
+        card.href = item.imageSource;
         card.target = "_blank";
         card.rel = "noopener";
         card.setAttribute("aria-label", `open ${item.filename}`);
 
         const image = document.createElement("img");
-        image.src = item.path;
+        image.src = item.imageSource;
         image.alt = item.filename;
         image.loading = "lazy";
 
@@ -213,17 +218,25 @@
       if (typeof item === "string") {
         return {
           filename: "saved item",
+          imageSource: item,
           path: item,
           type: null,
         };
       }
 
+      const imageSource = getItemImageSource(item);
+
       return {
         ...item,
         filename: item.filename || item.id || "saved item",
-        path: item.path || item.imageData,
+        imageSource,
+        path: imageSource,
         type: item.type === "building" || item.type === "street" ? item.type : null,
       };
+    }
+
+    function getItemImageSource(item) {
+      return item.imageData || item.imageUrl || item.src || item.path || null;
     }
 
     function getFilteredItems() {
