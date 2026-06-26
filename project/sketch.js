@@ -7,6 +7,7 @@ let midgroundLayer;
 let rearBuildingLayer;
 let atmosphericBuffer;
 let visibleBuildingLayerCount = 3;
+let ui = {};
 
 let groundY;
 
@@ -41,8 +42,11 @@ const MAX_BUILDING_LAYER_COUNT = 3;
 const baselineState = {
   warmth: 0.5,
   density: 0.5,
+  decoration: 0.35,
+  glow: 0.45,
   order: 0.45,
   memory: 0.45,
+  tempo: 0.3,
 };
 
 let currentState = { ...baselineState };
@@ -512,6 +516,8 @@ function setup() {
 
   groundY = height - BLOCK * 1.2;
   atmosphericBuffer = createBuildingLayerBuffer();
+  setupUI();
+  scrollSpeed = tempoToSpeed(currentState.tempo);
 
   initializeCity();
 }
@@ -533,8 +539,6 @@ function draw() {
   drawBuildingLayer(foregroundLayer);
 
   drawAsphaltForeground();
-
-  drawDebugState();
 }
 
 function windowResized() {
@@ -820,7 +824,7 @@ function generateHouse(x, state, layer = {}) {
         col === topAccentWindow.col
       ) {
         const accentFamily = topAccentWindow.family;
-        const windowState = random() < 0.45 ? "lit" : "dark";
+        const windowState = chooseWindowState(state);
 
         cell.window = assets.windows[accentFamily][windowState];
         cell.detail = null;
@@ -830,11 +834,15 @@ function generateHouse(x, state, layer = {}) {
         isMiddleRow &&
         shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
       ) {
-        const litChance = 0.18 + state.warmth * 0.25 + state.memory * 0.2;
-        const windowState = random() < litChance ? "lit" : "dark";
+        const windowState = chooseWindowState(state);
 
         cell.window = assets.windows[windowFamily][windowState];
 
+        const balconyChance = lerp(0, 0.42, getDecorationAmount(state));
+
+        if (random() < balconyChance && assets.details.balconies[windowFamily]) {
+          cell.detail = assets.details.balconies[windowFamily];
+        }
       }
 
       rowCells.push(cell);
@@ -1661,6 +1669,10 @@ function chooseDifferentWindowFamily(mainWindowFamily) {
   return pick(families);
 }
 
+function chooseWindowState(state) {
+  return random() < state.glow ? "lit" : "dark";
+}
+
 function randomGap(state) {
   const minGap = lerp(BLOCK * 0.25, 0, state.density);
   const maxGap = lerp(BLOCK * 1.2, BLOCK * 0.25, state.density);
@@ -1902,19 +1914,110 @@ function drawImage(img, x, y, w, h, target = null) {
 // DEBUG AND CONTROLS
 // -----------------------------
 
-function drawDebugState() {
-  fill(20, 90);
-  noStroke();
-  rect(16, 16, 230, 120, 8);
+function setupUI() {
+  setupPanelToggle();
 
-  fill(255);
-  textSize(12);
-  text(`warmth: ${currentState.warmth.toFixed(2)}`, 28, 38);
-  text(`density: ${currentState.density.toFixed(2)}`, 28, 56);
-  text(`order: ${currentState.order.toFixed(2)}`, 28, 74);
-  text(`memory: ${currentState.memory.toFixed(2)}`, 28, 92);
-  text(`speed: ${scrollSpeed.toFixed(1)}`, 28, 110);
-  text(`layers: ${visibleBuildingLayerCount}`, 28, 128);
+  ui.warmthSlider = document.getElementById("warmthSlider");
+  ui.densitySlider = document.getElementById("densitySlider");
+  ui.decorationSlider = document.getElementById("decorationSlider");
+  ui.glowSlider = document.getElementById("glowSlider");
+  ui.orderSlider = document.getElementById("orderSlider");
+  ui.memorySlider = document.getElementById("memorySlider");
+  ui.tempoSlider = document.getElementById("tempoSlider");
+  ui.layersSlider = document.getElementById("layersSlider");
+
+  ui.warmthValue = document.getElementById("warmthValue");
+  ui.densityValue = document.getElementById("densityValue");
+  ui.decorationValue = document.getElementById("decorationValue");
+  ui.glowValue = document.getElementById("glowValue");
+  ui.orderValue = document.getElementById("orderValue");
+  ui.memoryValue = document.getElementById("memoryValue");
+  ui.tempoValue = document.getElementById("tempoValue");
+  ui.layersValue = document.getElementById("layersValue");
+
+  const controls = [
+    ui.warmthSlider,
+    ui.densitySlider,
+    ui.decorationSlider,
+    ui.glowSlider,
+    ui.orderSlider,
+    ui.memorySlider,
+    ui.tempoSlider,
+    ui.layersSlider,
+  ].filter(Boolean);
+
+  controls.forEach((el) => {
+    el.addEventListener("input", updateSandboxFromUI);
+    el.addEventListener("change", updateSandboxFromUI);
+  });
+
+  syncUIFromState();
+}
+
+function setupPanelToggle() {
+  const panel = document.querySelector(".ui");
+  const toggle = document.querySelector(".panel-toggle");
+  if (!panel || !toggle) return;
+
+  const syncPanelToggle = () => {
+    const isCollapsed = panel.classList.contains("is-collapsed");
+    toggle.textContent = isCollapsed ? "⋮" : "←";
+    toggle.setAttribute("aria-label", isCollapsed ? "expand controls" : "collapse controls");
+    toggle.setAttribute("aria-expanded", String(!isCollapsed));
+  };
+
+  syncPanelToggle();
+
+  toggle.addEventListener("click", () => {
+    panel.classList.toggle("is-collapsed");
+    syncPanelToggle();
+  });
+}
+
+function getStateFromUI() {
+  return {
+    warmth: parseFloat(ui.warmthSlider.value),
+    density: parseFloat(ui.densitySlider.value),
+    decoration: parseFloat(ui.decorationSlider.value),
+    glow: parseFloat(ui.glowSlider.value),
+    order: parseFloat(ui.orderSlider.value),
+    memory: parseFloat(ui.memorySlider.value),
+    tempo: parseFloat(ui.tempoSlider.value),
+  };
+}
+
+function updateSandboxFromUI() {
+  currentState = getStateFromUI();
+  visibleBuildingLayerCount = parseInt(ui.layersSlider.value, 10);
+  syncUIFromState();
+  scrollSpeed = tempoToSpeed(currentState.tempo);
+  initializeCity();
+}
+
+function syncUIFromState() {
+  if (!ui.warmthSlider) return;
+
+  ui.warmthSlider.value = currentState.warmth.toFixed(2);
+  ui.densitySlider.value = currentState.density.toFixed(2);
+  ui.decorationSlider.value = currentState.decoration.toFixed(2);
+  ui.glowSlider.value = currentState.glow.toFixed(2);
+  ui.orderSlider.value = currentState.order.toFixed(2);
+  ui.memorySlider.value = currentState.memory.toFixed(2);
+  ui.tempoSlider.value = currentState.tempo.toFixed(2);
+  ui.layersSlider.value = visibleBuildingLayerCount;
+
+  ui.warmthValue.textContent = currentState.warmth.toFixed(2);
+  ui.densityValue.textContent = currentState.density.toFixed(2);
+  ui.decorationValue.textContent = currentState.decoration.toFixed(2);
+  ui.glowValue.textContent = currentState.glow.toFixed(2);
+  ui.orderValue.textContent = currentState.order.toFixed(2);
+  ui.memoryValue.textContent = currentState.memory.toFixed(2);
+  ui.tempoValue.textContent = currentState.tempo.toFixed(2);
+  ui.layersValue.textContent = visibleBuildingLayerCount;
+}
+
+function tempoToSpeed(tempo) {
+  return lerp(0.2, 5.0, tempo);
 }
 
 function keyPressed() {
@@ -1976,10 +2079,12 @@ function keyPressed() {
 
   if (key === "-") {
     scrollSpeed = max(0.2, scrollSpeed - 0.2);
+    currentState.tempo = speedToTempo(scrollSpeed);
   }
 
   if (key === "=" || key === "+") {
     scrollSpeed = min(5.0, scrollSpeed + 0.2);
+    currentState.tempo = speedToTempo(scrollSpeed);
   }
 
   if (key === "r" || key === "R") {
@@ -1993,8 +2098,14 @@ function keyPressed() {
   if (shouldRegenerateCity) {
     initializeCity();
   }
+
+  syncUIFromState();
+}
+
+function speedToTempo(speed) {
+  return constrain((speed - 0.2) / 4.8, 0, 1);
 }
 
 function pick(arr) {
-  return arr[floor(random(arr.length))];
+  return arr[Math.floor(Math.random() * arr.length)];
 }

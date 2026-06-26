@@ -28,7 +28,19 @@
       left: 18px;
       z-index: 10;
       display: flex;
+      align-items: center;
       gap: 8px;
+    }
+
+    .palette-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
     }
 
     button {
@@ -45,17 +57,69 @@
     button:hover {
       background: white;
     }
+
+    .palette-button {
+      border: 0;
+      background: transparent;
+      color: #222;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 32px;
+      padding: 0 11px 0 8px;
+      box-shadow: none;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .palette-button:hover {
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .palette-button.is-active {
+      background: #222;
+      color: #fff;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.16);
+    }
+
+    .palette-swatch {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .palette-label {
+      white-space: nowrap;
+    }
+
+    .palette-dot {
+      width: 13px;
+      height: 13px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 50%;
+      margin-left: -4px;
+    }
+
+    .palette-dot:first-child {
+      margin-left: 0;
+    }
+
+    .palette-button.is-active .palette-dot {
+      border-color: rgba(255, 255, 255, 0.72);
+    }
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>
 
 <body>
   <div class="ui">
-    <button id="generateBtn">generate poster</button>
-    <button id="saveBtn">save png</button>
+    <button id="generateBtn">shuffle</button>
+    <div class="palette-controls" id="paletteControls" aria-label="poster color scheme"></div>
+    <button id="saveBtn">save</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script src="/node_modules/p5/lib/p5.min.js"></script>
+  <script src="palettes.js"></script>
 
   <script>
     const POSTER_W = 1240;
@@ -73,10 +137,22 @@
     const COL_W = WORK_W / COLS;
     const ROW_H = WORK_H / ROWS;
     const TEXT_IMAGE_GAP = ROW_H * 0.18;
+    const THEME_LABELS = {
+      originalNeutral: "Neutral",
+      mutedBlue: "Blue",
+      monochrome: "B/W",
+    };
 
     let buildings = [];
     let currentBuilding = null;
     let currentLayout = null;
+    let silhouetteCache = null;
+    let silhouetteCacheSource = null;
+    let silhouetteCacheColor = null;
+    const posterPaletteApi = createPosterPaletteApi();
+    let paletteAssignments = {};
+    let activePaletteId = posterPaletteApi.defaultPaletteId;
+    let paletteAssignment = getPaletteAssignment(activePaletteId);
 
     const posterContent = {
       title: "THE CITY THAT REMEMBERS FORWARD",
@@ -87,6 +163,67 @@
       extraInfo2: "Free entry",
     };
 
+    function createPosterPaletteApi() {
+      if (
+        typeof COLOR_PALETTES !== "undefined" &&
+        typeof DEFAULT_PALETTE_ID !== "undefined" &&
+        typeof createPaletteAssignment === "function" &&
+        typeof hexToRgb === "function"
+      ) {
+        return {
+          colorPalettes: COLOR_PALETTES,
+          defaultPaletteId: DEFAULT_PALETTE_ID,
+          createPaletteAssignment,
+          hexToRgb,
+        };
+      }
+
+      const fallbackPalettes = {
+        originalNeutral: {
+          name: "Original / Neutral",
+          colors: ["#1C1C1C", "#F1EEE8", "#E7E0D3"],
+        },
+        mutedBlue: {
+          name: "Muted Blue",
+          colors: ["#AFC6D8", "#C7D6E2", "#E8E5DE"],
+        },
+        monochrome: {
+          name: "Monochrome",
+          colors: ["#000000", "#FFFFFF"],
+        },
+      };
+
+      return {
+        colorPalettes: fallbackPalettes,
+        defaultPaletteId: "originalNeutral",
+        createPaletteAssignment(paletteId) {
+          const palette = fallbackPalettes[paletteId] || fallbackPalettes.originalNeutral;
+          const background = palette.colors[1];
+          const textColor = palette.colors[0];
+
+          return {
+            id: palette === fallbackPalettes[paletteId] ? paletteId : "originalNeutral",
+            pageBackground: background,
+            headline: textColor,
+            bodyText: textColor,
+            secondaryText: textColor,
+            illustration: textColor,
+            illustrationAlt: textColor,
+            accent: textColor,
+            text: textColor,
+          };
+        },
+        hexToRgb(hexColor) {
+          const hex = hexColor.replace("#", "");
+          return [
+            parseInt(hex.slice(0, 2), 16),
+            parseInt(hex.slice(2, 4), 16),
+            parseInt(hex.slice(4, 6), 16),
+          ];
+        },
+      };
+    }
+
     function setup() {
       createCanvas(POSTER_W, POSTER_H);
       pixelDensity(1);
@@ -94,6 +231,7 @@
       textFont("Arial");
 
       document.getElementById("generateBtn").addEventListener("click", generatePoster);
+      setupPaletteControls();
 
       document.getElementById("saveBtn").addEventListener("click", () => {
         saveCanvas("generated_poster", "png");
@@ -109,30 +247,234 @@
     async function loadBuildingList() {
       try {
         const response = await fetch("/api/buildings");
-        buildings = await response.json();
+
+        if (!response.ok) {
+          throw new Error("Could not load saved building list");
+        }
+
+        const items = await response.json();
+        buildings = items
+          .map(normalizeSavedItem)
+          .filter((item) => {
+            if (item.imageSource) {
+              return true;
+            }
+
+            console.warn("Skipping saved item without an image source:", item);
+            return false;
+          });
 
         if (!buildings.length) {
-          console.warn("No generated buildings found.");
+          console.warn("No usable saved building images found. Using generated fallback artwork.");
+          generatePosterFallback();
           return;
         }
 
         generatePoster();
       } catch (error) {
         console.error("Could not load buildings:", error);
+        generatePosterFallback();
       }
     }
 
     function generatePoster() {
       if (!buildings.length) {
-        alert("No building PNGs found. Save some buildings first.");
+        console.warn("No usable saved building images found. Using generated fallback artwork.");
+        generatePosterFallback();
         return;
       }
 
+      resetCurrentPaletteAssignment();
       const buildingData = pick(buildings);
+      const imageSource = getItemImageSource(buildingData);
 
-      loadImage(buildingData.path, (img) => {
-        currentBuilding = img;
-        currentLayout = createLayout();
+      if (!imageSource) {
+        console.warn("Saved item is missing an image source:", buildingData);
+        generatePosterFallback();
+        return;
+      }
+
+      loadImage(
+        imageSource,
+        (img) => {
+          currentBuilding = img;
+          currentLayout = createLayout();
+        },
+        (error) => {
+          console.warn("Could not load saved image source. Using generated fallback artwork.", imageSource, error);
+          generatePosterFallback();
+        }
+      );
+    }
+
+    function normalizeSavedItem(item) {
+      if (typeof item === "string") {
+        return {
+          filename: "saved item",
+          imageSource: item,
+        };
+      }
+
+      return {
+        ...item,
+        filename: item.filename || item.id || "saved item",
+        imageSource: getItemImageSource(item),
+      };
+    }
+
+    function getItemImageSource(item) {
+      return item.imageData || item.imageUrl || item.src || item.path || null;
+    }
+
+    function generatePosterFallback() {
+      resetCurrentPaletteAssignment();
+      currentBuilding = createFallbackBuildingImage();
+      currentLayout = createLayout();
+    }
+
+    function createFallbackBuildingImage() {
+      const pg = createGraphics(760, 420);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const buildingCount = floor(random(4, 8));
+      const streetY = pg.height - 36;
+      let x = 20;
+
+      for (let i = 0; i < buildingCount; i++) {
+        const w = random(70, 130);
+        const h = random(150, 330);
+        const y = streetY - h;
+        const hueStep = i % 3;
+        const wallColor = hueStep === 0 ? "#1C1C1C" : hueStep === 1 ? "#4D5A63" : "#7B6D5E";
+
+        pg.fill(wallColor);
+        pg.rect(x, y, w, h);
+        pg.fill("#F1EEE8");
+
+        for (let wy = y + 26; wy < streetY - 42; wy += 34) {
+          for (let wx = x + 14; wx < x + w - 20; wx += 28) {
+            if (random() > 0.18) {
+              pg.rect(wx, wy, 14, 18);
+            }
+          }
+        }
+
+        pg.fill("#F1EEE8");
+        pg.rect(x + w * 0.38, streetY - 48, w * 0.24, 48);
+        x += w + random(8, 22);
+      }
+
+      pg.fill("#1C1C1C");
+      pg.rect(0, streetY, pg.width, 12);
+
+      return pg;
+    }
+
+    function setupPaletteControls() {
+      const paletteControls = document.getElementById("paletteControls");
+
+      Object.entries(posterPaletteApi.colorPalettes).forEach(([paletteId, palette]) => {
+        const button = createThemeButton(paletteId, palette);
+        paletteControls.appendChild(button);
+      });
+
+      updatePaletteButtons();
+    }
+
+    function createThemeButton(paletteId, palette) {
+      const button = document.createElement("button");
+      const swatch = document.createElement("span");
+      const label = document.createElement("span");
+      const themeLabel = THEME_LABELS[paletteId] || palette.name;
+
+      button.className = "palette-button";
+      button.type = "button";
+      button.dataset.palette = paletteId;
+      button.title = palette.name;
+      button.setAttribute("aria-label", themeLabel);
+
+      swatch.className = "palette-swatch";
+      palette.colors.forEach((colorValue) => {
+        const dot = document.createElement("span");
+        dot.className = "palette-dot";
+        dot.style.background = colorValue;
+        swatch.appendChild(dot);
+      });
+
+      label.className = "palette-label";
+      label.textContent = themeLabel;
+
+      button.append(swatch, label);
+      button.addEventListener("click", () => {
+        activatePalette(paletteId);
+      });
+
+      return button;
+    }
+
+    function getPaletteAssignment(paletteId) {
+      if (!paletteAssignments[paletteId]) {
+        paletteAssignments[paletteId] = posterPaletteApi.createPaletteAssignment(paletteId);
+      }
+
+      return paletteAssignments[paletteId];
+    }
+
+    function activatePalette(paletteId) {
+      if (paletteId === activePaletteId) {
+        shuffleActivePaletteAssignment();
+        return;
+      }
+
+      activePaletteId = paletteId;
+      paletteAssignment = getPaletteAssignment(activePaletteId);
+      updatePaletteButtons();
+    }
+
+    function resetCurrentPaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+    }
+
+    function shuffleActivePaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+      updatePaletteButtons();
+    }
+
+    function createDifferentPaletteAssignment(paletteId, previousAssignment) {
+      let nextAssignment = posterPaletteApi.createPaletteAssignment(paletteId);
+      const previousKey = previousAssignment ? getPaletteAssignmentKey(previousAssignment) : null;
+
+      for (let tries = 0; previousKey && tries < 8; tries++) {
+        if (getPaletteAssignmentKey(nextAssignment) !== previousKey) {
+          return nextAssignment;
+        }
+
+        nextAssignment = posterPaletteApi.createPaletteAssignment(paletteId);
+      }
+
+      return nextAssignment;
+    }
+
+    function getPaletteAssignmentKey(assignment) {
+      return [
+        assignment.pageBackground,
+        assignment.headline,
+        assignment.bodyText,
+        assignment.secondaryText,
+        assignment.illustration,
+        assignment.accent,
+      ].join("|");
+    }
+
+    function updatePaletteButtons() {
+      Array.from(document.querySelectorAll(".palette-button")).forEach((button) => {
+        const isActive = button.dataset.palette === activePaletteId;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
       });
     }
 
@@ -256,14 +598,14 @@
     }
 
     function drawPoster() {
-      background("#f4f1ea");
+      background(paletteAssignment.pageBackground);
 
       if (!currentLayout || !currentBuilding) {
-        fill("#111111");
+        fill(paletteAssignment.text);
         noStroke();
         textSize(20);
         textAlign(LEFT, TOP);
-        text("Save buildings first, then generate poster.", MARGIN_X, MARGIN_Y);
+        text("Save buildings first, then shuffle.", MARGIN_X, MARGIN_Y);
         return;
       }
 
@@ -298,6 +640,26 @@
 
       const imageRect = getImageFitRect(img, r);
 
+      if (paletteAssignment.id === "monochrome") {
+        const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+
+        image(
+          silhouette,
+          imageRect.x,
+          imageRect.y,
+          imageRect.w,
+          imageRect.h
+        );
+
+        return;
+      }
+
+      if (paletteAssignment.id !== "originalNeutral") {
+        const tintColor = posterPaletteApi.hexToRgb(paletteAssignment.illustration);
+        push();
+        tint(tintColor[0], tintColor[1], tintColor[2]);
+      }
+
       image(
         img,
         imageRect.x,
@@ -305,6 +667,54 @@
         imageRect.w,
         imageRect.h
       );
+
+      if (paletteAssignment.id !== "originalNeutral") {
+        pop();
+      }
+    }
+
+    function getSilhouetteGraphic(img, silhouetteColor) {
+      if (
+        silhouetteCache &&
+        silhouetteCacheSource === img &&
+        silhouetteCacheColor === silhouetteColor
+      ) {
+        return silhouetteCache;
+      }
+
+      if (silhouetteCache) {
+        silhouetteCache.remove();
+      }
+
+      const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
+      const pg = createGraphics(img.width, img.height);
+
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.imageMode(CORNER);
+      pg.image(img, 0, 0, img.width, img.height);
+      pg.loadPixels();
+
+      for (let i = 0; i < pg.pixels.length; i += 4) {
+        const alpha = pg.pixels[i + 3];
+
+        if (alpha > 8) {
+          pg.pixels[i] = r;
+          pg.pixels[i + 1] = g;
+          pg.pixels[i + 2] = b;
+          pg.pixels[i + 3] = 255;
+        } else {
+          pg.pixels[i + 3] = 0;
+        }
+      }
+
+      pg.updatePixels();
+
+      silhouetteCache = pg;
+      silhouetteCacheSource = img;
+      silhouetteCacheColor = silhouetteColor;
+
+      return silhouetteCache;
     }
 
     function getImageFitRect(img, r) {
@@ -323,7 +733,7 @@
     }
 
     function drawTitle(block, title) {
-      fill("#111111");
+      fill(paletteAssignment.headline);
       noStroke();
 
       const r = block.rect;
@@ -349,7 +759,7 @@
     function drawBodyText(block) {
       const r = block.rect;
 
-      fill("#111111");
+      fill(paletteAssignment.bodyText);
       noStroke();
 
       textFont("Arial");
@@ -364,7 +774,9 @@
     function drawLightText(block) {
       const r = block.rect;
 
-      fill(17, 17, 17, 150);
+      const textColor = color(paletteAssignment.secondaryText);
+      textColor.setAlpha(paletteAssignment.id === "monochrome" ? 255 : 150);
+      fill(textColor);
       noStroke();
       textFont("Arial");
       textSize(block.size);
@@ -378,7 +790,7 @@
     function drawExtraText(block) {
       const r = block.rect;
 
-      fill("#111111");
+      fill(paletteAssignment.accent);
       noStroke();
       textFont("Arial");
       textSize(block.size);
@@ -516,7 +928,7 @@
     }
 
     function pick(arr) {
-      return arr[floor(random(arr.length))];
+      return arr[Math.floor(Math.random() * arr.length)];
     }
   </script>
   <script src="shared-nav.js"></script>
