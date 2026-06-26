@@ -79,6 +79,10 @@ function preload() {
       },
     },
 
+    roofRailings: {
+      flat: loadImage("assets/roofs/railings/roof_railing.png"),
+    },
+
     walls: {
       smooth: [
         loadImage("assets/walls/smooth/wall_smooth_01.png"),
@@ -120,9 +124,32 @@ function preload() {
 
     details: {
       balconies: {
-        rounded: loadImage("assets/details/balconies/detail_balcony_rounded_01.png"),
-        square: loadImage("assets/details/balconies/detail_balcony_square_01.png"),
-        tall: loadImage("assets/details/balconies/detail_balcony_tall_01.png"),
+        single: [
+          loadImage("assets/details/balconies/detail_balcony_single.png"),
+          loadImage("assets/details/balconies/detail_balcony_rounded_01.png"),
+          loadImage("assets/details/balconies/detail_balcony_square_01.png"),
+          loadImage("assets/details/balconies/detail_balcony_tall_01.png"),
+        ],
+        double: [
+          {
+            parts: [
+              loadImage("assets/details/balconies/detail_balcony_double_01_left.png"),
+              loadImage("assets/details/balconies/detail_balcony_double_01_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/details/balconies/detail_balcony_double_02_left.png"),
+              loadImage("assets/details/balconies/detail_balcony_double_02_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/details/balconies/detail_balcony_double_03_left.png"),
+              loadImage("assets/details/balconies/detail_balcony_double_03_right.png"),
+            ],
+          },
+        ],
       },
     },
 
@@ -164,6 +191,83 @@ function preload() {
             ],
           },
         ],
+        roofTop: [
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_01.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_02.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_03.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_04.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_05.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_06.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_07.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_08.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_09.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_01_left.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_01_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_02_left.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_02_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_03_left.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_03_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_04_left.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_04_right.png"),
+            ],
+          },
+          {
+            parts: [
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_05_left.png"),
+              loadImage("assets/decor/plants/roof/plant_roof_top_long_05_right.png"),
+            ],
+          },
+        ],
         ground: [
           {
             parts: [
@@ -197,6 +301,69 @@ function preload() {
               loadImage("assets/decor/plants/ground/plant_ground_bush_02_right.png"),
             ],
           },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_01_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_01_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_02_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_02_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_03_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_03_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_04_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_04_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_05_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_05_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_06_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_06_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_07_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_07_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_08_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_08_bottom.png"),
+            ],
+          },
+          {
+            layout: "vertical",
+            parts: [
+              loadImage("assets/decor/plants/ground/tree_ground_tall_09_top.png"),
+              loadImage("assets/decor/plants/ground/tree_ground_tall_09_bottom.png"),
+            ],
+          },
         ],
         wall: [
           loadImage("assets/decor/plants/wall/plant_wall_climber_01.png"),
@@ -213,6 +380,9 @@ function preload() {
           loadImage("assets/decor/appliances/ac_wall_02.png"),
         ],
       },
+      stairs: [
+        loadImage("assets/decor/stairs/stair_fire_escape_01.png"),
+      ],
       posters: {
         ground: [
           loadImage("assets/decor/posters/ground/poster_ground_small_01.png"),
@@ -295,6 +465,41 @@ function preload() {
         ],
         laundry: [
           loadImage("assets/decor/spans/span_between_laundry_01.png"),
+        ],
+        house: [
+          {
+            mode: "tile",
+            parts: [
+              loadImage("assets/decor/spans/span_house_lights_01_left.png"),
+              loadImage("assets/decor/spans/span_house_lights_01_right.png"),
+            ],
+          },
+          {
+            mode: "tile",
+            parts: [
+              loadImage("assets/decor/spans/span_house_lights_02_left.png"),
+              loadImage("assets/decor/spans/span_house_lights_02_right.png"),
+            ],
+          },
+          {
+            mode: "tile",
+            parts: [
+              loadImage("assets/decor/spans/span_house_lights_03_left.png"),
+              loadImage("assets/decor/spans/span_house_lights_03_right.png"),
+            ],
+          },
+          {
+            mode: "tile",
+            parts: [
+              loadImage("assets/decor/spans/span_house_flags_01.png"),
+            ],
+          },
+          {
+            mode: "tile",
+            parts: [
+              loadImage("assets/decor/spans/span_house_flags_02.png"),
+            ],
+          },
         ],
       },
     },
@@ -647,6 +852,8 @@ function generateHouse(x, state, layer = {}) {
   }
 
   placeDoor(cells, widthBlocks, heightBlocks, doorData);
+  placeWindowBalconyDetails(cells, widthBlocks, heightBlocks, state, layer);
+  placeStairDecor(cells, widthBlocks, heightBlocks, state, layer);
   placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, layer);
   placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
   placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer);
@@ -655,7 +862,8 @@ function generateHouse(x, state, layer = {}) {
   placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer);
   placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer);
   placePosterDecor(cells, widthBlocks, heightBlocks, state, layer);
-  const spans = chooseHouseSpanDecor(widthBlocks, state, hasRoof, layer);
+  const spans = chooseHouseSpanDecor(widthBlocks, heightBlocks, state, hasRoof, layer);
+  const roofTopDecor = chooseRoofTopPlantDecor(widthBlocks, state, hasRoof, layer);
 
   return {
     x,
@@ -673,6 +881,7 @@ function generateHouse(x, state, layer = {}) {
     topAccentWindow,
     tintColor,
     spans,
+    roofTopDecor,
     cells,
   };
 }
@@ -691,6 +900,65 @@ function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
 
   const doorCol = floor(widthBlocks / 2);
   cells[groundRow][doorCol].door = doorData.asset;
+}
+
+function placeWindowBalconyDetails(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const balconies = assets.details && assets.details.balconies;
+  if (!balconies) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+
+  const doubleBalconies = balconies.double || [];
+  const singleBalconies = balconies.single || [];
+  const doubleChance = lerp(0, 0.34, decoration);
+  const singleChance = lerp(0.08, 0.46, decoration);
+
+  for (let row = 1; row < heightBlocks - 1; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      if (
+        doubleBalconies.length > 0 &&
+        col + 1 < widthBlocks &&
+        random() < doubleChance &&
+        canPlaceDoubleWindowBalcony(cells, row, col)
+      ) {
+        const balcony = pick(doubleBalconies);
+        cells[row][col].detail = balcony.parts[0];
+        cells[row][col + 1].detail = balcony.parts[1];
+        col++;
+        continue;
+      }
+
+      if (
+        singleBalconies.length > 0 &&
+        random() < singleChance &&
+        canPlaceSingleWindowBalcony(cells, row, col)
+      ) {
+        cells[row][col].detail = pick(singleBalconies);
+      }
+    }
+  }
+}
+
+function canPlaceSingleWindowBalcony(cells, row, col) {
+  const cell = cells[row][col];
+
+  return Boolean(
+    cell &&
+    cell.window &&
+    !cell.detail &&
+    !cell.decorFront
+  );
+}
+
+function canPlaceDoubleWindowBalcony(cells, row, col) {
+  return (
+    canPlaceSingleWindowBalcony(cells, row, col) &&
+    canPlaceSingleWindowBalcony(cells, row, col + 1)
+  );
 }
 
 function placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, layer = {}) {
@@ -729,6 +997,37 @@ function placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, l
   }
 }
 
+function chooseRoofTopPlantDecor(widthBlocks, state, hasRoof, layer = {}) {
+  if (hasRoof) return [];
+  if (layer.tint) return [];
+
+  const roofTopPlants = assets.decor && assets.decor.plants && assets.decor.plants.roofTop;
+  if (!roofTopPlants || roofTopPlants.length === 0) return [];
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return [];
+
+  const chance = lerp(0, 0.26, decoration);
+  const placements = [];
+
+  for (let col = 0; col < widthBlocks; col++) {
+    if (random() > chance) continue;
+
+    const fittingPlants = roofTopPlants.filter((plant) => col + plant.parts.length <= widthBlocks);
+    if (fittingPlants.length === 0) continue;
+
+    const plant = pick(fittingPlants);
+    placements.push({
+      col,
+      parts: plant.parts,
+    });
+
+    col += plant.parts.length - 1;
+  }
+
+  return placements;
+}
+
 function placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
   if (layer.tint) return;
 
@@ -739,12 +1038,21 @@ function placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer = 
   if (decoration <= 0) return;
 
   const groundRow = heightBlocks - 1;
-  const chance = lerp(0, 0.34, decoration);
+  const chance = lerp(0, 0.55, decoration);
 
   for (let col = 0; col < widthBlocks; col++) {
     if (random() > chance) continue;
 
     const plant = pick(groundPlants);
+
+    if (plant.layout === "vertical") {
+      const startRow = groundRow - plant.parts.length + 1;
+      if (!canPlaceVerticalDecor(cells, startRow, col, plant.parts.length)) continue;
+
+      placeVerticalDecor(cells, startRow, col, plant.parts);
+      continue;
+    }
+
     if (!canPlaceHorizontalDecor(cells, groundRow, col, plant.parts.length)) continue;
 
     placeHorizontalDecor(cells, groundRow, col, plant.parts);
@@ -769,6 +1077,19 @@ function placeHorizontalDecor(cells, row, startCol, parts) {
   }
 }
 
+function canPlaceVerticalDecor(cells, startRow, col, length) {
+  if (startRow < 0) return false;
+  if (startRow + length > cells.length) return false;
+
+  for (let i = 0; i < length; i++) {
+    if (!isOpenWallCell(cells[startRow + i][col])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
   if (layer.tint) return;
 
@@ -779,15 +1100,32 @@ function placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
   if (decoration <= 0) return;
 
   const groundRow = heightBlocks - 1;
-  const chance = lerp(0, 0.2, decoration);
+  const chance = lerp(0.12, 0.78, decoration);
+  const candidates = [];
+  let placedCount = 0;
 
   for (let col = 0; col < widthBlocks; col++) {
     const cell = cells[groundRow][col];
 
     if (!isOpenWallCell(cell)) continue;
+    candidates.push(col);
     if (random() > chance) continue;
 
     cell.decorFront = pick(streetProps);
+    placedCount++;
+  }
+
+  const minimumCount = decoration > 0.55 ? 3 : decoration > 0.2 ? 2 : 1;
+
+  while (placedCount < minimumCount && candidates.length > 0) {
+    const candidateIndex = floor(random(candidates.length));
+    const col = candidates.splice(candidateIndex, 1)[0];
+    const cell = cells[groundRow][col];
+
+    if (!isOpenWallCell(cell)) continue;
+
+    cell.decorFront = pick(streetProps);
+    placedCount++;
   }
 }
 
@@ -801,7 +1139,7 @@ function placeBalconyDecor(cells, widthBlocks, heightBlocks, state, layer = {}) 
   const decoration = getDecorationAmount(state);
   if (decoration <= 0) return;
 
-  const chance = lerp(0, 0.16, decoration);
+  const chance = lerp(0, 0.32, decoration);
 
   for (let row = 1; row < heightBlocks - 1; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -826,7 +1164,7 @@ function placeWallPlantDecor(cells, widthBlocks, heightBlocks, state, layer = {}
   const decoration = getDecorationAmount(state);
   if (decoration <= 0) return;
 
-  const chance = lerp(0, 0.12, decoration);
+  const chance = lerp(0, 0.26, decoration);
 
   for (let row = 1; row < heightBlocks - 1; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -853,7 +1191,7 @@ function placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer = 
   const decoration = getDecorationAmount(state);
   if (decoration <= 0) return;
 
-  const chance = lerp(0, 0.08, decoration);
+  const chance = lerp(0, 0.18, decoration);
 
   for (let row = 1; row < heightBlocks - 1; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -899,7 +1237,7 @@ function placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer
   const decoration = getDecorationAmount(state);
   if (decoration <= 0) return;
 
-  const chance = lerp(0, 0.1, decoration);
+  const chance = lerp(0, 0.22, decoration);
 
   for (let row = 1; row < heightBlocks - 1; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -921,25 +1259,84 @@ function placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer
   }
 }
 
-function chooseHouseSpanDecor(widthBlocks, state, hasRoof, layer = {}) {
-  if (!hasRoof) return [];
+function placeStairDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+  if (heightBlocks < 3) return;
+
+  const stairs = assets.decor && assets.decor.stairs;
+  if (!stairs || stairs.length === 0) return;
+
+  const decoration = getDecorationAmount(state);
+  if (decoration <= 0) return;
+  if (random() > lerp(0, 0.36, decoration)) return;
+
+  const stair = pick(stairs);
+  const maxLength = min(5, heightBlocks - 1);
+  if (maxLength <= 0) return;
+
+  const length = floor(random(1, maxLength + 1));
+  const startRow = heightBlocks - length;
+  const candidates = [];
+
+  for (let col = 0; col < widthBlocks; col++) {
+    if (canPlaceVerticalDecor(cells, startRow, col, length)) {
+      candidates.push(col);
+    }
+  }
+
+  if (candidates.length === 0) return;
+
+  const col = pick(candidates);
+
+  for (let row = startRow; row < heightBlocks; row++) {
+    cells[row][col].decorFront = stair;
+  }
+}
+
+function chooseHouseSpanDecor(widthBlocks, heightBlocks, state, hasRoof, layer = {}) {
   if (layer.tint) return [];
   if (widthBlocks < 3) return [];
+  if (heightBlocks < 3) return [];
 
-  const roofSpans = assets.decor && assets.decor.spans && assets.decor.spans.roof;
-  if (!roofSpans || roofSpans.length === 0) return [];
+  const spans = assets.decor && assets.decor.spans;
+  if (!spans) return [];
+
+  const roofSpans = hasRoof ? spans.roof : [];
+  const houseSpans = spans.house || [];
+  const availableSpans = [...(roofSpans || []), ...houseSpans];
+  if (availableSpans.length === 0) return [];
 
   const decoration = getDecorationAmount(state);
   if (decoration <= 0) return [];
-  if (random() > lerp(0, 0.18, decoration)) return [];
+  if (random() > lerp(0.24, 0.78, decoration)) return [];
 
-  return [
-    {
-      asset: pick(roofSpans),
-      offsetY: -BLOCK * 0.35,
+  const spanCount = decoration > 0.65 && heightBlocks >= 5 && random() < 0.55 ? 2 : 1;
+  const spansToPlace = [];
+  const usedRows = [];
+  const maxRow = min(heightBlocks - 2, 4);
+
+  for (let i = 0; i < spanCount; i++) {
+    const candidates = [];
+
+    for (let row = 0; row <= maxRow; row++) {
+      if (!usedRows.includes(row)) {
+        candidates.push(row);
+      }
+    }
+
+    if (candidates.length === 0) break;
+
+    const row = pick(candidates);
+    usedRows.push(row);
+
+    spansToPlace.push({
+      asset: pick(availableSpans),
+      offsetY: row * BLOCK + BLOCK * 0.15,
       height: BLOCK * 2,
-    },
-  ];
+    });
+  }
+
+  return spansToPlace;
 }
 
 function placePosterDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
@@ -959,7 +1356,7 @@ function placePosterDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
 function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters, decoration) {
   if (!groundPosters || groundPosters.length === 0) return;
 
-  const chance = lerp(0, 0.18, decoration);
+  const chance = lerp(0, 0.32, decoration);
   const rowStart = max(1, heightBlocks - 2);
 
   for (let row = rowStart; row < heightBlocks; row++) {
@@ -977,7 +1374,7 @@ function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters,
 function placeUpperPosterDecor(cells, widthBlocks, heightBlocks, upperPosters, decoration) {
   if (!upperPosters || upperPosters.length === 0) return;
 
-  const chance = lerp(0, 0.1, decoration);
+  const chance = lerp(0, 0.22, decoration);
   const maxStartRow = max(1, heightBlocks - 3);
 
   for (let row = 1; row <= maxStartRow; row++) {
@@ -1363,20 +1760,71 @@ function drawHouse(house, target = null, layer = null) {
   }
 
   drawHouseSpans(house, houseDrawX, bodyTopY, target);
+  drawRoofTopDecor(house, roofY, bodyTopY, houseDrawX, target);
+  drawFlatRoofRailing(house, bodyTopY, houseDrawX, target);
+}
+
+function drawRoofTopDecor(house, roofY, bodyTopY, houseDrawX, target = null) {
+  if (!house.roofTopDecor || house.roofTopDecor.length === 0) return;
+
+  const drawY = house.hasRoof ? roofY : bodyTopY - BLOCK;
+
+  for (let decor of house.roofTopDecor) {
+    for (let i = 0; i < decor.parts.length; i++) {
+      drawImage(
+        decor.parts[i],
+        houseDrawX + (decor.col + i) * BLOCK,
+        drawY,
+        BLOCK,
+        BLOCK,
+        target
+      );
+    }
+  }
+}
+
+function drawFlatRoofRailing(house, bodyTopY, houseDrawX, target = null) {
+  if (house.hasRoof) return;
+  if (!house.roofTopDecor || house.roofTopDecor.length === 0) return;
+  if (!assets.roofRailings || !assets.roofRailings.flat) return;
+
+  const y = bodyTopY - BLOCK;
+
+  for (let col = 0; col < house.widthBlocks; col++) {
+    drawImage(
+      assets.roofRailings.flat,
+      houseDrawX + col * BLOCK,
+      y,
+      BLOCK,
+      BLOCK,
+      target
+    );
+  }
 }
 
 function drawHouseSpans(house, houseDrawX, bodyTopY, target = null) {
   if (!house.spans || house.spans.length === 0) return;
 
   for (let span of house.spans) {
-    drawSpanParts(
-      span.asset.parts,
-      houseDrawX,
-      bodyTopY + span.offsetY,
-      house.widthBlocks * BLOCK,
-      span.height,
-      target
-    );
+    const x = houseDrawX;
+    const y = bodyTopY + span.offsetY;
+    const totalWidth = house.widthBlocks * BLOCK;
+
+    if (span.asset.mode === "tile") {
+      drawTiledSpanParts(span.asset.parts, x, y, totalWidth, span.height, target);
+    } else {
+      drawSpanParts(span.asset.parts, x, y, totalWidth, span.height, target);
+    }
+  }
+}
+
+function drawTiledSpanParts(parts, x, y, totalWidth, height, target = null) {
+  if (!parts || parts.length === 0) return;
+
+  const count = ceil(totalWidth / BLOCK);
+
+  for (let i = 0; i < count; i++) {
+    drawImage(parts[i % parts.length], x + i * BLOCK, y, BLOCK, height, target);
   }
 }
 
