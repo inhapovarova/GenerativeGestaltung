@@ -48,6 +48,8 @@ http://localhost:8000/gallery.html
 
 Keep the Terminal window open while using the project. To stop the server, press `Control + C` in Terminal.
 
+<img width="1085" height="833" alt="Screenshot 2026-06-26 at 02 06 30" src="https://github.com/user-attachments/assets/15d585fd-06e3-4dc6-a05a-f8c94dfb560d" />
+
 ## Saving buildings
 
 Use the save button on `single-building.html`. Saved PNGs are stored locally in:
@@ -61,3 +63,11 @@ The poster generator and gallery load saved buildings from the local server endp
 ```text
 http://localhost:8000/api/buildings
 ```
+
+<img width="1200" height="831" alt="Screenshot 2026-06-26 at 02 08 14" src="https://github.com/user-attachments/assets/556bd381-0aba-4337-87f1-622deac96d82" />
+
+<img width="1240" height="1754" alt="generated_poster (57)" src="https://github.com/user-attachments/assets/7f67f630-70a6-4ad5-8304-0f5aa281c8b6" />
+
+<img width="1240" height="1754" alt="generated_poster (65)" src="https://github.com/user-attachments/assets/88bd55f1-b864-45b6-a9af-b59e4a7324e7" />
+
+<img width="1240" height="1754" alt="generated_poster (46)" src="https://github.com/user-attachments/assets/91993370-2b84-4a94-a206-6241d1cfbf15" />
