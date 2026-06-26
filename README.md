@@ -14,6 +14,8 @@ Collaborative course project with small p5.js generators for modular city/buildi
 - `project/server.js` - local Express server
 - `project/assets/generated-buildings/` - saved building PNGs
 
+<img width="1470" height="832" alt="Screenshot 2026-06-26 at 02 04 29" src="https://github.com/user-attachments/assets/c4d39c87-2ae0-4171-8206-49f678c31dd4" />
+
 ## How to run it
 
 First, install Node.js if you do not already have it:
