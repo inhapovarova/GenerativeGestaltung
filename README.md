@@ -1,6 +1,8 @@
 # Generative Gestaltung
 
-Collaborative course project with small p5.js generators for modular city/building visuals.
+Collaborative course project with small p5.js generators for modular city/building visuals.\
+
+<img width="965" height="587" alt="Screenshot 2026-06-26 at 02 02 06" src="https://github.com/user-attachments/assets/4aa5aef3-4698-44ae-9641-041f6e44f812" />
 
 ## What is inside
 
