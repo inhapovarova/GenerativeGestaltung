@@ -913,12 +913,13 @@
 
       for (let span of house.spans) {
         const parts = span.asset.parts;
-        const totalWidth = parts.length * BLOCK;
-        const startX = houseX + (house.widthBlocks * BLOCK - totalWidth) / 2;
+        const startCol = span.startCol || 0;
+        const columns = span.columns || parts.length;
+        const startX = houseX + startCol * BLOCK;
         const y = bodyTopY + span.offsetY;
 
-        for (let i = 0; i < parts.length; i++) {
-          pg.image(parts[i], startX + i * BLOCK, y, BLOCK, span.height);
+        for (let i = 0; i < columns; i++) {
+          pg.image(parts[i % parts.length], startX + i * BLOCK, y, BLOCK, span.height);
         }
       }
     }
@@ -1121,7 +1122,7 @@
       const decoration = getDecorationAmount(state);
       if (decoration <= 0) return;
 
-      const chance = lerp(0, 0.72, decoration);
+      const chance = lerp(0.12, 0.9, decoration);
       const candidates = [];
       let placedCount = 0;
 
@@ -1139,10 +1140,18 @@
         placedCount++;
       }
 
-      if (placedCount === 0 && decoration > 0.35 && candidates.length > 0) {
+      const minimumCount = decoration > 0.68 ? min(3, widthBlocks) : decoration > 0.3 ? 1 : 0;
+
+      while (placedCount < minimumCount && candidates.length > 0) {
         const candidate = pick(candidates);
         const vine = pick(candidate.fittingVines);
+        if (!canPlaceVerticalDecor(cells, 0, candidate.col, vine.parts.length)) {
+          candidates.splice(candidates.indexOf(candidate), 1);
+          continue;
+        }
         placeVerticalDecor(cells, 0, candidate.col, vine.parts);
+        candidates.splice(candidates.indexOf(candidate), 1);
+        placedCount++;
       }
     }
 
@@ -1154,25 +1163,50 @@
       if (decoration <= 0) return;
 
       const groundRow = heightBlocks - 1;
-      const chance = lerp(0, 0.55, decoration);
+      const chance = lerp(0.18, 0.82, decoration);
+      const candidates = [];
+      let placedCount = 0;
 
       for (let col = 0; col < widthBlocks; col++) {
+        candidates.push(col);
         if (random() > chance) continue;
 
-        const plant = pick(groundPlants);
+        if (tryPlaceGroundPlant(cells, groundPlants, groundRow, col)) {
+          placedCount++;
+        }
+      }
 
+      const minimumCount = decoration > 0.7 ? min(3, widthBlocks) : decoration > 0.3 ? min(2, widthBlocks) : 0;
+
+      while (placedCount < minimumCount && candidates.length > 0) {
+        const candidateIndex = floor(random(candidates.length));
+        const col = candidates.splice(candidateIndex, 1)[0];
+
+        if (tryPlaceGroundPlant(cells, groundPlants, groundRow, col)) {
+          placedCount++;
+        }
+      }
+    }
+
+    function tryPlaceGroundPlant(cells, groundPlants, groundRow, col) {
+      const shuffledPlants = shuffle([...groundPlants], true);
+
+      for (let plant of shuffledPlants) {
         if (plant.layout === "vertical") {
           const startRow = groundRow - plant.parts.length + 1;
           if (!canPlaceVerticalDecor(cells, startRow, col, plant.parts.length)) continue;
 
           placeVerticalDecor(cells, startRow, col, plant.parts);
-          continue;
+          return true;
         }
 
         if (!canPlaceHorizontalDecor(cells, groundRow, col, plant.parts.length)) continue;
 
         placeHorizontalDecor(cells, groundRow, col, plant.parts);
+        return true;
       }
+
+      return false;
     }
 
     function canPlaceHorizontalDecor(cells, row, startCol, length) {
@@ -1239,7 +1273,7 @@
       const decoration = getDecorationAmount(state);
       if (decoration <= 0) return;
 
-      const chance = lerp(0, 0.32, decoration);
+      const chance = lerp(0.08, 0.48, decoration);
 
       for (let row = 1; row < heightBlocks - 1; row++) {
         for (let col = 0; col < widthBlocks; col++) {
@@ -1263,7 +1297,9 @@
       const decoration = getDecorationAmount(state);
       if (decoration <= 0) return;
 
-      const chance = lerp(0, 0.26, decoration);
+      const chance = lerp(0.06, 0.46, decoration);
+      const candidates = [];
+      let placedCount = 0;
 
       for (let row = 1; row < heightBlocks - 1; row++) {
         for (let col = 0; col < widthBlocks; col++) {
@@ -1272,12 +1308,84 @@
           if (!cell.window) continue;
           if (cell.detail || cell.decorFront) continue;
           if (row + 1 < heightBlocks && cells[row + 1][col].decorFront) continue;
+          candidates.push(cell);
           if (random() > chance) continue;
 
           cell.decorFront = pick(wallPlants);
           cell.decorFrontOffsetY = BLOCK * 0.38;
+          placedCount++;
         }
       }
+
+      const minimumCount = decoration > 0.7 ? min(3, candidates.length) : decoration > 0.38 ? min(1, candidates.length) : 0;
+
+      while (placedCount < minimumCount && candidates.length > 0) {
+        const candidateIndex = floor(random(candidates.length));
+        const cell = candidates.splice(candidateIndex, 1)[0];
+
+        if (cell.decorFront) continue;
+
+        cell.decorFront = pick(wallPlants);
+        cell.decorFrontOffsetY = BLOCK * 0.38;
+        placedCount++;
+      }
+    }
+
+    function canPlaceSpanRow(spansToPlace, row, assetLength, widthBlocks) {
+      if (assetLength > widthBlocks) return false;
+
+      return !spansToPlace.some((span) => {
+        const spanRow = Math.round((span.offsetY - BLOCK * 0.15) / BLOCK);
+        return spanRow === row;
+      });
+    }
+
+    function createFullWidthSpan(asset, row, widthBlocks) {
+      return {
+        asset,
+        startCol: 0,
+        columns: widthBlocks,
+        offsetY: row * BLOCK + BLOCK * 0.15,
+        height: BLOCK * 2,
+      };
+    }
+
+    function pickSpanAssetForWidth(availableSpans, widthBlocks) {
+      const fittingSpans = availableSpans.filter((span) => span.parts.length <= widthBlocks);
+      return fittingSpans.length > 0 ? pick(fittingSpans) : null;
+    }
+
+    function chooseDecoratedSpanRows(heightBlocks, decoration) {
+      const rows = [];
+      const minRow = 0;
+      const maxRow = heightBlocks - 2;
+      const rowCount = maxRow - minRow + 1;
+
+      if (rowCount <= 0) return rows;
+
+      const targetCount = constrain(
+        1 + floor(decoration * rowCount),
+        1,
+        min(rowCount, decoration > 0.72 ? 5 : 3)
+      );
+
+      for (let row = minRow; row <= maxRow; row++) {
+        const normalized = rowCount === 1 ? 0 : row / (rowCount - 1);
+        const bandChance = lerp(0.22, 0.82, decoration) * (0.8 + 0.2 * sin(normalized * PI));
+
+        if (random() < bandChance) {
+          rows.push(row);
+        }
+      }
+
+      while (rows.length < targetCount) {
+        const row = floor(random(minRow, maxRow + 1));
+        if (!rows.includes(row)) {
+          rows.push(row);
+        }
+      }
+
+      return shuffle(rows, true).slice(0, targetCount);
     }
 
     function placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state) {
@@ -1403,32 +1511,17 @@
 
       const decoration = getDecorationAmount(state);
       if (decoration <= 0) return [];
-      if (random() > lerp(0.24, 0.78, decoration)) return [];
-
-      const spanCount = decoration > 0.65 && heightBlocks >= 5 && random() < 0.55 ? 2 : 1;
       const spansToPlace = [];
-      const usedRows = [];
-      const maxRow = min(heightBlocks - 2, 4);
+      const rows = chooseDecoratedSpanRows(heightBlocks, decoration);
 
-      for (let i = 0; i < spanCount; i++) {
-        const candidates = [];
+      if (random() > lerp(0.38, 0.92, decoration)) return [];
 
-        for (let row = 0; row <= maxRow; row++) {
-          if (!usedRows.includes(row)) {
-            candidates.push(row);
-          }
-        }
+      for (let row of rows) {
+        const asset = pickSpanAssetForWidth(availableSpans, widthBlocks);
+        if (!asset) continue;
+        if (!canPlaceSpanRow(spansToPlace, row, asset.parts.length, widthBlocks)) continue;
 
-        if (candidates.length === 0) break;
-
-        const row = pick(candidates);
-        usedRows.push(row);
-
-        spansToPlace.push({
-          asset: pick(availableSpans),
-          offsetY: row * BLOCK + BLOCK * 0.15,
-          height: BLOCK * 2,
-        });
+        spansToPlace.push(createFullWidthSpan(asset, row, widthBlocks));
       }
 
       return spansToPlace;
@@ -1443,7 +1536,7 @@
       const decoration = getDecorationAmount(state);
       if (decoration <= 0) return [];
 
-      const chance = lerp(0, 0.26, decoration);
+      const chance = lerp(0.12, 0.58, decoration);
       const placements = [];
 
       for (let col = 0; col < widthBlocks; col++) {
@@ -1459,6 +1552,26 @@
         });
 
         col += plant.parts.length - 1;
+      }
+
+      const minimumCount = decoration > 0.65 ? min(2, widthBlocks) : decoration > 0.32 ? 1 : 0;
+
+      while (placements.length < minimumCount) {
+        const col = floor(random(widthBlocks));
+        const fittingPlants = roofTopPlants.filter((plant) => col + plant.parts.length <= widthBlocks);
+        if (fittingPlants.length === 0) break;
+
+        const plant = pick(fittingPlants);
+        const overlaps = placements.some((placement) => {
+          return col < placement.col + placement.parts.length && col + plant.parts.length > placement.col;
+        });
+
+        if (overlaps) break;
+
+        placements.push({
+          col,
+          parts: plant.parts,
+        });
       }
 
       return placements;
@@ -1908,12 +2021,13 @@
 
       for (let span of house.spans) {
         const parts = span.asset.parts;
-        const totalWidth = parts.length * BLOCK;
-        const startX = houseX + (house.widthBlocks * BLOCK - totalWidth) / 2;
+        const startCol = span.startCol || 0;
+        const columns = span.columns || parts.length;
+        const startX = houseX + startCol * BLOCK;
         const y = bodyTopY + span.offsetY;
 
-        for (let i = 0; i < parts.length; i++) {
-          image(parts[i], startX + i * BLOCK, y, BLOCK, span.height);
+        for (let i = 0; i < columns; i++) {
+          image(parts[i % parts.length], startX + i * BLOCK, y, BLOCK, span.height);
         }
       }
     }
