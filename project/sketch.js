@@ -1358,6 +1358,7 @@ function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters,
 
   const chance = lerp(0, 0.32, decoration);
   const rowStart = max(1, heightBlocks - 2);
+  const candidates = [];
 
   for (let row = rowStart; row < heightBlocks; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -1366,8 +1367,25 @@ function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters,
       if (!isOpenWallCell(cell)) continue;
       if (random() > chance) continue;
 
-      cell.decorBack = pick(groundPosters);
+      candidates.push(cell);
     }
+  }
+
+  const maxCount = decoration > 0.75 && widthBlocks >= 5 ? 2 : 1;
+  const usedPosters = [];
+  let placedCount = 0;
+
+  while (placedCount < maxCount && candidates.length > 0) {
+    const candidateIndex = floor(random(candidates.length));
+    const cell = candidates.splice(candidateIndex, 1)[0];
+    const availablePosters = groundPosters.filter((poster) => !usedPosters.includes(poster));
+
+    if (availablePosters.length === 0) break;
+
+    const poster = pick(availablePosters);
+    cell.decorBack = poster;
+    usedPosters.push(poster);
+    placedCount++;
   }
 }
 
@@ -1376,6 +1394,7 @@ function placeUpperPosterDecor(cells, widthBlocks, heightBlocks, upperPosters, d
 
   const chance = lerp(0, 0.22, decoration);
   const maxStartRow = max(1, heightBlocks - 3);
+  const candidates = [];
 
   for (let row = 1; row <= maxStartRow; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -1395,14 +1414,33 @@ function placeUpperPosterDecor(cells, widthBlocks, heightBlocks, upperPosters, d
 
       if (fittingPosters.length === 0) continue;
 
-      const poster = pick(fittingPosters);
-
-      if (poster.type === "vertical") {
-        placeVerticalBackDecor(cells, row, col, poster.parts);
-      } else {
-        placeRectBackDecor(cells, row, col, poster.rows);
-      }
+      candidates.push({ row, col, fittingPosters });
     }
+  }
+
+  const maxCount = decoration > 0.8 && widthBlocks >= 5 && heightBlocks >= 5 ? 2 : 1;
+  const usedPosters = [];
+  let placedCount = 0;
+
+  while (placedCount < maxCount && candidates.length > 0) {
+    const candidateIndex = floor(random(candidates.length));
+    const candidate = candidates.splice(candidateIndex, 1)[0];
+    const availablePosters = candidate.fittingPosters.filter((poster) => !usedPosters.includes(poster));
+
+    if (availablePosters.length === 0) continue;
+
+    const poster = pick(availablePosters);
+
+    if (poster.type === "vertical") {
+      if (!canPlaceVerticalBackDecor(cells, candidate.row, candidate.col, poster.parts.length)) continue;
+      placeVerticalBackDecor(cells, candidate.row, candidate.col, poster.parts);
+    } else {
+      if (!canPlaceRectBackDecor(cells, candidate.row, candidate.col, poster.rows)) continue;
+      placeRectBackDecor(cells, candidate.row, candidate.col, poster.rows);
+    }
+
+    usedPosters.push(poster);
+    placedCount++;
   }
 }
 
