@@ -2,6 +2,7 @@
   const links = [
     { href: "single-building.html", label: "single building" },
     { href: "poster-generator.html", label: "create poster" },
+    { href: "ticket-generator.html", label: "create ticket" },
     { href: "random-street.html", label: "random street" },
     { href: "index.html", label: "sandbox" },
     { href: "gallery.html", label: "gallery" },

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Generator</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #efede7;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: calc(100vw - 96px);
+      max-height: calc(100vh - 140px);
+      width: min(630px, calc(100vw - 96px)) !important;
+      height: auto !important;
+    }
+
+    .ui {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .palette-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: white;
+    }
+
+    .palette-button {
+      border: 0;
+      background: transparent;
+      color: #222;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 32px;
+      padding: 0 11px 0 8px;
+      box-shadow: none;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .palette-button:hover {
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .palette-button.is-active {
+      background: #222;
+      color: #fff;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.16);
+    }
+
+    .palette-swatch {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .palette-label {
+      white-space: nowrap;
+    }
+
+    .palette-dot {
+      width: 13px;
+      height: 13px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 50%;
+      margin-left: -4px;
+    }
+
+    .palette-dot:first-child {
+      margin-left: 0;
+    }
+
+    .palette-button.is-active .palette-dot {
+      border-color: rgba(255, 255, 255, 0.72);
+    }
+  </style>
+  <link rel="stylesheet" href="shared-nav.css">
+</head>
+
+<body>
+  <div class="ui">
+    <button id="generateBtn">shuffle</button>
+    <div class="palette-controls" id="paletteControls" aria-label="ticket color scheme"></div>
+    <button id="saveBtn">save</button>
+  </div>
+
+  <script src="node_modules/p5/lib/p5.min.js"></script>
+  <script src="palettes.js"></script>
+
+  <script>
+    const TICKET_W = 1600;
+    const TICKET_H = 520;
+
+    const MARGIN_X = 64;
+    const MARGIN_Y = 48;
+
+    const COLS = 8;
+    const ROWS = 3;
+
+    const WORK_W = TICKET_W - MARGIN_X * 2;
+    const WORK_H = TICKET_H - MARGIN_Y * 2;
+    const COL_W = WORK_W / COLS;
+    const ROW_H = WORK_H / ROWS;
+
+    const THEME_LABELS = {
+      originalNeutral: "Neutral",
+      mutedBlue: "Blue",
+      monochrome: "B/W",
+    };
+
+    const ticketContent = {
+      title: "THE CITY THAT REMEMBERS FORWARD",
+      admit: "ADMIT ONE",
+      date: "38.07.2026, 19:30",
+      night: "OPENING NIGHT",
+      venue: "THE MUSEUM OF UNBUILT STREETS",
+      gate: "GATE: MEMORY",
+      seat: "SEAT: GENERATED",
+      number: "NO. 00038",
+      micro: "GENERATED ACCESS / UNBUILT STREETS / MEMORY-FORWARD ARCHIVE / VALID FOR ONE TEMPORARY CITY",
+    };
+
+    let buildings = [];
+    let currentBuilding = null;
+    let currentLayout = null;
+    let silhouetteCache = null;
+    let silhouetteCacheSource = null;
+    let silhouetteCacheColor = null;
+    const posterPaletteApi = createPosterPaletteApi();
+    let paletteAssignments = {};
+    let activePaletteId = posterPaletteApi.defaultPaletteId;
+    let paletteAssignment = getPaletteAssignment(activePaletteId);
+
+    function createPosterPaletteApi() {
+      if (
+        typeof COLOR_PALETTES !== "undefined" &&
+        typeof DEFAULT_PALETTE_ID !== "undefined" &&
+        typeof createPaletteAssignment === "function" &&
+        typeof hexToRgb === "function"
+      ) {
+        return {
+          colorPalettes: COLOR_PALETTES,
+          defaultPaletteId: DEFAULT_PALETTE_ID,
+          createPaletteAssignment,
+          hexToRgb,
+        };
+      }
+
+      const fallbackPalettes = {
+        originalNeutral: {
+          name: "Original / Neutral",
+          colors: ["#1C1C1C", "#F1EEE8", "#E7E0D3"],
+        },
+        mutedBlue: {
+          name: "Muted Blue",
+          colors: ["#AFC6D8", "#C7D6E2", "#E8E5DE"],
+        },
+        monochrome: {
+          name: "Monochrome",
+          colors: ["#000000", "#FFFFFF"],
+        },
+      };
+
+      return {
+        colorPalettes: fallbackPalettes,
+        defaultPaletteId: "originalNeutral",
+        createPaletteAssignment(paletteId) {
+          const palette = fallbackPalettes[paletteId] || fallbackPalettes.originalNeutral;
+          const background = palette.colors[1];
+          const textColor = palette.colors[0];
+
+          return {
+            id: palette === fallbackPalettes[paletteId] ? paletteId : "originalNeutral",
+            pageBackground: background,
+            headline: textColor,
+            bodyText: textColor,
+            secondaryText: textColor,
+            illustration: textColor,
+            illustrationAlt: textColor,
+            accent: textColor,
+            text: textColor,
+          };
+        },
+        hexToRgb(hexColor) {
+          const hex = hexColor.replace("#", "");
+          return [
+            parseInt(hex.slice(0, 2), 16),
+            parseInt(hex.slice(2, 4), 16),
+            parseInt(hex.slice(4, 6), 16),
+          ];
+        },
+      };
+    }
+
+    function setup() {
+      createCanvas(TICKET_W, TICKET_H);
+      pixelDensity(1);
+      imageMode(CORNER);
+      textFont("Arial");
+
+      document.getElementById("generateBtn").addEventListener("click", generateTicket);
+      setupPaletteControls();
+
+      document.getElementById("saveBtn").addEventListener("click", () => {
+        saveCanvas("generated_ticket", "png");
+      });
+
+      loadBuildingList();
+    }
+
+    function draw() {
+      drawTicket();
+    }
+
+    async function loadBuildingList() {
+      try {
+        const response = await fetch("/api/buildings");
+
+        if (!response.ok) {
+          throw new Error("Could not load saved building list");
+        }
+
+        const items = await response.json();
+        buildings = items
+          .map(normalizeSavedItem)
+          .filter((item) => {
+            if (item.imageSource) {
+              return true;
+            }
+
+            console.warn("Skipping saved item without an image source:", item);
+            return false;
+          });
+
+        if (!buildings.length) {
+          console.warn("No usable saved building images found. Using generated fallback artwork.");
+          generateTicketFallback();
+          return;
+        }
+
+        generateTicket();
+      } catch (error) {
+        console.error("Could not load buildings:", error);
+        generateTicketFallback();
+      }
+    }
+
+    function generateTicket() {
+      if (!buildings.length) {
+        console.warn("No usable saved building images found. Using generated fallback artwork.");
+        generateTicketFallback();
+        return;
+      }
+
+      resetCurrentPaletteAssignment();
+      const buildingData = pick(buildings);
+      const imageSource = getItemImageSource(buildingData);
+
+      if (!imageSource) {
+        console.warn("Saved item is missing an image source:", buildingData);
+        generateTicketFallback();
+        return;
+      }
+
+      loadImage(
+        imageSource,
+        (img) => {
+          currentBuilding = img;
+          currentLayout = createLayout();
+        },
+        (error) => {
+          console.warn("Could not load saved image source. Using generated fallback artwork.", imageSource, error);
+          generateTicketFallback();
+        }
+      );
+    }
+
+    function normalizeSavedItem(item) {
+      if (typeof item === "string") {
+        return {
+          filename: "saved item",
+          imageSource: item,
+        };
+      }
+
+      return {
+        ...item,
+        filename: item.filename || item.id || "saved item",
+        imageSource: getItemImageSource(item),
+      };
+    }
+
+    function getItemImageSource(item) {
+      return item.imageData || item.imageUrl || item.src || item.path || null;
+    }
+
+    function generateTicketFallback() {
+      resetCurrentPaletteAssignment();
+      currentBuilding = createFallbackBuildingImage();
+      currentLayout = createLayout();
+    }
+
+    function createFallbackBuildingImage() {
+      const pg = createGraphics(760, 420);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const buildingCount = floor(random(4, 8));
+      const streetY = pg.height - 36;
+      let x = 20;
+
+      for (let i = 0; i < buildingCount; i++) {
+        const w = random(70, 130);
+        const h = random(150, 330);
+        const y = streetY - h;
+        const hueStep = i % 3;
+        const wallColor = hueStep === 0 ? "#1C1C1C" : hueStep === 1 ? "#4D5A63" : "#7B6D5E";
+
+        pg.fill(wallColor);
+        pg.rect(x, y, w, h);
+        pg.fill("#F1EEE8");
+
+        for (let wy = y + 26; wy < streetY - 42; wy += 34) {
+          for (let wx = x + 14; wx < x + w - 20; wx += 28) {
+            if (random() > 0.18) {
+              pg.rect(wx, wy, 14, 18);
+            }
+          }
+        }
+
+        pg.fill("#F1EEE8");
+        pg.rect(x + w * 0.38, streetY - 48, w * 0.24, 48);
+        x += w + random(8, 22);
+      }
+
+      pg.fill("#1C1C1C");
+      pg.rect(0, streetY, pg.width, 12);
+
+      return pg;
+    }
+
+    function setupPaletteControls() {
+      const paletteControls = document.getElementById("paletteControls");
+
+      Object.entries(posterPaletteApi.colorPalettes).forEach(([paletteId, palette]) => {
+        const button = createThemeButton(paletteId, palette);
+        paletteControls.appendChild(button);
+      });
+
+      updatePaletteButtons();
+    }
+
+    function createThemeButton(paletteId, palette) {
+      const button = document.createElement("button");
+      const swatch = document.createElement("span");
+      const label = document.createElement("span");
+      const themeLabel = THEME_LABELS[paletteId] || palette.name;
+
+      button.className = "palette-button";
+      button.type = "button";
+      button.dataset.palette = paletteId;
+      button.title = palette.name;
+      button.setAttribute("aria-label", themeLabel);
+
+      swatch.className = "palette-swatch";
+      palette.colors.forEach((colorValue) => {
+        const dot = document.createElement("span");
+        dot.className = "palette-dot";
+        dot.style.background = colorValue;
+        swatch.appendChild(dot);
+      });
+
+      label.className = "palette-label";
+      label.textContent = themeLabel;
+
+      button.append(swatch, label);
+      button.addEventListener("click", () => {
+        activatePalette(paletteId);
+      });
+
+      return button;
+    }
+
+    function getPaletteAssignment(paletteId) {
+      if (!paletteAssignments[paletteId]) {
+        paletteAssignments[paletteId] = posterPaletteApi.createPaletteAssignment(paletteId);
+      }
+
+      return paletteAssignments[paletteId];
+    }
+
+    function activatePalette(paletteId) {
+      if (paletteId === activePaletteId) {
+        shuffleActivePaletteAssignment();
+        return;
+      }
+
+      activePaletteId = paletteId;
+      paletteAssignment = getPaletteAssignment(activePaletteId);
+      updatePaletteButtons();
+    }
+
+    function resetCurrentPaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+    }
+
+    function shuffleActivePaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+      updatePaletteButtons();
+    }
+
+    function createDifferentPaletteAssignment(paletteId, previousAssignment) {
+      let nextAssignment = posterPaletteApi.createPaletteAssignment(paletteId);
+      const previousKey = previousAssignment ? getPaletteAssignmentKey(previousAssignment) : null;
+
+      for (let tries = 0; previousKey && tries < 8; tries++) {
+        if (getPaletteAssignmentKey(nextAssignment) !== previousKey) {
+          return nextAssignment;
+        }
+
+        nextAssignment = posterPaletteApi.createPaletteAssignment(paletteId);
+      }
+
+      return nextAssignment;
+    }
+
+    function getPaletteAssignmentKey(assignment) {
+      return [
+        assignment.pageBackground,
+        assignment.headline,
+        assignment.bodyText,
+        assignment.secondaryText,
+        assignment.illustration,
+        assignment.accent,
+      ].join("|");
+    }
+
+    function updatePaletteButtons() {
+      Array.from(document.querySelectorAll(".palette-button")).forEach((button) => {
+        const isActive = button.dataset.palette === activePaletteId;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    function createLayout() {
+      return {
+        title: rectFromGrid(0, 0, 3, 2.24),
+        image: rectFromGrid(3.05, 0.15, 2.68, 2.7),
+        info: rectFromGrid(6.08, 0.27, 1.72, 2.36),
+        perforationX: MARGIN_X + COL_W * 5.85,
+        serialTop: `CTRF-${floor(random(10000, 99999))}-00038`,
+        serialBottom: `UNBUILT-${floor(random(1000, 9999))}/MEMORY`,
+      };
+    }
+
+    function drawTicket() {
+      background(paletteAssignment.pageBackground);
+
+      if (!currentLayout || !currentBuilding) {
+        fill(paletteAssignment.text);
+        noStroke();
+        textSize(20);
+        textAlign(LEFT, TOP);
+        text("Save buildings first, then shuffle.", MARGIN_X, MARGIN_Y);
+        return;
+      }
+
+      drawGridBands();
+      drawMicroText();
+      drawTitle(currentLayout.title, ticketContent.title);
+      drawImageBlock(currentBuilding, currentLayout.image);
+      drawPerforation(currentLayout.perforationX);
+      drawTicketInfo(currentLayout.info);
+      drawSerials();
+
+      // Uncomment for grid debug:
+      // drawGrid();
+    }
+
+    function drawGridBands() {
+      const bandColor = color(paletteAssignment.ground || paletteAssignment.illustrationAlt);
+      bandColor.setAlpha(paletteAssignment.id === "monochrome" ? 26 : 54);
+      noStroke();
+      fill(bandColor);
+      rect(rectFromGrid(0, 2.55, 5.85, 0.16).x, rectFromGrid(0, 2.55, 5.85, 0.16).y, rectFromGrid(0, 2.55, 5.85, 0.16).w, rectFromGrid(0, 2.55, 5.85, 0.16).h);
+      rect(rectFromGrid(6.05, 0, 1.95, 3).x, MARGIN_Y, rectFromGrid(6.05, 0, 1.95, 3).w, WORK_H);
+    }
+
+    function drawTitle(r, title) {
+      fill(paletteAssignment.headline);
+      noStroke();
+
+      const titleText = title.toUpperCase();
+      const fontSize = fitTitleSize(titleText, r, 78);
+      const leading = fontSize * 0.86;
+      const lines = wrapTextLines(titleText, r.w, fontSize);
+
+      textFont("Arial Black");
+      textSize(fontSize);
+      textLeading(leading);
+      textStyle(BOLD);
+      textAlign(LEFT, TOP);
+
+      lines.forEach((line, index) => {
+        text(line, r.x, r.y + index * leading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function drawImageBlock(img, r) {
+      if (!img) return;
+
+      const imageRect = getImageFitRect(img, r);
+      const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+      const accent = color(paletteAssignment.accent);
+      const ruleColor = color(paletteAssignment.secondaryText);
+
+      push();
+      drawingContext.save();
+      drawingContext.beginPath();
+      drawingContext.rect(r.x, r.y, r.w, r.h);
+      drawingContext.clip();
+
+      image(silhouette, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+
+      accent.setAlpha(paletteAssignment.id === "monochrome" ? 34 : 46);
+      fill(accent);
+      noStroke();
+      rect(r.x, r.y + r.h * 0.58, r.w, r.h * 0.32);
+
+      ruleColor.setAlpha(paletteAssignment.id === "monochrome" ? 180 : 112);
+      stroke(ruleColor);
+      strokeWeight(2);
+      line(r.x + r.w * 0.08, r.y + r.h * 0.83, r.x + r.w * 0.92, r.y + r.h * 0.83);
+      drawingContext.restore();
+      pop();
+    }
+
+    function getSilhouetteGraphic(img, silhouetteColor) {
+      if (
+        silhouetteCache &&
+        silhouetteCacheSource === img &&
+        silhouetteCacheColor === silhouetteColor
+      ) {
+        return silhouetteCache;
+      }
+
+      if (silhouetteCache) {
+        silhouetteCache.remove();
+      }
+
+      const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
+      const pg = createGraphics(img.width, img.height);
+
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.imageMode(CORNER);
+      pg.image(img, 0, 0, img.width, img.height);
+      pg.loadPixels();
+
+      for (let i = 0; i < pg.pixels.length; i += 4) {
+        const alpha = pg.pixels[i + 3];
+
+        if (alpha > 8) {
+          pg.pixels[i] = r;
+          pg.pixels[i + 1] = g;
+          pg.pixels[i + 2] = b;
+          pg.pixels[i + 3] = 255;
+        } else {
+          pg.pixels[i + 3] = 0;
+        }
+      }
+
+      pg.updatePixels();
+
+      silhouetteCache = pg;
+      silhouetteCacheSource = img;
+      silhouetteCacheColor = silhouetteColor;
+
+      return silhouetteCache;
+    }
+
+    function drawTicketInfo(r) {
+      noStroke();
+      fill(paletteAssignment.bodyText);
+      textAlign(LEFT, TOP);
+
+      textFont("Arial Black");
+      textStyle(BOLD);
+      textSize(30);
+      text(ticketContent.admit, r.x, r.y, r.w, 36);
+
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(19);
+      textLeading(25);
+      const detailText = [
+        ticketContent.date,
+        ticketContent.night,
+        "",
+        ticketContent.venue,
+        "",
+        ticketContent.gate,
+        ticketContent.seat,
+        ticketContent.number,
+      ].join("\n");
+      text(detailText, r.x, r.y + 70, r.w, r.h - 70);
+    }
+
+    function drawPerforation(x) {
+      const strokeColor = color(paletteAssignment.secondaryText);
+      strokeColor.setAlpha(paletteAssignment.id === "monochrome" ? 210 : 132);
+
+      stroke(strokeColor);
+      strokeWeight(2);
+      drawingContext.setLineDash([10, 14]);
+      line(x, MARGIN_Y, x, MARGIN_Y + WORK_H);
+      drawingContext.setLineDash([]);
+
+      noFill();
+      strokeWeight(1);
+      const notch = 22;
+      arc(x, MARGIN_Y, notch, notch, 0, PI);
+      arc(x, MARGIN_Y + WORK_H, notch, notch, PI, TWO_PI);
+    }
+
+    function drawMicroText() {
+      const textColor = color(paletteAssignment.secondaryText);
+      textColor.setAlpha(paletteAssignment.id === "monochrome" ? 170 : 118);
+
+      fill(textColor);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(9);
+      textAlign(LEFT, TOP);
+      text(ticketContent.micro, MARGIN_X, MARGIN_Y - 20);
+      text("8 COLUMN / 3 ROW ACCESS FIELD / ARCHIVE INDEX 00038", MARGIN_X, MARGIN_Y + WORK_H + 12);
+    }
+
+    function drawSerials() {
+      const serialColor = color(paletteAssignment.accent);
+      serialColor.setAlpha(paletteAssignment.id === "monochrome" ? 255 : 180);
+
+      fill(serialColor);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(11);
+      textAlign(LEFT, TOP);
+      text(currentLayout.serialTop, rectFromGrid(0, 2.73, 2.2, 0.18).x, rectFromGrid(0, 2.73, 2.2, 0.18).y);
+
+      push();
+      translate(TICKET_W - MARGIN_X + 14, MARGIN_Y + WORK_H);
+      rotate(-HALF_PI);
+      text(currentLayout.serialBottom, 0, 0);
+      pop();
+    }
+
+    function getImageFitRect(img, r) {
+      const scale = min(r.w / img.width, r.h / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const x = r.x + (r.w - drawW) / 2;
+      const y = r.y + (r.h - drawH) / 2;
+
+      return {
+        x,
+        y,
+        w: drawW,
+        h: drawH
+      };
+    }
+
+    function fitTitleSize(title, r, preferredSize) {
+      for (let size = preferredSize; size >= 42; size -= 2) {
+        const lines = wrapTextLines(title, r.w, size);
+        const leading = size * 0.86;
+        const textHeight = lines.length * leading;
+
+        if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
+          return size;
+        }
+      }
+
+      return 42;
+    }
+
+    function wrapTextLines(textValue, maxWidth, size) {
+      textFont("Arial Black");
+      textSize(size);
+
+      const words = textValue.split(" ");
+      const lines = [];
+      let currentLine = "";
+
+      for (let word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines;
+    }
+
+    function rectFromGrid(col, row, colSpan, rowSpan) {
+      return {
+        x: MARGIN_X + col * COL_W,
+        y: MARGIN_Y + row * ROW_H,
+        w: colSpan * COL_W,
+        h: rowSpan * ROW_H
+      };
+    }
+
+    function drawGrid() {
+      stroke(255, 0, 0, 60);
+      noFill();
+
+      for (let c = 0; c <= COLS; c++) {
+        const x = MARGIN_X + c * COL_W;
+        line(x, MARGIN_Y, x, MARGIN_Y + WORK_H);
+      }
+
+      for (let r = 0; r <= ROWS; r++) {
+        const y = MARGIN_Y + r * ROW_H;
+        line(MARGIN_X, y, MARGIN_X + WORK_W, y);
+      }
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+  </script>
+  <script src="shared-nav.js"></script>
+</body>
+</html>
