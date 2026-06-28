@@ -136,13 +136,42 @@
     const MARGIN_X = 64;
     const MARGIN_Y = 48;
 
-    const COLS = 8;
-    const ROWS = 3;
-
     const WORK_W = TICKET_W - MARGIN_X * 2;
     const WORK_H = TICKET_H - MARGIN_Y * 2;
-    const COL_W = WORK_W / COLS;
-    const ROW_H = WORK_H / ROWS;
+    const ZONE_GAP = 34;
+    const TITLE_ZONE_W = 470;
+    const IMAGE_ZONE_W = 520;
+    const INFO_ZONE_W = WORK_W - TITLE_ZONE_W - IMAGE_ZONE_W - ZONE_GAP * 2;
+
+    const TITLE_ZONE = {
+      x: MARGIN_X,
+      y: MARGIN_Y,
+      w: TITLE_ZONE_W,
+      h: WORK_H,
+    };
+
+    const IMAGE_ZONE = {
+      x: TITLE_ZONE.x + TITLE_ZONE.w + ZONE_GAP,
+      y: MARGIN_Y,
+      w: IMAGE_ZONE_W,
+      h: WORK_H,
+    };
+
+    const INFO_ZONE = {
+      x: IMAGE_ZONE.x + IMAGE_ZONE.w + ZONE_GAP,
+      y: MARGIN_Y,
+      w: INFO_ZONE_W,
+      h: WORK_H,
+    };
+
+    const MAIN_ZONE = {
+      x: TITLE_ZONE.x,
+      y: MARGIN_Y,
+      w: TITLE_ZONE.w + IMAGE_ZONE.w + ZONE_GAP,
+      h: WORK_H,
+    };
+
+    const PERFORATION_X = INFO_ZONE.x - ZONE_GAP * 0.5;
 
     const THEME_LABELS = {
       originalNeutral: "Neutral",
@@ -152,18 +181,18 @@
 
     const ticketContent = {
       title: "THE CITY THAT REMEMBERS FORWARD",
-      admit: "ADMIT ONE",
-      date: "38.07.2026, 19:30",
-      night: "OPENING NIGHT",
-      venue: "THE MUSEUM OF UNBUILT STREETS",
-      gate: "GATE: MEMORY",
-      seat: "SEAT: GENERATED",
-      number: "NO. 00038",
+      infoLabel: "EXHIBITION",
+      date: "20 JULY 2026",
+      venue: "Faculty for Design\nMunich University of Applied Sciences",
+      gate: "Lothstraße 17",
+      seat: "80335 Munich",
+      number: "",
       micro: "GENERATED ACCESS / UNBUILT STREETS / MEMORY-FORWARD ARCHIVE / VALID FOR ONE TEMPORARY CITY",
     };
 
     let buildings = [];
     let currentBuilding = null;
+    let currentBuildingIsFallback = false;
     let currentLayout = null;
     let silhouetteCache = null;
     let silhouetteCacheSource = null;
@@ -308,6 +337,7 @@
         imageSource,
         (img) => {
           currentBuilding = img;
+          currentBuildingIsFallback = false;
           currentLayout = createLayout();
         },
         (error) => {
@@ -339,6 +369,7 @@
     function generateTicketFallback() {
       resetCurrentPaletteAssignment();
       currentBuilding = createFallbackBuildingImage();
+      currentBuildingIsFallback = true;
       currentLayout = createLayout();
     }
 
@@ -489,13 +520,168 @@
     }
 
     function createLayout() {
+      const mode = pick(["classic", "swapped", "bigCity", "bigTitle"]);
+      const zones = createModeZones(mode);
+      const titleVariant = pick([
+        ["THE CITY", "THAT", "REMEMBERS", "FORWARD"],
+        ["THE CITY THAT", "REMEMBERS", "FORWARD"],
+        ["THE CITY", "THAT REMEMBERS", "FORWARD"],
+      ]);
+      const titleSize = random(zones.titleSize[0], zones.titleSize[1]);
+      const titleLeading = random(0.78, 0.88);
+      const titleHeight = titleVariant.length * titleSize * titleLeading;
+      const titleY = zones.title.y + random(0, max(2, zones.title.h - titleHeight));
+      const imageW = zones.image.w * random(zones.imageScale[0], zones.imageScale[1]);
+      const imageH = zones.image.h * random(zones.imageHeight[0], zones.imageHeight[1]);
+      const imageX = zones.image.x + (zones.image.w - imageW) / 2 + random(zones.imageJitterX[0], zones.imageJitterX[1]);
+      const imageY = zones.image.y + (zones.image.h - imageH) / 2 + random(zones.imageJitterY[0], zones.imageJitterY[1]);
+      const infoInsetX = random(22, 42);
+      const infoY = INFO_ZONE.y + random(44, 72);
+      const infoAlign = random() < 0.82 ? LEFT : RIGHT;
+
       return {
-        title: rectFromGrid(0, 0, 3, 2.24),
-        image: rectFromGrid(3.05, 0.15, 2.68, 2.7),
-        info: rectFromGrid(6.08, 0.27, 1.72, 2.36),
-        perforationX: MARGIN_X + COL_W * 5.85,
+        mode,
+        title: {
+          rect: {
+            x: zones.title.x + random(0, zones.titleJitterX),
+            y: titleY,
+            w: zones.title.w - zones.titlePadRight,
+            h: zones.title.h - (titleY - zones.title.y),
+          },
+          lines: titleVariant,
+          size: titleSize,
+          leadingRatio: titleLeading,
+        },
+        image: {
+          x: constrain(imageX, zones.image.x, zones.image.x + zones.image.w - imageW),
+          y: constrain(imageY, zones.image.y, zones.image.y + zones.image.h - imageH),
+          w: imageW,
+          h: imageH,
+        },
+        info: {
+          x: INFO_ZONE.x + infoInsetX,
+          y: infoY,
+          w: INFO_ZONE.w - infoInsetX - 22,
+          h: INFO_ZONE.h - (infoY - INFO_ZONE.y) - 36,
+          align: infoAlign,
+          leading: random(22, 26),
+          bodySize: random(17, 19),
+        },
+        perforationX: PERFORATION_X,
+        microTop: {
+          x: MAIN_ZONE.x + random(0, 24),
+          y: MARGIN_Y - random(14, 22),
+        },
+        microBottom: {
+          x: MAIN_ZONE.x + random(0, 18),
+          y: MARGIN_Y + WORK_H + random(8, 15),
+        },
+        serialTopPos: {
+          x: MAIN_ZONE.x + random(0, 18),
+          y: MARGIN_Y + WORK_H - random(44, 66),
+        },
+        serialSideY: MARGIN_Y + WORK_H - random(0, 22),
         serialTop: `CTRF-${floor(random(10000, 99999))}-00038`,
         serialBottom: `UNBUILT-${floor(random(1000, 9999))}/MEMORY`,
+      };
+    }
+
+    function createModeZones(mode) {
+      const mainTop = MARGIN_Y + 16;
+      const mainBottom = MARGIN_Y + WORK_H - 24;
+
+      if (mode === "swapped") {
+        return {
+          title: {
+            x: IMAGE_ZONE.x + 10,
+            y: mainTop + 18,
+            w: IMAGE_ZONE.w - 18,
+            h: WORK_H - 96,
+          },
+          image: {
+            x: TITLE_ZONE.x,
+            y: mainTop + 12,
+            w: TITLE_ZONE.w,
+            h: WORK_H - 68,
+          },
+          titleSize: [58, 72],
+          titleJitterX: 14,
+          titlePadRight: 18,
+          imageScale: [0.84, 0.98],
+          imageHeight: [0.66, 0.88],
+          imageJitterX: [-18, 18],
+          imageJitterY: [-16, 22],
+        };
+      }
+
+      if (mode === "bigCity") {
+        return {
+          title: {
+            x: MAIN_ZONE.x + 18,
+            y: mainTop,
+            w: MAIN_ZONE.w * 0.48,
+            h: WORK_H * 0.32,
+          },
+          image: {
+            x: MAIN_ZONE.x,
+            y: MARGIN_Y + WORK_H * 0.44,
+            w: MAIN_ZONE.w - 12,
+            h: WORK_H * 0.44,
+          },
+          titleSize: [40, 52],
+          titleJitterX: 12,
+          titlePadRight: 14,
+          imageScale: [0.92, 1],
+          imageHeight: [0.7, 1],
+          imageJitterX: [-12, 12],
+          imageJitterY: [-12, 10],
+        };
+      }
+
+      if (mode === "bigTitle") {
+        return {
+          title: {
+            x: MAIN_ZONE.x,
+            y: mainTop + 4,
+            w: MAIN_ZONE.w - 18,
+            h: WORK_H * 0.56,
+          },
+          image: {
+            x: MAIN_ZONE.x + MAIN_ZONE.w * 0.48,
+            y: mainBottom - WORK_H * 0.24,
+            w: MAIN_ZONE.w * 0.48,
+            h: WORK_H * 0.22,
+          },
+          titleSize: [82, 106],
+          titleJitterX: 16,
+          titlePadRight: 24,
+          imageScale: [0.74, 0.96],
+          imageHeight: [0.72, 1],
+          imageJitterX: [-18, 16],
+          imageJitterY: [-8, 8],
+        };
+      }
+
+      return {
+        title: {
+          x: TITLE_ZONE.x,
+          y: mainTop,
+          w: TITLE_ZONE.w,
+          h: WORK_H - 82,
+        },
+        image: {
+          x: IMAGE_ZONE.x,
+          y: mainTop + 18,
+          w: IMAGE_ZONE.w,
+          h: WORK_H - 84,
+        },
+        titleSize: [62, 78],
+        titleJitterX: 18,
+        titlePadRight: 22,
+        imageScale: [0.82, 0.98],
+        imageHeight: [0.62, 0.82],
+        imageJitterX: [-22, 22],
+        imageJitterY: [-18, 24],
       };
     }
 
@@ -511,25 +697,12 @@
         return;
       }
 
-      drawGridBands();
       drawMicroText();
       drawTitle(currentLayout.title, ticketContent.title);
       drawImageBlock(currentBuilding, currentLayout.image);
       drawPerforation(currentLayout.perforationX);
       drawTicketInfo(currentLayout.info);
       drawSerials();
-
-      // Uncomment for grid debug:
-      // drawGrid();
-    }
-
-    function drawGridBands() {
-      const bandColor = color(paletteAssignment.ground || paletteAssignment.illustrationAlt);
-      bandColor.setAlpha(paletteAssignment.id === "monochrome" ? 26 : 54);
-      noStroke();
-      fill(bandColor);
-      rect(rectFromGrid(0, 2.55, 5.85, 0.16).x, rectFromGrid(0, 2.55, 5.85, 0.16).y, rectFromGrid(0, 2.55, 5.85, 0.16).w, rectFromGrid(0, 2.55, 5.85, 0.16).h);
-      rect(rectFromGrid(6.05, 0, 1.95, 3).x, MARGIN_Y, rectFromGrid(6.05, 0, 1.95, 3).w, WORK_H);
     }
 
     function drawTitle(r, title) {
@@ -537,9 +710,9 @@
       noStroke();
 
       const titleText = title.toUpperCase();
-      const fontSize = fitTitleSize(titleText, r, 78);
-      const leading = fontSize * 0.86;
-      const lines = wrapTextLines(titleText, r.w, fontSize);
+      const lines = r.lines || wrapTextLines(titleText, r.rect.w, r.size || 78);
+      const fontSize = fitTitleLines(lines, r.rect, r.size || 78, r.leadingRatio || 0.86);
+      const leading = fontSize * (r.leadingRatio || 0.86);
 
       textFont("Arial Black");
       textSize(fontSize);
@@ -548,7 +721,7 @@
       textAlign(LEFT, TOP);
 
       lines.forEach((line, index) => {
-        text(line, r.x, r.y + index * leading);
+        text(line, r.rect.x, r.rect.y + index * leading);
       });
 
       textStyle(NORMAL);
@@ -559,9 +732,6 @@
       if (!img) return;
 
       const imageRect = getImageFitRect(img, r);
-      const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
-      const accent = color(paletteAssignment.accent);
-      const ruleColor = color(paletteAssignment.secondaryText);
 
       push();
       drawingContext.save();
@@ -569,17 +739,19 @@
       drawingContext.rect(r.x, r.y, r.w, r.h);
       drawingContext.clip();
 
-      image(silhouette, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      if (currentBuildingIsFallback || paletteAssignment.id === "monochrome") {
+        const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+        image(silhouette, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      } else if (paletteAssignment.id !== "originalNeutral") {
+        const tintColor = posterPaletteApi.hexToRgb(paletteAssignment.illustration);
+        push();
+        tint(tintColor[0], tintColor[1], tintColor[2]);
+        image(img, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+        pop();
+      } else {
+        image(img, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      }
 
-      accent.setAlpha(paletteAssignment.id === "monochrome" ? 34 : 46);
-      fill(accent);
-      noStroke();
-      rect(r.x, r.y + r.h * 0.58, r.w, r.h * 0.32);
-
-      ruleColor.setAlpha(paletteAssignment.id === "monochrome" ? 180 : 112);
-      stroke(ruleColor);
-      strokeWeight(2);
-      line(r.x + r.w * 0.08, r.y + r.h * 0.83, r.x + r.w * 0.92, r.y + r.h * 0.83);
       drawingContext.restore();
       pop();
     }
@@ -631,28 +803,29 @@
     function drawTicketInfo(r) {
       noStroke();
       fill(paletteAssignment.bodyText);
-      textAlign(LEFT, TOP);
+      textAlign(r.align || LEFT, TOP);
 
       textFont("Arial Black");
       textStyle(BOLD);
-      textSize(30);
-      text(ticketContent.admit, r.x, r.y, r.w, 36);
+      textSize(28);
+      textLeading(26);
+      text(ticketContent.infoLabel, r.x, r.y, r.w, 34);
 
       textFont("Arial");
       textStyle(NORMAL);
-      textSize(19);
-      textLeading(25);
+      textSize(r.bodySize || 18);
+      textLeading(r.leading || 24);
+      text(ticketContent.date, r.x, r.y + 44, r.w, 24);
+
+      textSize(r.bodySize || 18);
+      textLeading(r.leading || 24);
       const detailText = [
-        ticketContent.date,
-        ticketContent.night,
-        "",
         ticketContent.venue,
         "",
         ticketContent.gate,
         ticketContent.seat,
-        ticketContent.number,
       ].join("\n");
-      text(detailText, r.x, r.y + 70, r.w, r.h - 70);
+      text(detailText, r.x, r.y + 112, r.w, r.h - 112);
     }
 
     function drawPerforation(x) {
@@ -664,12 +837,6 @@
       drawingContext.setLineDash([10, 14]);
       line(x, MARGIN_Y, x, MARGIN_Y + WORK_H);
       drawingContext.setLineDash([]);
-
-      noFill();
-      strokeWeight(1);
-      const notch = 22;
-      arc(x, MARGIN_Y, notch, notch, 0, PI);
-      arc(x, MARGIN_Y + WORK_H, notch, notch, PI, TWO_PI);
     }
 
     function drawMicroText() {
@@ -682,8 +849,8 @@
       textStyle(NORMAL);
       textSize(9);
       textAlign(LEFT, TOP);
-      text(ticketContent.micro, MARGIN_X, MARGIN_Y - 20);
-      text("8 COLUMN / 3 ROW ACCESS FIELD / ARCHIVE INDEX 00038", MARGIN_X, MARGIN_Y + WORK_H + 12);
+      text(ticketContent.micro, currentLayout.microTop.x, currentLayout.microTop.y);
+      text("THREE-ZONE TICKET FIELD / ARCHIVE INDEX 00038", currentLayout.microBottom.x, currentLayout.microBottom.y);
     }
 
     function drawSerials() {
@@ -696,10 +863,10 @@
       textStyle(NORMAL);
       textSize(11);
       textAlign(LEFT, TOP);
-      text(currentLayout.serialTop, rectFromGrid(0, 2.73, 2.2, 0.18).x, rectFromGrid(0, 2.73, 2.2, 0.18).y);
+      text(currentLayout.serialTop, currentLayout.serialTopPos.x, currentLayout.serialTopPos.y);
 
       push();
-      translate(TICKET_W - MARGIN_X + 14, MARGIN_Y + WORK_H);
+      translate(TICKET_W - MARGIN_X + 14, currentLayout.serialSideY);
       rotate(-HALF_PI);
       text(currentLayout.serialBottom, 0, 0);
       pop();
@@ -720,10 +887,11 @@
       };
     }
 
-    function fitTitleSize(title, r, preferredSize) {
+    function fitTitleLines(lines, r, preferredSize, leadingRatio) {
       for (let size = preferredSize; size >= 42; size -= 2) {
-        const lines = wrapTextLines(title, r.w, size);
-        const leading = size * 0.86;
+        textFont("Arial Black");
+        textSize(size);
+        const leading = size * leadingRatio;
         const textHeight = lines.length * leading;
 
         if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
@@ -758,30 +926,6 @@
       }
 
       return lines;
-    }
-
-    function rectFromGrid(col, row, colSpan, rowSpan) {
-      return {
-        x: MARGIN_X + col * COL_W,
-        y: MARGIN_Y + row * ROW_H,
-        w: colSpan * COL_W,
-        h: rowSpan * ROW_H
-      };
-    }
-
-    function drawGrid() {
-      stroke(255, 0, 0, 60);
-      noFill();
-
-      for (let c = 0; c <= COLS; c++) {
-        const x = MARGIN_X + c * COL_W;
-        line(x, MARGIN_Y, x, MARGIN_Y + WORK_H);
-      }
-
-      for (let r = 0; r <= ROWS; r++) {
-        const y = MARGIN_Y + r * ROW_H;
-        line(MARGIN_X, y, MARGIN_X + WORK_W, y);
-      }
     }
 
     function pick(arr) {
