@@ -3,163 +3,316 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Almost Tomorrow City Generator</title>
+  <title>the city that remebers</title>
   <style>
+    :root {
+      --bg-1: #f4efe7;
+      --bg-2: #ddd3c4;
+      --ink: #151311;
+      --muted: rgba(21, 19, 17, 0.66);
+      --panel: rgba(255, 255, 255, 0.72);
+      --panel-border: rgba(0, 0, 0, 0.1);
+      --accent: #151311;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      background: #e8e3dc;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.7), transparent 28%),
+        radial-gradient(circle at 88% 18%, rgba(220, 196, 156, 0.5), transparent 24%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .backdrop-shape {
+      position: fixed;
+      inset: auto;
+      border-radius: 999px;
+      filter: blur(10px);
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .shape-a {
+      width: 380px;
+      height: 380px;
+      left: -110px;
+      bottom: -120px;
+      background: rgba(25, 22, 18, 0.06);
+    }
+
+    .shape-b {
+      width: 220px;
+      height: 220px;
+      right: 9vw;
+      top: 120px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .home {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 26px;
+      align-items: stretch;
+      padding: 28px;
+      box-sizing: border-box;
+    }
+
+    .hero {
+      display: grid;
+      align-content: space-between;
+      gap: 32px;
+      min-height: calc(100vh - 56px);
+      padding: 26px;
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.36));
+      backdrop-filter: blur(16px);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.06);
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 9ch;
+      font-size: clamp(58px, 10vw, 132px);
+      line-height: 0.92;
+      letter-spacing: -0.05em;
+      text-transform: lowercase;
+      font-weight: 700;
+    }
+
+    .lede {
+      max-width: 560px;
+      margin-top: 22px;
+      font-family: Arial, sans-serif;
+      font-size: clamp(16px, 2vw, 22px);
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .intro-card {
+      max-width: 560px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.58);
       font-family: Arial, sans-serif;
     }
 
-    canvas {
+    .intro-card strong {
       display: block;
-    }
-
-    .ui {
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      z-index: 10;
-      width: 280px;
-    }
-
-    .ui.is-collapsed {
-      width: auto;
-    }
-
-    .ui-header {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .title {
-      color: #222;
+      margin-bottom: 6px;
       font-size: 13px;
-      letter-spacing: 0.02em;
-      opacity: 0.82;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
-    .ui-content {
-      max-height: calc(100vh - 88px);
-      overflow-y: auto;
-      padding: 16px;
-      box-sizing: border-box;
-      background: rgba(255,255,255,0.72);
-      border: 1px solid rgba(0,0,0,0.08);
-      border-radius: 18px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+    .intro-card p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
     }
 
-    .panel-toggle {
-      appearance: none;
-      border: 1px solid rgba(0,0,0,0.12);
-      background: rgba(255,255,255,0.78);
-      color: #222;
-      min-width: 34px;
-      height: 36px;
-      padding: 0 9px;
-      border-radius: 999px;
-      font-size: 15px;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    .panel-toggle:hover {
-      background: rgba(255,255,255,0.95);
-    }
-
-    .ui.is-collapsed .ui-header {
-      margin-bottom: 0;
-    }
-
-    .ui.is-collapsed .title,
-    .ui.is-collapsed .ui-content {
-      display: none;
-    }
-
-    .control {
-      margin-bottom: 12px;
-    }
-
-    .control-row {
+    .cta-row {
       display: flex;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .cta {
+      appearance: none;
+      display: inline-flex;
       align-items: center;
-      margin-bottom: 5px;
-      color: #222;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--ink);
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      text-decoration: none;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .cta:hover {
+      transform: translateY(-1px);
+      background: #fff;
+    }
+
+    .card-column {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .feature-card {
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(14px);
+    }
+
+    .feature-card h2 {
+      margin: 0 0 10px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .feature-card p {
+      margin: 0 0 14px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .link-grid a {
+      display: block;
+      padding: 14px 14px 13px;
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.66);
+      color: var(--ink);
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .link-grid a:hover {
+      transform: translateY(-1px);
+      background: #fff;
+    }
+
+    .link-grid a span {
+      display: block;
       font-size: 12px;
-      opacity: 0.82;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
     }
 
-    .control-hint {
-      margin-top: 3px;
-      color: #222;
-      font-size: 10px;
+    .link-grid a strong {
+      font-size: 15px;
       line-height: 1.3;
-      opacity: 0.48;
     }
 
-    input[type="range"] {
-      width: 100%;
-      accent-color: #222;
+    .note-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      font-family: Arial, sans-serif;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .home {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .link-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>
 <body>
-  <div class="ui is-collapsed">
-    <div class="ui-header">
-      <button class="panel-toggle" type="button" aria-label="expand controls" aria-expanded="false">⋮</button>
-      <div class="title">sandbox</div>
-    </div>
+  <div class="backdrop-shape shape-a"></div>
+  <div class="backdrop-shape shape-b"></div>
 
-    <div class="ui-content">
-      <div class="control">
-        <div class="control-row">
-          <span>warmth</span>
-          <span id="warmthValue">0.50</span>
+  <main class="home">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Generative exhibition website</p>
+        <h1>the city that remebers</h1>
+        <p class="lede">
+          Explore a small city archive made from p5.js generators, saved facades, social media compositions, and printable exhibition assets.
+        </p>
+        <div class="intro-card">
+          <strong>What you can try</strong>
+          <p>
+            Build a single house, generate a moving street, compose a poster, create an Instagram-style post, or design an exhibition ticket. Save your favourites and collect them in the gallery.
+          </p>
         </div>
-        <input id="warmthSlider" type="range" min="0" max="1" step="0.01" value="0.50" />
-        <div class="control-hint">cold to warm color</div>
+        <div class="cta-row">
+          <a class="cta" href="sandbox.html">Open sandbox</a>
+          <a class="cta" href="gallery.html">View gallery</a>
+          <a class="cta" href="ticket-generator.html">Ticket generator</a>
+        </div>
       </div>
 
-      <div class="control">
-        <div class="control-row">
-          <span>density</span>
-          <span id="densityValue">0.50</span>
-        </div>
-        <input id="densitySlider" type="range" min="0" max="1" step="0.01" value="0.50" />
-        <div class="control-hint">open to compact city</div>
+      <div class="footer-note">
+        Tip: start with the sandbox to tweak the city, then save outputs from the other generators so they appear in the gallery.
       </div>
+    </section>
 
-      <div class="control">
-        <div class="control-row">
-          <span>decoration</span>
-          <span id="decorationValue">0.35</span>
+    <aside class="card-column">
+      <section class="feature-card">
+        <h2>Generators</h2>
+        <p>Each page focuses on a different output format, from the large poster to the social post and the new ticket system.</p>
+        <div class="link-grid">
+          <a href="single-building.html"><span>01</span><strong>Single building</strong></a>
+          <a href="random-street.html"><span>02</span><strong>Random street</strong></a>
+          <a href="poster-generator.html"><span>03</span><strong>Poster</strong></a>
+          <a href="instagram-post.html"><span>04</span><strong>Instagram 4:5</strong></a>
+          <a href="ticket-generator.html"><span>05</span><strong>Ticket generator</strong></a>
+          <a href="gallery.html"><span>06</span><strong>Gallery</strong></a>
         </div>
-        <input id="decorationSlider" type="range" min="0" max="1" step="0.01" value="0.35" />
-        <div class="control-hint">plain to detailed</div>
-      </div>
+      </section>
 
-      <div class="control">
-        <div class="control-row">
-          <span>glow</span>
-          <span id="glowValue">0.45</span>
-        </div>
-        <input id="glowSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
-        <div class="control-hint">dark to lit windows</div>
-      </div>
-
-      <div class="control">
-        <div class="control-row">
-          <span>order</span>
-          <span id="orderValue">0.45</span>
+      <section class="feature-card">
+        <h2>How it works</h2>
+        <div class="note-list">
+          <div>1. Generate a city image on one of the generator pages.</div>
+          <div>2. Use the save button to store the PNG through the local server.</div>
+          <div>3. Open the gallery to see saved buildings, streets, and visual experiments.</div>
         </div>
         <input id="orderSlider" type="range" min="0" max="1" step="0.01" value="0.45" />
         <div class="control-hint">loose to regular grid</div>

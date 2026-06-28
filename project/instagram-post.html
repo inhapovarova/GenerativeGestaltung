@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram 4:5 Generator</title>
+  <style>
+    :root {
+      --bg: #ece7df;
+      --panel: rgba(255, 255, 255, 0.8);
+      --border: rgba(0, 0, 0, 0.12);
+      --text: #1f1e1b;
+      --muted: rgba(31, 30, 27, 0.62);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) 1fr;
+      gap: 18px;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .controls {
+      align-self: start;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .controls h1 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      font-weight: 600;
+    }
+
+    .controls p {
+      margin: 0 0 14px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .field {
+      margin-bottom: 11px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      padding: 8px 9px;
+      outline: none;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 56px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 8px 0 14px;
+      font-size: 12px;
+    }
+
+    .checkbox input {
+      accent-color: #222;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      appearance: none;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      padding: 9px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #fff;
+    }
+
+    .canvas-wrap {
+      display: grid;
+      place-items: start center;
+      min-height: calc(100vh - 36px);
+      padding-top: 12px;
+      overflow: auto;
+    }
+
+    canvas {
+      display: block;
+      width: min(100%, 720px) !important;
+      height: auto !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      .canvas-wrap {
+        min-height: 0;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="shared-nav.css">
+</head>
+<body>
+  <aside class="controls">
+    <h1>instagram 4:5 post</h1>
+    <p>Editable text, randomized saved image, and multiple exhibition identity layout variants.</p>
+
+    <div class="field">
+      <label for="headlineInput">Headline</label>
+      <input id="headlineInput" type="text" value="THE CITY THAT REMEMBERS" />
+    </div>
+
+    <div class="field">
+      <label for="subtitleInput">Subtitle / poetic line</label>
+      <textarea id="subtitleInput">Windows repeat like thoughts.</textarea>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="smallInfoInput">Date / archive no.</label>
+        <input id="smallInfoInput" type="text" value="ARCHIVE 38.07.2026" />
+      </div>
+
+      <div class="field">
+        <label for="contentTypeSelect">Image source</label>
+        <select id="contentTypeSelect">
+          <option value="any">building or street</option>
+          <option value="building">building only</option>
+          <option value="street">street only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="variantSelect">Layout variant</label>
+        <select id="variantSelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="paletteSelect">Palette</label>
+        <select id="paletteSelect"></select>
+      </div>
+    </div>
+
+    <label class="checkbox" for="showInfoToggle">
+      <input id="showInfoToggle" type="checkbox" checked />
+      show date / archive number
+    </label>
+
+    <div class="buttons">
+      <button id="shuffleBtn" type="button">shuffle</button>
+      <button id="exportBtn" type="button">save png</button>
+    </div>
+  </aside>
+
+  <main class="canvas-wrap" id="canvasWrap"></main>
+
+  <script src="/node_modules/p5/lib/p5.min.js"></script>
+  <script src="palettes.js"></script>
+  <script src="shared-nav.js"></script>
+  <script>
+    const CANVAS_W = 1080;
+    const CANVAS_H = 1350;
+
+    const VARIANTS = {
+      titleTopSmallImageBottom: {
+        label: "Large title top, small image bottom",
+        draw: drawTitleTopSmallImageBottom,
+      },
+      streetTopTitleCenter: {
+        label: "Street fragment top, large title center",
+        draw: drawStreetTopTitleCenter,
+      },
+      tinyObjectBigDate: {
+        label: "Tiny object, big date",
+        draw: drawTinyObjectBigDate,
+      },
+      fullWidthStreetMinimal: {
+        label: "Full-width street crop, minimal text",
+        draw: drawFullWidthStreetMinimal,
+      },
+      archiveCard: {
+        label: "Archive card with parameters",
+        draw: drawArchiveCard,
+      },
+    };
+
+    const state = {
+      items: [],
+      currentItem: null,
+      currentImage: null,
+      activeVariant: "titleTopSmallImageBottom",
+      activePaletteId: typeof DEFAULT_PALETTE_ID !== "undefined" ? DEFAULT_PALETTE_ID : "originalNeutral",
+      paletteAssignment: null,
+      typography: {
+        headline: 142,
+        subtitle: 40,
+        small: 24,
+        giant: 180,
+      },
+      text: {
+        headline: "THE CITY THAT REMEMBERS",
+        subtitle: "Windows repeat like thoughts.",
+        smallInfo: "ARCHIVE 38.07.2026",
+      },
+      typeFilter: "any",
+      showSmallInfo: true,
+    };
+
+    const ui = {
+      headlineInput: document.getElementById("headlineInput"),
+      subtitleInput: document.getElementById("subtitleInput"),
+      smallInfoInput: document.getElementById("smallInfoInput"),
+      contentTypeSelect: document.getElementById("contentTypeSelect"),
+      variantSelect: document.getElementById("variantSelect"),
+      paletteSelect: document.getElementById("paletteSelect"),
+      showInfoToggle: document.getElementById("showInfoToggle"),
+      shuffleBtn: document.getElementById("shuffleBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      canvasWrap: document.getElementById("canvasWrap"),
+    };
+
+    function setup() {
+      const canvas = createCanvas(CANVAS_W, CANVAS_H);
+      canvas.parent(ui.canvasWrap);
+      noLoop();
+      textFont("Arial");
+      textAlign(LEFT, TOP);
+
+      hydrateSelects();
+      bindUi();
+      refreshPalette();
+      loadSavedItems();
+    }
+
+    function draw() {
+      if (!state.paletteAssignment) {
+        return;
+      }
+
+      const variant = VARIANTS[state.activeVariant];
+      const assignment = state.paletteAssignment;
+
+      background(assignment.pageBackground);
+      drawAtmosphere(assignment);
+      variant.draw(assignment, state.currentImage);
+    }
+
+    function hydrateSelects() {
+      Object.entries(VARIANTS).forEach(([value, config]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = config.label;
+        ui.variantSelect.appendChild(option);
+      });
+
+      ui.variantSelect.value = state.activeVariant;
+
+      const palettes = typeof COLOR_PALETTES !== "undefined" ? COLOR_PALETTES : { originalNeutral: { name: "Original" } };
+
+      Object.entries(palettes).forEach(([paletteId, palette]) => {
+        const option = document.createElement("option");
+        option.value = paletteId;
+        option.textContent = palette.name;
+        ui.paletteSelect.appendChild(option);
+      });
+
+      ui.paletteSelect.value = state.activePaletteId;
+    }
+
+    function bindUi() {
+      ui.headlineInput.addEventListener("input", () => {
+        state.text.headline = ui.headlineInput.value.trim() || "THE CITY THAT REMEMBERS";
+        redraw();
+      });
+
+      ui.subtitleInput.addEventListener("input", () => {
+        state.text.subtitle = ui.subtitleInput.value.trim() || "Windows repeat like thoughts.";
+        redraw();
+      });
+
+      ui.smallInfoInput.addEventListener("input", () => {
+        state.text.smallInfo = ui.smallInfoInput.value.trim() || "ARCHIVE 38.07.2026";
+        redraw();
+      });
+
+      ui.contentTypeSelect.addEventListener("change", () => {
+        state.typeFilter = ui.contentTypeSelect.value;
+        pickRandomItem();
+      });
+
+      ui.variantSelect.addEventListener("change", () => {
+        state.activeVariant = ui.variantSelect.value;
+        redraw();
+      });
+
+      ui.paletteSelect.addEventListener("change", () => {
+        state.activePaletteId = ui.paletteSelect.value;
+        refreshPalette();
+        redraw();
+      });
+
+      ui.showInfoToggle.addEventListener("change", () => {
+        state.showSmallInfo = ui.showInfoToggle.checked;
+        redraw();
+      });
+
+      ui.shuffleBtn.addEventListener("click", () => {
+        state.activeVariant = randomArrayItem(Object.keys(VARIANTS));
+        ui.variantSelect.value = state.activeVariant;
+        pickRandomItem();
+      });
+
+      ui.exportBtn.addEventListener("click", () => {
+        saveInstagramToGallery();
+      });
+    }
+
+    function refreshPalette() {
+      if (typeof createPaletteAssignment === "function") {
+        state.paletteAssignment = createPaletteAssignment(state.activePaletteId);
+      } else {
+        state.paletteAssignment = {
+          pageBackground: "#f1eee8",
+          headline: "#1c1c1c",
+          bodyText: "#1c1c1c",
+          secondaryText: "#1c1c1c",
+          illustration: "#1c1c1c",
+          illustrationAlt: "#e7e0d3",
+          accent: "#1c1c1c",
+        };
+      }
+    }
+
+    async function loadSavedItems() {
+      try {
+        const response = await fetch("/api/buildings");
+
+        if (!response.ok) {
+          throw new Error("Could not load saved items");
+        }
+
+        const items = await response.json();
+        state.items = items
+          .map(normalizeSavedItem)
+          .filter((item) => Boolean(item.imageSource));
+      } catch (error) {
+        console.error(error);
+        state.items = [];
+      }
+
+      pickRandomItem();
+    }
+
+    function normalizeSavedItem(item) {
+      if (typeof item === "string") {
+        return {
+          type: "building",
+          imageSource: item,
+          id: "legacy-item",
+          createdAt: null,
+          filename: "saved_item.png",
+          parameters: {},
+        };
+      }
+
+      const imageSource = item.imageUrl || item.path || item.src || item.imageData || null;
+
+      return {
+        ...item,
+        type: item.type === "street" ? "street" : "building",
+        imageSource,
+        parameters: item.parameters || {},
+      };
+    }
+
+    function pickRandomItem() {
+      const source = state.typeFilter === "any"
+        ? state.items
+        : state.items.filter((item) => item.type === state.typeFilter);
+
+      state.currentItem = source.length ? randomArrayItem(source) : null;
+      state.currentImage = null;
+
+      if (!state.currentItem || !state.currentItem.imageSource) {
+        redraw();
+        return;
+      }
+
+      loadImage(
+        state.currentItem.imageSource,
+        (img) => {
+          state.currentImage = img;
+          redraw();
+        },
+        () => {
+          state.currentImage = null;
+          redraw();
+        }
+      );
+    }
+
+    function drawTitleTopSmallImageBottom(assignment, imageAsset) {
+      const padding = 92;
+      const imageW = 420;
+      const imageH = 520;
+      const imageX = width - padding - imageW;
+      const imageY = height - padding - imageH;
+
+      fill(assignment.headline);
+      textSize(state.typography.headline);
+      textLeading(state.typography.headline * 0.9);
+      text(state.text.headline, padding, padding, width - padding * 2 - 80);
+
+      fill(assignment.bodyText);
+      textSize(state.typography.subtitle);
+      textLeading(state.typography.subtitle * 1.1);
+      text(state.text.subtitle, padding, 430, 640);
+
+      drawFramedImage(imageAsset, imageX, imageY, imageW, imageH, assignment.illustrationAlt, "contain");
+
+      if (state.showSmallInfo) {
+        fill(assignment.secondaryText);
+        textSize(state.typography.small);
+        text(state.text.smallInfo, padding, height - padding - 36);
+      }
+    }
+
+    function drawStreetTopTitleCenter(assignment, imageAsset) {
+      const padding = 86;
+      drawImageCrop(imageAsset, 0, 0, width, 380, "cover", assignment.illustrationAlt);
+
+      fill(assignment.headline);
+      textSize(state.typography.headline);
+      textLeading(state.typography.headline * 0.9);
+      text(state.text.headline, padding, 470, width - padding * 2);
+
+      fill(assignment.bodyText);
+      textSize(state.typography.subtitle);
+      textLeading(state.typography.subtitle * 1.15);
+      text(state.text.subtitle, padding, 840, width - padding * 2);
+
+      if (state.showSmallInfo) {
+        fill(assignment.secondaryText);
+        textSize(state.typography.small);
+        text(state.text.smallInfo, padding, height - padding - 28);
+      }
+    }
+
+    function drawTinyObjectBigDate(assignment, imageAsset) {
+      const padding = 90;
+
+      fill(assignment.accent);
+      textSize(state.typography.giant);
+      textLeading(state.typography.giant * 0.88);
+      text(state.text.smallInfo, padding, 100, width - padding * 2);
+
+      fill(assignment.headline);
+      textSize(102);
+      textLeading(88);
+      text(state.text.headline, padding, 620, width - padding * 2);
+
+      fill(assignment.bodyText);
+      textSize(40);
+      textLeading(45);
+      text(state.text.subtitle, padding, 895, width - padding * 2);
+
+      drawFramedImage(imageAsset, width - 290, 1020, 170, 210, assignment.illustrationAlt, "contain");
+    }
+
+    function drawFullWidthStreetMinimal(assignment, imageAsset) {
+      const padding = 86;
+      drawImageCrop(imageAsset, 0, 160, width, 760, "cover", assignment.illustrationAlt);
+
+      fill(assignment.headline);
+      textSize(120);
+      textLeading(104);
+      text(state.text.headline, padding, 56, width - padding * 2);
+
+      fill(assignment.bodyText);
+      textSize(42);
+      textLeading(46);
+      text(state.text.subtitle, padding, 980, width - padding * 2);
+
+      if (state.showSmallInfo) {
+        fill(assignment.secondaryText);
+        textSize(23);
+        text(state.text.smallInfo, padding, 1240);
+      }
+    }
+
+    function drawArchiveCard(assignment, imageAsset) {
+      const cardX = 70;
+      const cardY = 90;
+      const cardW = width - 140;
+      const cardH = height - 180;
+
+      noStroke();
+      fill(255, 255, 255, 220);
+      rect(cardX, cardY, cardW, cardH, 16);
+
+      fill(assignment.headline);
+      textSize(102);
+      textLeading(90);
+      text(state.text.headline, cardX + 60, cardY + 54, cardW - 120);
+
+      fill(assignment.bodyText);
+      textSize(36);
+      textLeading(41);
+      text(state.text.subtitle, cardX + 60, cardY + 320, cardW - 120);
+
+      drawFramedImage(imageAsset, cardX + 60, cardY + 510, 360, 460, assignment.illustrationAlt, "contain");
+
+      fill(assignment.secondaryText);
+      textSize(22);
+      textLeading(30);
+
+      const paramsText = buildArchiveParameterText();
+      text(paramsText, cardX + 470, cardY + 530, cardW - 530);
+
+      if (state.showSmallInfo) {
+        fill(assignment.secondaryText);
+        textSize(24);
+        text(state.text.smallInfo, cardX + 60, cardY + cardH - 50);
+      }
+    }
+
+    async function saveInstagramToGallery() {
+      if (!state.currentImage) return;
+
+      const imageData = document.querySelector("canvas").toDataURL("image/png");
+      const savedItem = {
+        type: state.currentItem && state.currentItem.type === "street" ? "street" : "building",
+        sourcePage: "instagram-post",
+        aesthetic: state.activePaletteId,
+        palette: state.activePaletteId,
+        parameters: {
+          layout: state.activeVariant,
+          contentType: state.typeFilter,
+          headline: state.text.headline,
+        },
+        imageData,
+      };
+
+      try {
+        const response = await fetch("/api/save-building", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(savedItem),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
+          saveCanvas("instagram_4x5_post", "png");
+        } else {
+          console.error(result);
+          alert(result.error || "Could not save Instagram post.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Server is not running. Start it with: node server.js");
+      }
+    }
+
+    function drawAtmosphere(assignment) {
+      noStroke();
+      const accentA = color(assignment.accent);
+      accentA.setAlpha(24);
+      fill(accentA);
+      circle(width * 0.18, height * 0.18, 280);
+      circle(width * 0.88, height * 0.14, 200);
+
+      const accentB = color(assignment.illustrationAlt);
+      accentB.setAlpha(18);
+      fill(accentB);
+      circle(width * 0.82, height * 0.78, 320);
+      rect(width * 0.06, height * 0.86, width * 0.88, 26, 14);
+    }
+
+    function buildArchiveParameterText() {
+      const item = state.currentItem;
+
+      if (!item) {
+        return "Type: none\nNo saved image loaded.";
+      }
+
+      const lines = [
+        "Type: " + item.type,
+        "ID: " + (item.id || "archive_item"),
+      ];
+
+      if (item.createdAt) {
+        lines.push("Created: " + String(item.createdAt).slice(0, 10));
+      }
+
+      const keys = Object.keys(item.parameters || {}).slice(0, 4);
+
+      keys.forEach((key) => {
+        lines.push(key + ": " + item.parameters[key]);
+      });
+
+      if (!keys.length) {
+        lines.push("No parameter metadata.");
+      }
+
+      return lines.join("\n");
+    }
+
+    function drawFramedImage(imageAsset, x, y, w, h, frameColor, fitMode) {
+      noStroke();
+      fill(255, 255, 255, 200);
+      rect(x - 8, y - 8, w + 16, h + 16, 10);
+      drawImageCrop(imageAsset, x, y, w, h, fitMode, frameColor);
+    }
+
+    function drawImageCrop(imageAsset, x, y, w, h, fitMode, fallbackColor) {
+      noStroke();
+
+      if (!imageAsset) {
+        fill(hexToRgbSafe(fallbackColor || "#d8d2c5"));
+        rect(x, y, w, h);
+
+        fill(40, 40, 40, 120);
+        textSize(24);
+        textAlign(CENTER, CENTER);
+        text("no saved image", x + w / 2, y + h / 2);
+        textAlign(LEFT, TOP);
+        return;
+      }
+
+      const sourceRatio = imageAsset.width / imageAsset.height;
+      const targetRatio = w / h;
+
+      let sx = 0;
+      let sy = 0;
+      let sw = imageAsset.width;
+      let sh = imageAsset.height;
+
+      if (fitMode === "cover") {
+        if (sourceRatio > targetRatio) {
+          sw = imageAsset.height * targetRatio;
+          sx = (imageAsset.width - sw) / 2;
+        } else {
+          sh = imageAsset.width / targetRatio;
+          sy = (imageAsset.height - sh) / 2;
+        }
+      } else {
+        if (sourceRatio > targetRatio) {
+          const drawH = w / sourceRatio;
+          image(imageAsset, x, y + (h - drawH) / 2, w, drawH);
+          return;
+        }
+
+        const drawW = h * sourceRatio;
+        image(imageAsset, x + (w - drawW) / 2, y, drawW, h);
+        return;
+      }
+
+      image(imageAsset, x, y, w, h, sx, sy, sw, sh);
+    }
+
+    function randomArrayItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function hexToRgbSafe(hexColor) {
+      if (typeof hexToRgb === "function") {
+        return hexToRgb(hexColor);
+      }
+
+      const hex = hexColor.replace("#", "");
+      return [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+      ];
+    }
+  </script>
+</body>
+</html>

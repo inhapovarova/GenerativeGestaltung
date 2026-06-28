@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Generator</title>
+  <style>
+    :root {
+      --bg: #ece6dd;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-border: rgba(0, 0, 0, 0.12);
+      --text: #181614;
+      --muted: rgba(24, 22, 20, 0.62);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: minmax(300px, 360px) 1fr;
+      gap: 18px;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .panel {
+      align-self: start;
+      padding: 15px;
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+    }
+
+    .panel h1 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+
+    .panel p {
+      margin: 0 0 14px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .field {
+      margin-bottom: 11px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    .locked-value {
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 8px 0 14px;
+      font-size: 12px;
+    }
+
+    .toggles label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .toggles input {
+      accent-color: #222;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      appearance: none;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #fff;
+    }
+
+    .canvas-wrap {
+      display: grid;
+      place-items: start center;
+      overflow: auto;
+      min-height: calc(100vh - 36px);
+      padding-top: 12px;
+    }
+
+    canvas {
+      display: block;
+      width: min(100%, 880px) !important;
+      height: auto !important;
+      border-radius: 10px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.09);
+      background: #fff;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      .canvas-wrap {
+        min-height: 0;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="shared-nav.css">
+</head>
+<body>
+  <aside class="panel">
+    <h1>ticket generator</h1>
+    <p>Creative exhibition tickets with fixed hierarchy, strong typography, serial numbers, and multiple color moods.</p>
+
+    <div class="field">
+      <label for="layoutSelect">Layout</label>
+      <select id="layoutSelect"></select>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="modeSelect">Color mode</label>
+        <select id="modeSelect"></select>
+      </div>
+
+      <div class="field">
+        <label for="imageTypeSelect">Image source</label>
+        <select id="imageTypeSelect">
+          <option value="any">building or street</option>
+          <option value="building">building only</option>
+          <option value="street">street only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Title</label>
+      <div class="locked-value">THE CITY THAT REMEMBERS FORWARD</div>
+    </div>
+
+    <div class="field">
+      <label for="subtitleInput">Subtitle / description</label>
+      <input id="subtitleInput" type="text" value="Generative exhibition admission / urban memory edition" />
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="dateInput">Date / time</label>
+        <input id="dateInput" type="text" value="28.06.2026 / 19:30" />
+      </div>
+
+      <div class="field">
+        <label for="seedInput">Seed tag</label>
+        <input id="seedInput" type="text" value="CITY-ARCHIVE" />
+      </div>
+    </div>
+
+    <div class="toggles">
+      <label><input id="showIdToggle" type="checkbox" checked /> show ticket id</label>
+      <label><input id="showGridToggle" type="checkbox" /> system grid</label>
+    </div>
+
+    <div class="buttons">
+      <button id="shuffleBtn" type="button">shuffle</button>
+      <button id="exportBtn" type="button">save png</button>
+    </div>
+
+    <div class="status" id="statusText">Loading saved city images...</div>
+  </aside>
+
+  <main class="canvas-wrap" id="canvasWrap"></main>
+
+  <script src="/node_modules/p5/lib/p5.min.js"></script>
+  <script src="palettes.js"></script>
+  <script src="shared-nav.js"></script>
+  <script>
+    const CANVAS_W = 1600;
+    const CANVAS_H = 900;
+
+    const LAYOUTS = {
+      heroLeft: {
+        label: "Hero left / image right",
+        draw: drawHeroLeft,
+      },
+      centerSplit: {
+        label: "Center split / image band",
+        draw: drawCenterSplit,
+      },
+      museumObject: {
+        label: "Museum object / big date",
+        draw: drawMuseumObject,
+      },
+      edgeBand: {
+        label: "Edge band / wide crop",
+        draw: drawEdgeBand,
+      },
+      archiveCard: {
+        label: "Archive card / system area",
+        draw: drawArchiveCard,
+      },
+    };
+
+    const THEMES = {
+      neon: {
+        label: "Neon",
+        background: "#0B0710",
+        panel: "#120B18",
+        paper: "#F5F0E8",
+        title: "#EFFF6B",
+        subtitle: "#FF5FD7",
+        date: "#7CF7FF",
+        id: "#D7C9FF",
+        cityMain: "#FF5FD7",
+        cityAlt: "#7CF7FF",
+        stroke: "#EFFF6B",
+        imageGlow: "#7CF7FF",
+        card: "rgba(255, 255, 255, 0.06)",
+        cardBorder: "rgba(239, 255, 107, 0.28)",
+      },
+      dark: {
+        label: "Dark",
+        background: "#0E1116",
+        panel: "#151A22",
+        paper: "#F1ECE4",
+        title: "#F4EFE7",
+        subtitle: "#B8C1CF",
+        date: "#A8B2C0",
+        id: "#92A0B1",
+        cityMain: "#D8E0EA",
+        cityAlt: "#91A0B8",
+        stroke: "#D8E0EA",
+        imageGlow: "#6C7A90",
+        card: "rgba(255, 255, 255, 0.05)",
+        cardBorder: "rgba(255, 255, 255, 0.14)",
+      },
+      light: {
+        label: "Light",
+        background: "#F6F0E7",
+        panel: "#FFF9F2",
+        paper: "#F7F2EA",
+        title: "#171615",
+        subtitle: "#4E4A44",
+        date: "#5A534A",
+        id: "#8B8378",
+        cityMain: "#1A1816",
+        cityAlt: "#8D857B",
+        stroke: "#171615",
+        imageGlow: "#C8B79E",
+        card: "rgba(255, 255, 255, 0.72)",
+        cardBorder: "rgba(0, 0, 0, 0.12)",
+      },
+    };
+
+    const state = {
+      items: [],
+      currentItem: null,
+      currentImage: null,
+      activeLayout: "heroLeft",
+      activeThemeId: "neon",
+      activeImageType: "any",
+      ticketId: generateTicketId(),
+      showId: true,
+      showGrid: false,
+      text: {
+        title: "THE CITY THAT REMEMBERS FORWARD",
+        subtitle: "Generative exhibition admission / urban memory edition",
+        date: "28.06.2026 / 19:30",
+        seedTag: "CITY-ARCHIVE",
+      },
+    };
+
+    const ui = {
+      layoutSelect: document.getElementById("layoutSelect"),
+      modeSelect: document.getElementById("modeSelect"),
+      imageTypeSelect: document.getElementById("imageTypeSelect"),
+      subtitleInput: document.getElementById("subtitleInput"),
+      dateInput: document.getElementById("dateInput"),
+      seedInput: document.getElementById("seedInput"),
+      showIdToggle: document.getElementById("showIdToggle"),
+      showGridToggle: document.getElementById("showGridToggle"),
+      shuffleBtn: document.getElementById("shuffleBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      canvasWrap: document.getElementById("canvasWrap"),
+      statusText: document.getElementById("statusText"),
+    };
+
+    function setup() {
+      const canvas = createCanvas(CANVAS_W, CANVAS_H);
+      canvas.parent(ui.canvasWrap);
+      pixelDensity(1);
+      noLoop();
+      textFont("Arial");
+      textAlign(LEFT, TOP);
+      rectMode(CORNER);
+      imageMode(CORNER);
+
+      hydrateSelects();
+      bindUi();
+      refreshTheme();
+      loadSavedItems();
+    }
+
+    function draw() {
+      if (!state.currentImage && state.items.length) {
+        return;
+      }
+
+      const theme = THEMES[state.activeThemeId] || THEMES.neon;
+      background(theme.background);
+      drawCanvasNoise(theme);
+      drawFrame(theme);
+      drawCityBackdrop(theme);
+
+      const layout = LAYOUTS[state.activeLayout];
+      layout.draw(theme, state.currentImage);
+
+      if (state.showGrid) {
+        drawSystemGrid(theme);
+      }
+    }
+
+    function hydrateSelects() {
+      Object.entries(LAYOUTS).forEach(([value, config]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = config.label;
+        ui.layoutSelect.appendChild(option);
+      });
+      ui.layoutSelect.value = state.activeLayout;
+
+      Object.entries(THEMES).forEach(([value, config]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = config.label;
+        ui.modeSelect.appendChild(option);
+      });
+      ui.modeSelect.value = state.activeThemeId;
+    }
+
+    function bindUi() {
+      ui.layoutSelect.addEventListener("change", () => {
+        state.activeLayout = ui.layoutSelect.value;
+        redraw();
+      });
+
+      ui.modeSelect.addEventListener("change", () => {
+        state.activeThemeId = ui.modeSelect.value;
+        refreshTheme();
+        redraw();
+      });
+
+      ui.imageTypeSelect.addEventListener("change", () => {
+        state.activeImageType = ui.imageTypeSelect.value;
+        pickRandomItem();
+      });
+
+      ui.subtitleInput.addEventListener("input", () => {
+        state.text.subtitle = ui.subtitleInput.value.trim() || "Generative exhibition admission / urban memory edition";
+        redraw();
+      });
+
+      ui.dateInput.addEventListener("input", () => {
+        state.text.date = ui.dateInput.value.trim() || "28.06.2026 / 19:30";
+        redraw();
+      });
+
+      ui.seedInput.addEventListener("input", () => {
+        state.text.seedTag = ui.seedInput.value.trim() || "CITY-ARCHIVE";
+        state.ticketId = generateTicketId();
+        redraw();
+      });
+
+      ui.showIdToggle.addEventListener("change", () => {
+        state.showId = ui.showIdToggle.checked;
+        redraw();
+      });
+
+      ui.showGridToggle.addEventListener("change", () => {
+        state.showGrid = ui.showGridToggle.checked;
+        redraw();
+      });
+
+      ui.shuffleBtn.addEventListener("click", () => {
+        state.activeLayout = randomArrayItem(Object.keys(LAYOUTS));
+        ui.layoutSelect.value = state.activeLayout;
+        state.activeThemeId = randomArrayItem(Object.keys(THEMES));
+        ui.modeSelect.value = state.activeThemeId;
+        refreshTheme();
+        state.ticketId = generateTicketId();
+        pickRandomItem();
+      });
+
+      ui.exportBtn.addEventListener("click", () => {
+        saveTicketToGallery();
+      });
+    }
+
+    function refreshTheme() {
+      state.theme = THEMES[state.activeThemeId] || THEMES.neon;
+      document.documentElement.style.setProperty("--bg", state.theme.background);
+      document.documentElement.style.setProperty("--panel", state.theme.panel);
+      document.documentElement.style.setProperty("--panel-border", state.theme.cardBorder);
+      document.documentElement.style.setProperty("--text", state.theme.title);
+      document.documentElement.style.setProperty("--muted", state.theme.subtitle);
+    }
+
+    async function loadSavedItems() {
+      try {
+        const response = await fetch("/api/buildings");
+
+        if (!response.ok) {
+          throw new Error("Could not load saved city images");
+        }
+
+        const items = await response.json();
+        state.items = items
+          .map(normalizeSavedItem)
+          .filter((item) => Boolean(item.imageSource));
+      } catch (error) {
+        console.error(error);
+        state.items = [];
+      }
+
+      updateStatus();
+      pickRandomItem();
+    }
+
+    function normalizeSavedItem(item) {
+      if (typeof item === "string") {
+        return {
+          type: "building",
+          imageSource: item,
+          id: "legacy-item",
+          createdAt: null,
+          parameters: {},
+        };
+      }
+
+      return {
+        ...item,
+        type: item.type === "street" ? "street" : "building",
+        imageSource: item.imageUrl || item.path || item.src || item.imageData || null,
+        parameters: item.parameters || {},
+      };
+    }
+
+    function pickRandomItem() {
+      const candidates = state.activeImageType === "any"
+        ? state.items
+        : state.items.filter((item) => item.type === state.activeImageType);
+
+      state.currentItem = candidates.length ? randomArrayItem(candidates) : null;
+      state.currentImage = null;
+      updateStatus();
+
+      if (!state.currentItem || !state.currentItem.imageSource) {
+        redraw();
+        return;
+      }
+
+      loadImage(
+        state.currentItem.imageSource,
+        (img) => {
+          state.currentImage = img;
+          redraw();
+        },
+        (error) => {
+          console.error(error);
+          state.currentImage = null;
+          redraw();
+        }
+      );
+    }
+
+    function drawHeroLeft(theme, imageAsset) {
+      const titleX = 92;
+      const titleY = 84;
+      const imageX = 930;
+      const imageY = 130;
+      const imageW = 580;
+      const imageH = 640;
+
+      drawLabel(theme, "ADMISSION", 92, 44, 170);
+      drawTitle(theme, state.text.title, titleX, titleY, 740, 190, 118);
+      drawSubtitle(theme, state.text.subtitle, titleX, 320, 620, 88);
+      drawCornerDate(theme, imageX + 250, 70);
+      drawImageObject(theme, imageAsset, imageX, imageY, imageW, imageH, 14, 0.96);
+      drawSystemId(theme, 92, 792);
+    }
+
+    function drawCenterSplit(theme, imageAsset) {
+      drawLabel(theme, "TICKET / EXHIBITION", 110, 78, 220);
+      drawTitle(theme, state.text.title, 120, 160, 860, 180, 126);
+      drawSubtitle(theme, state.text.subtitle, 120, 326, 640, 76);
+      drawImageObject(theme, imageAsset, 120, 424, 1360, 316, 22, 1.0);
+      drawCornerDate(theme, 1280, 64);
+      drawSystemId(theme, 120, 804);
+    }
+
+    function drawMuseumObject(theme, imageAsset) {
+      drawDateFeature(theme, state.text.date, 1050, 76, 340, 210);
+      drawTitle(theme, state.text.title, 116, 120, 690, 160, 114);
+      drawSubtitle(theme, state.text.subtitle, 120, 286, 520, 80);
+      drawImageObject(theme, imageAsset, 102, 430, 380, 330, 18, 1.08);
+      drawMuseumStage(theme, 570, 448, 820, 240);
+      drawSystemId(theme, 113, 804);
+    }
+
+    function drawEdgeBand(theme, imageAsset) {
+      drawImageObject(theme, imageAsset, 0, 0, width, 360, 0, 1.0, true);
+      drawTitle(theme, state.text.title, 98, 430, 1040, 150, 120);
+      drawSubtitle(theme, state.text.subtitle, 100, 578, 620, 70);
+      drawCornerDate(theme, 1270, 424);
+      drawSystemId(theme, 100, 804);
+    }
+
+    function drawArchiveCard(theme, imageAsset) {
+      drawArchiveCardShell(theme);
+      drawTitle(theme, state.text.title, 126, 126, 740, 138, 102);
+      drawSubtitle(theme, state.text.subtitle, 128, 290, 560, 72);
+      drawImageObject(theme, imageAsset, 92, 402, 620, 340, 16, 1.02);
+      drawParameterBlock(theme, 780, 410, 690, 300);
+      drawDateFeature(theme, state.text.date, 1210, 76, 300, 182);
+      drawSystemId(theme, 128, 810);
+    }
+
+    function drawCanvasNoise(theme) {
+      noStroke();
+      for (let i = 0; i < 240; i++) {
+        const x = random(width);
+        const y = random(height);
+        const size = random(1, 2.4);
+        fill(255, 255, 255, theme.background === "#F6F0E7" ? 20 : 12);
+        circle(x, y, size);
+      }
+    }
+
+    function drawFrame(theme) {
+      noFill();
+      stroke(theme.stroke);
+      strokeWeight(2);
+      rect(28, 28, width - 56, height - 56, 22);
+      strokeWeight(1);
+      rect(48, 48, width - 96, height - 96, 18);
+    }
+
+    function drawCityBackdrop(theme) {
+      const baseY = 640;
+      const blocks = [
+        { x: 60, w: 140, h: 180 },
+        { x: 210, w: 110, h: 250 },
+        { x: 332, w: 210, h: 310 },
+        { x: 560, w: 92, h: 220 },
+        { x: 668, w: 180, h: 290 },
+        { x: 872, w: 124, h: 190 },
+        { x: 1010, w: 240, h: 330 },
+        { x: 1278, w: 152, h: 210 },
+      ];
+
+      push();
+      noStroke();
+
+      blocks.forEach((block, index) => {
+        const fillColor = index % 2 === 0 ? theme.cityMain : theme.cityAlt;
+        fill(fillColor);
+        rect(block.x, baseY - block.h, block.w, block.h, 8);
+
+        fill(theme.background === "#F6F0E7" ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)");
+        for (let y = baseY - block.h + 24; y < baseY - 24; y += 30) {
+          for (let x = block.x + 16; x < block.x + block.w - 18; x += 26) {
+            if (random() > 0.28) {
+              rect(x, y, 12, 16, 2);
+            }
+          }
+        }
+      });
+
+      fill(theme.stroke);
+      rect(0, baseY, width, 18);
+      fill(theme.imageGlow);
+      rect(0, baseY + 18, width, 3);
+      pop();
+    }
+
+    function drawLabel(theme, label, x, y, maxW) {
+      fill(theme.subtitle);
+      textFont("Arial");
+      textStyle(BOLD);
+      textSize(22);
+      textLeading(22);
+      text(label, x, y, maxW, 28);
+      textStyle(NORMAL);
+    }
+
+    function drawTitle(theme, title, x, y, maxW, maxH, preferredSize) {
+      fill(theme.title);
+      textFont("Arial");
+      textStyle(BOLD);
+      textSize(preferredSize);
+      textLeading(preferredSize * 0.92);
+      text(title.toUpperCase(), x, y, maxW, maxH);
+      textStyle(NORMAL);
+    }
+
+    function drawSubtitle(theme, subtitle, x, y, maxW, maxH) {
+      fill(theme.subtitle);
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(34);
+      textLeading(38);
+      text(subtitle, x, y, maxW, maxH);
+    }
+
+    function drawCornerDate(theme, x, y) {
+      fill(theme.date);
+      textFont("Courier New");
+      textStyle(NORMAL);
+      textSize(24);
+      textAlign(LEFT, TOP);
+      text(state.text.date, x, y, 220, 96);
+      textAlign(LEFT, TOP);
+    }
+
+    function drawDateFeature(theme, dateText, x, y, w, h) {
+      fill(theme.date);
+      textFont("Courier New");
+      textStyle(NORMAL);
+      textSize(28);
+      textLeading(32);
+      text(dateText, x, y, w, h);
+    }
+
+    function drawSystemId(theme, x, y) {
+      if (!state.showId) {
+        return;
+      }
+
+      fill(theme.id);
+      textFont("Courier New");
+      textStyle(NORMAL);
+      textSize(18);
+      textAlign(LEFT, TOP);
+      text("ID " + state.ticketId, x, y, 420, 30);
+      textAlign(LEFT, TOP);
+    }
+
+    function drawImageObject(theme, imageAsset, x, y, w, h, radius, intensity, coverMode = false) {
+      const glowColor = theme.imageGlow;
+      const modeFill = theme.card;
+      const borderColor = theme.cardBorder;
+
+      noStroke();
+      fill(modeFill);
+      rect(x - 18, y - 18, w + 36, h + 36, radius + 10);
+
+      fill(borderColor);
+      rect(x - 8, y - 8, w + 16, h + 16, radius + 8);
+
+      if (glowColor) {
+        const glow = color(glowColor);
+        glow.setAlpha(55);
+        fill(glow);
+        rect(x - 28, y - 28, w + 56, h + 56, radius + 16);
+      }
+
+      if (coverMode) {
+        drawCoverImage(imageAsset, x, y, w, h, radius, intensity, theme);
+        return;
+      }
+
+      if (!imageAsset) {
+        fill(theme.panel);
+        rect(x, y, w, h, radius);
+        fill(theme.title);
+        textFont("Courier New");
+        textSize(22);
+        textAlign(CENTER, CENTER);
+        text("no image", x + w / 2, y + h / 2);
+        textAlign(LEFT, TOP);
+        return;
+      }
+
+      const ratio = imageAsset.width / imageAsset.height;
+      const targetRatio = w / h;
+      let drawX = x;
+      let drawY = y;
+      let drawW = w;
+      let drawH = h;
+
+      if (ratio > targetRatio) {
+        drawH = w / ratio;
+        drawY = y + (h - drawH) / 2;
+      } else {
+        drawW = h * ratio;
+        drawX = x + (w - drawW) / 2;
+      }
+
+      if (theme.background === "#0B0710") {
+        push();
+        tint(255, 215);
+        image(imageAsset, drawX, drawY, drawW, drawH);
+        pop();
+      } else {
+        image(imageAsset, drawX, drawY, drawW, drawH);
+      }
+    }
+
+    function drawCoverImage(imageAsset, x, y, w, h, radius, intensity, theme) {
+      if (!imageAsset) {
+        fill(theme.panel);
+        rect(x, y, w, h, radius);
+        fill(theme.title);
+        textFont("Courier New");
+        textSize(22);
+        textAlign(CENTER, CENTER);
+        text("no image", x + w / 2, y + h / 2);
+        textAlign(LEFT, TOP);
+        return;
+      }
+
+      const ratio = imageAsset.width / imageAsset.height;
+      const targetRatio = w / h;
+      let sx = 0;
+      let sy = 0;
+      let sw = imageAsset.width;
+      let sh = imageAsset.height;
+
+      if (ratio > targetRatio) {
+        sw = imageAsset.height * targetRatio;
+        sx = (imageAsset.width - sw) / 2;
+      } else {
+        sh = imageAsset.width / targetRatio;
+        sy = (imageAsset.height - sh) / 2;
+      }
+
+      push();
+      if (theme.background === "#0B0710") {
+        tint(255, 235);
+      }
+      image(imageAsset, x, y, w, h, sx, sy, sw, sh);
+      pop();
+
+      if (intensity > 1) {
+        const overlay = color(theme.imageGlow);
+        overlay.setAlpha(35);
+        fill(overlay);
+        rect(x, y, w, h, radius);
+      }
+    }
+
+    function drawMuseumStage(theme, x, y, w, h) {
+      fill(theme.card);
+      rect(x, y, w, h, 24);
+      fill(theme.cardBorder);
+      rect(x + 14, y + 14, w - 28, h - 28, 18);
+      fill(theme.subtitle);
+      textFont("Arial");
+      textStyle(BOLD);
+      textSize(20);
+      text("museum object", x + 28, y + 28);
+      textStyle(NORMAL);
+    }
+
+    function drawArchiveCardShell(theme) {
+      fill(theme.card);
+      rect(72, 72, width - 144, height - 144, 24);
+      stroke(theme.cardBorder);
+      noFill();
+      strokeWeight(1.5);
+      rect(72, 72, width - 144, height - 144, 24);
+      noStroke();
+      fill(theme.subtitle);
+      textFont("Courier New");
+      textSize(18);
+      text("archive card", 98, 98);
+    }
+
+    function drawParameterBlock(theme, x, y, w, h) {
+      fill(theme.card);
+      rect(x, y, w, h, 18);
+      fill(theme.id);
+      textFont("Courier New");
+      textStyle(NORMAL);
+      textSize(18);
+      textLeading(26);
+
+      const item = state.currentItem || {};
+      const lines = [
+        "SOURCE: " + (item.type || "building"),
+        "ITEM: " + (item.id || "legacy-item"),
+        "SEED: " + state.text.seedTag,
+        "ID: " + state.ticketId,
+      ];
+
+      if (item.createdAt) {
+        lines.splice(2, 0, "DATE: " + String(item.createdAt).slice(0, 10));
+      }
+
+      text(lines.join("\n"), x + 22, y + 20, w - 44, h - 40);
+    }
+
+    function drawSystemGrid(theme) {
+      stroke(theme.subtitle);
+      strokeWeight(1);
+      const cols = 8;
+      const rows = 5;
+      for (let c = 1; c < cols; c++) {
+        const x = (width / cols) * c;
+        line(x, 40, x, height - 40);
+      }
+      for (let r = 1; r < rows; r++) {
+        const y = 40 + ((height - 80) / rows) * r;
+        line(40, y, width - 40, y);
+      }
+      noStroke();
+    }
+
+    async function saveTicketToGallery() {
+      if (!state.currentImage) return;
+
+      const imageData = document.querySelector("canvas").toDataURL("image/png");
+      const savedItem = {
+        type: state.currentItem && state.currentItem.type === "street" ? "street" : "building",
+        sourcePage: "ticket-generator",
+        aesthetic: state.activeThemeId,
+        palette: state.activeThemeId,
+        parameters: {
+          layout: state.activeLayout,
+          ticketId: state.ticketId,
+          seedTag: state.text.seedTag,
+        },
+        imageData,
+      };
+
+      try {
+        const response = await fetch("/api/save-building", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(savedItem),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
+          saveCanvas("exhibition_ticket", "png");
+        } else {
+          console.error(result);
+          alert(result.error || "Could not save ticket.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Server is not running. Start it with: node server.js");
+      }
+    }
+
+    function updateStatus() {
+      const total = state.items.length;
+      const filtered = state.activeImageType === "any"
+        ? total
+        : state.items.filter((item) => item.type === state.activeImageType).length;
+
+      ui.statusText.textContent = total
+        ? `Loaded ${total} saved city images. Active filter: ${state.activeImageType} (${filtered} available).`
+        : "No saved city images found yet. Use the other generators and save an image first.";
+    }
+
+    function randomArrayItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateTicketId() {
+      const datePart = "20260628";
+      const randomPart = Math.floor(1000 + Math.random() * 9000);
+      return `${state ? state.text.seedTag.replace(/[^A-Z0-9]+/gi, "").toUpperCase().slice(0, 8) || "CITY" : "CITY"}-${datePart}-${randomPart}`;
+    }
+  </script>
+</body>
+</html>

@@ -145,6 +145,7 @@
 
     let buildings = [];
     let currentBuilding = null;
+    let currentBuildingData = null;
     let currentLayout = null;
     let silhouetteCache = null;
     let silhouetteCacheSource = null;
@@ -233,9 +234,7 @@
       document.getElementById("generateBtn").addEventListener("click", generatePoster);
       setupPaletteControls();
 
-      document.getElementById("saveBtn").addEventListener("click", () => {
-        saveCanvas("generated_poster", "png");
-      });
+      document.getElementById("saveBtn").addEventListener("click", savePosterToGallery);
 
       loadBuildingList();
     }
@@ -286,6 +285,7 @@
 
       resetCurrentPaletteAssignment();
       const buildingData = pick(buildings);
+      currentBuildingData = buildingData;
       const imageSource = getItemImageSource(buildingData);
 
       if (!imageSource) {
@@ -329,7 +329,47 @@
     function generatePosterFallback() {
       resetCurrentPaletteAssignment();
       currentBuilding = createFallbackBuildingImage();
+      currentBuildingData = null;
       currentLayout = createLayout();
+    }
+
+    async function savePosterToGallery() {
+      if (!currentBuilding || !currentLayout) return;
+
+      const imageData = document.querySelector("canvas").toDataURL("image/png");
+      const savedItem = {
+        type: currentBuildingData && currentBuildingData.type === "street" ? "street" : "building",
+        sourcePage: "poster-generator",
+        aesthetic: paletteAssignment.id || "neutral",
+        palette: activePaletteId,
+        parameters: {
+          layout: currentLayout.archetype,
+          title: posterContent.title,
+        },
+        imageData,
+      };
+
+      try {
+        const response = await fetch("/api/save-building", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(savedItem),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
+          saveCanvas("generated_poster", "png");
+        } else {
+          console.error(result);
+          alert(result.error || "Could not save poster.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Server is not running. Start it with: node server.js");
+      }
     }
 
     function createFallbackBuildingImage() {
@@ -479,7 +519,7 @@
     }
 
     function createLayout() {
-      const archetype = floor(random(1, 7));
+      const archetype = floor(random(1, 8));
       const showExtraInfo = random() < 0.68;
       const showExtraInfo2 = random() < 0.5;
 
@@ -581,6 +621,23 @@
           ],
           date: textBlock(0, 6.6, 1.85, 1.05, posterContent.dateAddress, 12, 16),
           extras: [
+
+      if (archetype === 7) {
+        layout = {
+          archetype,
+          title: titleBlock(0, 0.2, 4.35, 2.7, 154),
+          image: rectFromGrid(3.1, 1.95, 2.8, 4.2),
+          textBlocks: [
+            textBlock(0, 3.45, 2.35, 1.05, posterContent.textIntro, 16, 22),
+            textBlock(0, 4.8, 2.45, 1.15, posterContent.textPoem, 16, 22),
+          ],
+          date: textBlock(3.1, 6.6, 1.85, 1.15, posterContent.dateAddress, 12, 16),
+          extras: [
+            optionalBlock(showExtraInfo, 0, 6.8, 1.55, 0.75, posterContent.extraInfo, 11, 15),
+            optionalBlock(showExtraInfo2, 4.75, 0.1, 1.1, 0.25, posterContent.extraInfo2, 12, 14),
+          ],
+        };
+      }
             optionalBlock(showExtraInfo, 2.4, 6.65, 1.35, 0.85, posterContent.extraInfo, 11, 15),
             optionalBlock(showExtraInfo2, 4.4, 6.65, 1, 0.25, posterContent.extraInfo2, 12, 14),
           ],
