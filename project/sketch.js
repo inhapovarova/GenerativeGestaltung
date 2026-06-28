@@ -50,6 +50,11 @@ const baselineState = {
 };
 
 let currentState = { ...baselineState };
+const CITY_STYLE_OLD = "oldCity";
+const CITY_STYLE_ALPINE = "alpineVillage";
+const CITY_STYLE_MIX = "mixedCity";
+const CITY_STYLE_JOURNEY = "journey";
+let currentCityStyle = CITY_STYLE_OLD;
 
 function preload() {
   assets = {
@@ -57,6 +62,75 @@ function preload() {
       far: loadImage("assets/backgrounds/bg_far_static.png"),
       mid: loadImage("assets/backgrounds/bg_mid_loop.png"),
       asphalt: loadImage("assets/backgrounds/asphalt_loop.png"),
+    },
+
+    alpine: {
+      backgrounds: {
+        mid: loadImage("assets/alpine/backgrounds/alpine_mountains_loop.png"),
+      },
+      roofs: {
+        tileGable: {
+          left: loadImage("assets/alpine/roofs/alpine_roof_tile_gable_left_01..png"),
+          mid: [
+            loadImage("assets/alpine/roofs/alpine_roof_tile_gable_mid_01.png"),
+            loadImage("assets/alpine/roofs/alpine_roof_tile_gable_dormer_01.png"),
+          ],
+          right: loadImage("assets/alpine/roofs/alpine_roof_tile_gable_right_01.png"),
+        },
+        slateGable: {
+          left: loadImage("assets/alpine/roofs/alpine_roof_slate_gable_left_01.png"),
+          mid: [
+            loadImage("assets/alpine/roofs/alpine_roof_slate_gable_mid_01.png"),
+            loadImage("assets/alpine/roofs/alpine_roof_slate_gable_dormer_01.png"),
+          ],
+          right: loadImage("assets/alpine/roofs/alpine_roof_slate_gable_right_01.png"),
+        },
+        tileLow: {
+          left: loadImage("assets/alpine/roofs/alpine_roof_tile_low_left_01.png"),
+          mid: [
+            loadImage("assets/alpine/roofs/alpine_roof_tile_low_mid_01.png"),
+            loadImage("assets/alpine/roofs/alpine_roof_tile_low_chimney_01.png"),
+          ],
+          right: loadImage("assets/alpine/roofs/alpine_roof_tile_low_right_01.png"),
+        },
+      },
+      windows: {
+        normal: [
+          loadImage("assets/alpine/windows/alpine_window_tall_shutters_flower_01.png"),
+          loadImage("assets/alpine/windows/alpine_window_square_flower_01.png"),
+          loadImage("assets/alpine/windows/alpine_window_rounded_flower_01.png"),
+        ],
+        accent: [],
+      },
+      doors: {
+        single: [
+          loadImage("assets/alpine/doors/alpine_door_rect_wood_01.png"),
+          loadImage("assets/alpine/doors/alpine_door_rect_wood_02.png"),
+          loadImage("assets/alpine/doors/alpine_door_rect_wood_03.png"),
+          loadImage("assets/alpine/doors/alpine_door_rect_wood_04.png"),
+          loadImage("assets/alpine/doors/alpine_door_rect_wood_05.png"),
+        ],
+      },
+      walls: {
+        any: [
+          loadImage("assets/alpine/walls/alpine_wall_plaster_any_01.png"),
+          loadImage("assets/alpine/walls/alpine_wall_plaster_any_02.png"),
+          loadImage("assets/alpine/walls/alpine_wall_plaster_any_03.png"),
+          loadImage("assets/alpine/walls/alpine_wall_plaster_any_04.png"),
+        ],
+        lower: [
+          loadImage("assets/alpine/walls/alpine_wall_stone_lower_01.png"),
+          loadImage("assets/alpine/walls/alpine_wall_stone_lower_02.png"),
+          loadImage("assets/alpine/walls/alpine_wall_stone_lower_03.png"),
+          loadImage("assets/alpine/walls/alpine_wall_stone_lower_04.png"),
+        ],
+        middle: [],
+        upper: [
+          loadImage("assets/alpine/walls/alpine_wall_wood_upper_01.png"),
+          loadImage("assets/alpine/walls/alpine_wall_wood_upper_03.png"),
+          loadImage("assets/alpine/walls/alpine_wall_wood_upper_04.png"),
+        ],
+      },
     },
 
     base: {
@@ -557,8 +631,10 @@ function windowResized() {
 // -----------------------------
 
 function updateLayerOffsets() {
-  midBgOffset = (midBgOffset + scrollSpeed * MID_BG_SPEED_FACTOR) % assets.backgrounds.mid.width;
-  asphaltOffset = (asphaltOffset + scrollSpeed) % assets.backgrounds.asphalt.width;
+  const backgrounds = getActiveBackgrounds();
+
+  midBgOffset = (midBgOffset + scrollSpeed * MID_BG_SPEED_FACTOR) % backgrounds.mid.width;
+  asphaltOffset = (asphaltOffset + scrollSpeed) % backgrounds.asphalt.width;
 }
 
 function drawBackgroundLayers() {
@@ -569,13 +645,13 @@ function drawBackgroundLayers() {
 }
 
 function drawFarBackground() {
-  const img = assets.backgrounds.far;
+  const img = getActiveBackgrounds().far;
 
   image(img, 0, 0, width, height);
 }
 
 function drawMidBackground() {
-  const img = assets.backgrounds.mid;
+  const img = getActiveBackgrounds().mid;
 
   const layerHeight = height * 0.65;
   const y = groundY - layerHeight;
@@ -590,7 +666,7 @@ function drawMidBackground() {
 }
 
 function drawAsphaltForeground() {
-  const img = assets.backgrounds.asphalt;
+  const img = getActiveBackgrounds().asphalt;
 
   const asphaltHeight = height - groundY + BLOCK * 0.35;
   const y = groundY - BLOCK * 0.05;
@@ -615,6 +691,18 @@ function drawTiledImage(img, startX, y, tileWidth, tileHeight) {
     image(img, Math.round(x), Math.round(y), tileWidth, tileHeight);
     x += tileWidth;
   }
+}
+
+function getActiveBackgrounds() {
+  if (currentCityStyle === CITY_STYLE_ALPINE || currentCityStyle === CITY_STYLE_JOURNEY) {
+    return {
+      far: assets.backgrounds.far,
+      mid: assets.alpine.backgrounds.mid,
+      asphalt: assets.backgrounds.asphalt,
+    };
+  }
+
+  return assets.backgrounds;
 }
 
 // -----------------------------
@@ -667,7 +755,7 @@ function createBuildingLayer(options = {}) {
   while (x < width + BLOCK * 4) {
     const house = generateHouse(x, currentState, layer);
     layer.houses.push(house);
-    x += house.widthBlocks * BLOCK + randomGap(currentState) * layer.gapMultiplier;
+    x += house.widthBlocks * BLOCK + randomGapForCityStyle(currentState) * layer.gapMultiplier;
   }
 
   return layer;
@@ -693,7 +781,7 @@ function updateBuildingLayer(layer) {
   let rightEdge = getRightEdge(layer);
 
   while (rightEdge < width + BLOCK * 4) {
-    const gap = randomGap(currentState) * layer.gapMultiplier;
+    const gap = randomGapForCityStyle(currentState) * layer.gapMultiplier;
     const newHouse = generateHouse(rightEdge + gap, currentState, layer);
     layer.houses.push(newHouse);
     rightEdge = getRightEdge(layer);
@@ -763,33 +851,39 @@ function createBuildingLayerBuffer() {
 // -----------------------------
 
 function generateHouse(x, state, layer = {}) {
-  const widthBlocks = chooseWidth(state);
-  const heightMultiplier = layer.heightMultiplier || 1;
-  const heightBlocks = max(3, ceil(chooseHeight(state) * heightMultiplier));
+  const cityStyle = chooseHouseCityStyle();
+  const usesOldCityAssets = cityStyle === CITY_STYLE_OLD;
+  const widthBlocks = chooseWidthForCityStyle(state, cityStyle);
+  const heightMultiplier = usesOldCityAssets ? layer.heightMultiplier || 1 : 1;
+  const heightBlocks = chooseHeightForCityStyle(state, cityStyle, heightMultiplier);
 
-  const hasRoof = chooseHasRoof(state);
-  const roofFamily = hasRoof ? pick(Object.keys(assets.roofs)) : null;
+  const roofAssets = getRoofAssetsForCityStyle(cityStyle);
+  const hasRoof = roofAssets
+    ? cityStyle === CITY_STYLE_ALPINE || chooseHasRoof(state)
+    : false;
+  const roofFamily = hasRoof ? pick(Object.keys(roofAssets)) : null;
+  const roofMidFeatures = hasRoof ? chooseRoofMidFeatures(widthBlocks, roofAssets[roofFamily]) : {};
 
-  const wallFamily = pick(Object.keys(assets.walls));
-  const windowFamily = pick(Object.keys(assets.windows));
+  const wallFamily = usesOldCityAssets ? pick(Object.keys(assets.walls)) : null;
+  const windowFamily = usesOldCityAssets ? pick(Object.keys(assets.windows)) : null;
 
-  const topAccentWindow = chooseTopAccentWindow(
-    widthBlocks,
-    hasRoof,
-    state,
-    windowFamily
-  );
+  const topAccentWindow = usesOldCityAssets
+    ? chooseTopAccentWindow(widthBlocks, hasRoof, state, windowFamily)
+    : null;
 
-  // one exact wall block for the whole building
-  const wallBlock = pick(assets.walls[wallFamily]);
+  const wallBlocks = chooseWallBlocksForHouse(heightBlocks, cityStyle, wallFamily);
 
-  const hasBase = chooseHasBase(state);
+  const hasBase = usesOldCityAssets ? chooseHasBase(state) : false;
   const baseBlock = hasBase ? pick(assets.base.plain) : null;
 
-  const doorData = chooseDoor(widthBlocks, state);
+  const doorData = usesOldCityAssets ? chooseDoor(widthBlocks, state) : null;
+  const alpineDoor = cityStyle === CITY_STYLE_ALPINE ? chooseAlpineDoor() : null;
   const windowPattern = chooseWindowPattern(widthBlocks, state);
+  const alpineWindowAsset = cityStyle === CITY_STYLE_ALPINE
+    ? chooseAlpineWindowForHouse(heightBlocks, state)
+    : null;
 
-  const tintColor = chooseBuildingTint(state);
+  const tintColor = cityStyle === CITY_STYLE_ALPINE ? [255, 255, 255] : chooseBuildingTint(state);
 
   const cells = [];
 
@@ -798,7 +892,7 @@ function generateHouse(x, state, layer = {}) {
 
     for (let col = 0; col < widthBlocks; col++) {
       const cell = {
-        wall: wallBlock,
+        wall: getWallBlockForRow(row, heightBlocks, wallBlocks),
         base: null,
         window: null,
         door: null,
@@ -819,6 +913,7 @@ function generateHouse(x, state, layer = {}) {
       }
 
       if (
+        usesOldCityAssets &&
         isTopRow &&
         topAccentWindow &&
         col === topAccentWindow.col
@@ -831,6 +926,7 @@ function generateHouse(x, state, layer = {}) {
       }
 
       if (
+        usesOldCityAssets &&
         isMiddleRow &&
         shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
       ) {
@@ -845,36 +941,58 @@ function generateHouse(x, state, layer = {}) {
         }
       }
 
+      if (
+        cityStyle === CITY_STYLE_ALPINE &&
+        (isMiddleRow || (heightBlocks <= 2 && isTopRow)) &&
+        shouldPlaceWindow(row, col, heightBlocks, widthBlocks, windowPattern)
+      ) {
+        if (alpineWindowAsset) {
+          cell.window = alpineWindowAsset;
+        }
+      }
+
       rowCells.push(cell);
     }
 
     cells.push(rowCells);
   }
 
-  placeDoor(cells, widthBlocks, heightBlocks, doorData);
-  placeWindowBalconyDetails(cells, widthBlocks, heightBlocks, state, layer);
-  placeStairDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, layer);
-  placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeBalconyDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeWallPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer);
-  placePosterDecor(cells, widthBlocks, heightBlocks, state, layer);
-  const spans = chooseHouseSpanDecor(widthBlocks, heightBlocks, state, hasRoof, layer);
-  const roofTopDecor = chooseRoofTopPlantDecor(widthBlocks, state, hasRoof, layer);
+  if (usesOldCityAssets) {
+    placeDoor(cells, widthBlocks, heightBlocks, doorData);
+    placeWindowBalconyDetails(cells, widthBlocks, heightBlocks, state, layer);
+    placeStairDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placeRoofPlantDecor(cells, widthBlocks, heightBlocks, state, hasRoof, layer);
+    placeGroundPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placeBalconyDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placeWallPlantDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state, layer);
+    placePosterDecor(cells, widthBlocks, heightBlocks, state, layer);
+  } else if (cityStyle === CITY_STYLE_ALPINE) {
+    placeAlpineDoor(cells, widthBlocks, heightBlocks, alpineDoor);
+    placeAlpineVillageDecor(cells, widthBlocks, heightBlocks, state, layer);
+  }
+
+  const spans = usesOldCityAssets
+    ? chooseHouseSpanDecor(widthBlocks, heightBlocks, state, hasRoof, layer)
+    : chooseAlpineGarlandSpans(widthBlocks, heightBlocks, state, layer);
+  const roofTopDecor = usesOldCityAssets
+    ? chooseRoofTopPlantDecor(widthBlocks, state, hasRoof, layer)
+    : [];
 
   return {
     x,
     y: groundY + (layer.groundOffset || 0),
+    cityStyle,
     widthBlocks,
     heightBlocks,
     hasRoof,
     roofFamily,
+    roofMidFeatures,
     wallFamily,
     windowFamily,
-    wallBlock,
+    wallBlocks,
     hasBase,
     baseBlock,
     windowPattern,
@@ -884,6 +1002,163 @@ function generateHouse(x, state, layer = {}) {
     roofTopDecor,
     cells,
   };
+}
+
+function chooseHouseCityStyle() {
+  if (currentCityStyle === CITY_STYLE_ALPINE) return CITY_STYLE_ALPINE;
+
+  if (currentCityStyle === CITY_STYLE_MIX) {
+    return random() < 0.5 ? CITY_STYLE_ALPINE : CITY_STYLE_OLD;
+  }
+
+  if (currentCityStyle === CITY_STYLE_JOURNEY) {
+    const blend = map(sin(frameCount * 0.012), -1, 1, 0.25, 0.85);
+    return random() < blend ? CITY_STYLE_ALPINE : CITY_STYLE_OLD;
+  }
+
+  return CITY_STYLE_OLD;
+}
+
+function getRoofAssetsForCityStyle(cityStyle) {
+  if (cityStyle === CITY_STYLE_ALPINE) {
+    return assets.alpine && assets.alpine.roofs;
+  }
+
+  return assets.roofs;
+}
+
+function chooseRoofMidFeatures(widthBlocks, roof) {
+  if (!roof || !Array.isArray(roof.mid) || roof.mid.length <= 1) return {};
+  if (widthBlocks < 4) return {};
+
+  const featureParts = roof.mid.slice(1);
+  const featureCol = floor(random(2, widthBlocks - 2));
+
+  if (random() > 0.42) return {};
+
+  return {
+    [featureCol]: pick(featureParts),
+  };
+}
+
+function chooseWidthForCityStyle(state, cityStyle) {
+  if (cityStyle !== CITY_STYLE_ALPINE) return chooseWidth(state);
+
+  if (state.density > 0.72) return pick([3, 3, 4, 4, 5]);
+  if (state.order > 0.68) return pick([3, 4]);
+
+  return pick([2, 3, 3, 4, 4, 5]);
+}
+
+function chooseHeightForCityStyle(state, cityStyle, heightMultiplier = 1) {
+  if (cityStyle !== CITY_STYLE_ALPINE) {
+    return max(3, ceil(chooseHeight(state) * heightMultiplier));
+  }
+
+  const roll = random();
+  if (roll < 0.18) return 2;
+  if (roll < 0.58) return 3;
+  if (roll < 0.93) return 4;
+
+  return 5;
+}
+
+function chooseWallBlocksForHouse(heightBlocks, cityStyle, wallFamily) {
+  if (cityStyle !== CITY_STYLE_ALPINE || !assets.alpine || !assets.alpine.walls) {
+    const wallBlock = pick(assets.walls[wallFamily]);
+
+    return {
+      default: wallBlock,
+    };
+  }
+
+  const bodyWall = pickAlpineBodyWall();
+
+  return {
+    body: bodyWall,
+    upper: null,
+    lower: pickWallForZone("lower"),
+    lowerRows: 1,
+    upperRows: 0,
+  };
+}
+
+function getWallBlockForRow(row, heightBlocks, wallBlocks) {
+  if (wallBlocks.default) return wallBlocks.default;
+
+  if (
+    wallBlocks.upper &&
+    isWallZoneRow(row, heightBlocks, wallBlocks.upperRows || 1, "upper")
+  ) {
+    return wallBlocks.upper;
+  }
+
+  if (
+    wallBlocks.lower &&
+    isWallZoneRow(row, heightBlocks, wallBlocks.lowerRows || 1, "lower")
+  ) {
+    return wallBlocks.lower || wallBlocks.body;
+  }
+
+  return wallBlocks.body || wallBlocks.lower;
+}
+
+function isWallZoneRow(row, heightBlocks, rowCount, side) {
+  if (side === "upper") return row < rowCount;
+  return row >= heightBlocks - rowCount;
+}
+
+function pickAlpineBodyWall() {
+  const walls = assets.alpine.walls;
+  const candidates = [
+    ...(walls.any || []),
+    ...(walls.middle || []),
+  ];
+
+  if (candidates.length > 0) return pick(candidates);
+
+  return pickWallForZone("lower");
+}
+
+function chooseAlpineWindowForHouse(heightBlocks, state) {
+  const windows = assets.alpine.windows;
+  const accentWindows = windows.accent || [];
+  const normalWindows = windows.normal || [];
+  const canUseAccent = heightBlocks >= 4 && accentWindows.length > 0;
+
+  if (canUseAccent && random() < lerp(0.05, 0.18, state.memory)) {
+    return pick(accentWindows);
+  }
+
+  if (normalWindows.length > 0) return pick(normalWindows);
+  if (accentWindows.length > 0) return pick(accentWindows);
+
+  return null;
+}
+
+function pickWallForZone(zone) {
+  const walls = assets.alpine.walls;
+  const candidates = [
+    ...(walls.any || []),
+    ...(walls[zone] || []),
+  ];
+
+  if (zone === "middle" && candidates.length === (walls.any || []).length) {
+    candidates.push(...(walls.upper || []));
+  }
+
+  if (candidates.length > 0) return pick(candidates);
+
+  const fallbackCandidates = [
+    ...(walls.any || []),
+    ...(walls.upper || []),
+    ...(walls.lower || []),
+  ];
+
+  if (fallbackCandidates.length > 0) return pick(fallbackCandidates);
+
+  const fallbackFamily = pick(Object.keys(assets.walls));
+  return pick(assets.walls[fallbackFamily]);
 }
 
 function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
@@ -900,6 +1175,33 @@ function placeDoor(cells, widthBlocks, heightBlocks, doorData) {
 
   const doorCol = floor(widthBlocks / 2);
   cells[groundRow][doorCol].door = doorData.asset;
+}
+
+function chooseAlpineDoor() {
+  const doors = assets.alpine && assets.alpine.doors && assets.alpine.doors.single;
+  if (!doors || doors.length === 0) return null;
+
+  return pick(doors);
+}
+
+function placeAlpineDoor(cells, widthBlocks, heightBlocks, doorAsset) {
+  if (!doorAsset) return;
+
+  const groundRow = heightBlocks - 1;
+  const preferredCols = [];
+  const centerCol = floor(widthBlocks / 2);
+
+  preferredCols.push(centerCol);
+  if (centerCol - 1 >= 0) preferredCols.push(centerCol - 1);
+  if (centerCol + 1 < widthBlocks) preferredCols.push(centerCol + 1);
+
+  for (let col of preferredCols) {
+    const cell = cells[groundRow][col];
+    if (!cell || cell.window || cell.decorFront || cell.detail) continue;
+
+    cell.door = doorAsset;
+    return;
+  }
 }
 
 function placeWindowBalconyDetails(cells, widthBlocks, heightBlocks, state, layer = {}) {
@@ -1127,6 +1429,158 @@ function placeStreetDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
     cell.decorFront = pick(streetProps);
     placedCount++;
   }
+}
+
+function placeAlpineVillageDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return;
+
+  placeAlpineGroundPlants(cells, widthBlocks, heightBlocks);
+  placeAlpineWindowFlowers(cells, widthBlocks, heightBlocks, state);
+  placeAlpineRoofVines(cells, widthBlocks, heightBlocks, state);
+  placeAlpineWallPlants(cells, widthBlocks, heightBlocks, state);
+  placeAlpineBenches(cells, widthBlocks, heightBlocks, state);
+}
+
+function placeAlpineGroundPlants(cells, widthBlocks, heightBlocks) {
+  const groundPlants = assets.decor && assets.decor.plants && assets.decor.plants.ground;
+  if (!groundPlants || groundPlants.length === 0) return;
+
+  const groundRow = heightBlocks - 1;
+  const maxPlacements = max(1, floor(widthBlocks * 0.72));
+  let placedCount = 0;
+
+  for (let col = 0; col < widthBlocks; col++) {
+    if (placedCount >= maxPlacements) break;
+    if (random() > 0.82) continue;
+
+    const plant = pick(groundPlants);
+
+    if (plant.layout === "vertical") {
+      const startRow = groundRow - plant.parts.length + 1;
+      if (!canPlaceVerticalDecor(cells, startRow, col, plant.parts.length)) continue;
+
+      placeVerticalDecor(cells, startRow, col, plant.parts);
+      placedCount++;
+      continue;
+    }
+
+    if (!canPlaceHorizontalDecor(cells, groundRow, col, plant.parts.length)) continue;
+
+    placeHorizontalDecor(cells, groundRow, col, plant.parts);
+    placedCount++;
+    col += plant.parts.length - 1;
+  }
+}
+
+function placeAlpineWindowFlowers(cells, widthBlocks, heightBlocks, state) {
+  const flowerBoxes = assets.decor && assets.decor.balconies;
+  if (!flowerBoxes || flowerBoxes.length === 0) return;
+
+  const chance = lerp(0.46, 0.88, max(state.decoration, state.memory));
+
+  for (let row = 0; row < heightBlocks; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      const cell = cells[row][col];
+      if (!cell.window) continue;
+      if (cell.detail || cell.decorFront) continue;
+      if (random() > chance) continue;
+
+      cell.decorFront = pick(flowerBoxes);
+    }
+  }
+}
+
+function placeAlpineRoofVines(cells, widthBlocks, heightBlocks, state) {
+  const roofVines = assets.decor && assets.decor.plants && assets.decor.plants.roof;
+  if (!roofVines || roofVines.length === 0) return;
+  if (heightBlocks < 3) return;
+
+  const maxPlacements = widthBlocks >= 4 ? 2 : 1;
+  const chance = lerp(0.42, 0.76, max(state.decoration, state.memory));
+  let placedCount = 0;
+
+  for (let col = 0; col < widthBlocks; col++) {
+    if (placedCount >= maxPlacements) break;
+    if (random() > chance) continue;
+
+    const freeLength = countOpenVerticalCells(cells, 0, col);
+    const fittingVines = roofVines.filter((vine) => vine.parts.length <= freeLength);
+    if (fittingVines.length === 0) continue;
+
+    const vine = pick(fittingVines);
+    placeVerticalDecor(cells, 0, col, vine.parts);
+    placedCount++;
+  }
+}
+
+function placeAlpineWallPlants(cells, widthBlocks, heightBlocks, state) {
+  const wallPlants = assets.decor && assets.decor.plants && assets.decor.plants.wall;
+  if (!wallPlants || wallPlants.length === 0) return;
+  if (heightBlocks < 3) return;
+
+  const maxPlacements = widthBlocks >= 4 ? 2 : 1;
+  let placedCount = 0;
+
+  for (let row = 1; row < heightBlocks - 1; row++) {
+    for (let col = 0; col < widthBlocks; col++) {
+      if (placedCount >= maxPlacements) return;
+      if (random() > lerp(0.12, 0.34, state.decoration)) continue;
+      if (!isOpenWallCell(cells[row][col])) continue;
+
+      cells[row][col].decorFront = pick(wallPlants);
+      cells[row][col].decorFrontOffsetY = BLOCK * 0.38;
+      placedCount++;
+    }
+  }
+}
+
+function placeAlpineBenches(cells, widthBlocks, heightBlocks, state) {
+  const streetProps = assets.decor && assets.decor.street;
+  if (!streetProps || streetProps.length < 2) return;
+
+  const benches = streetProps.slice(0, 2);
+  const groundRow = heightBlocks - 1;
+  const chance = widthBlocks >= 4 ? 0.34 : 0.18;
+
+  if (random() > chance) return;
+
+  const candidates = [];
+  for (let col = 0; col < widthBlocks; col++) {
+    if (isOpenWallCell(cells[groundRow][col])) {
+      candidates.push(col);
+    }
+  }
+
+  if (candidates.length === 0) return;
+
+  const col = pick(candidates);
+  cells[groundRow][col].decorFront = pick(benches);
+}
+
+function chooseAlpineGarlandSpans(widthBlocks, heightBlocks, state, layer = {}) {
+  if (layer.tint) return [];
+  if (widthBlocks < 3) return [];
+
+  const spans = assets.decor && assets.decor.spans;
+  if (!spans) return [];
+
+  const garlands = [
+    ...(spans.house || []),
+    ...((spans.roof || []).filter((span) => span.parts && span.parts.length <= 2)),
+  ];
+
+  if (garlands.length === 0) return [];
+  if (random() > lerp(0.34, 0.7, max(state.decoration, state.memory))) return [];
+
+  const row = heightBlocks >= 4 ? floor(random(1, heightBlocks - 2)) : 1;
+
+  return [
+    {
+      asset: pick(garlands),
+      offsetY: row * BLOCK + BLOCK * 0.12,
+      height: BLOCK * 2,
+    },
+  ];
 }
 
 function placeBalconyDecor(cells, widthBlocks, heightBlocks, state, layer = {}) {
@@ -1358,7 +1812,6 @@ function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters,
 
   const chance = lerp(0, 0.32, decoration);
   const rowStart = max(1, heightBlocks - 2);
-  const candidates = [];
 
   for (let row = rowStart; row < heightBlocks; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -1367,25 +1820,8 @@ function placeGroundPosterDecor(cells, widthBlocks, heightBlocks, groundPosters,
       if (!isOpenWallCell(cell)) continue;
       if (random() > chance) continue;
 
-      candidates.push(cell);
+      cell.decorBack = pick(groundPosters);
     }
-  }
-
-  const maxCount = decoration > 0.75 && widthBlocks >= 5 ? 2 : 1;
-  const usedPosters = [];
-  let placedCount = 0;
-
-  while (placedCount < maxCount && candidates.length > 0) {
-    const candidateIndex = floor(random(candidates.length));
-    const cell = candidates.splice(candidateIndex, 1)[0];
-    const availablePosters = groundPosters.filter((poster) => !usedPosters.includes(poster));
-
-    if (availablePosters.length === 0) break;
-
-    const poster = pick(availablePosters);
-    cell.decorBack = poster;
-    usedPosters.push(poster);
-    placedCount++;
   }
 }
 
@@ -1394,7 +1830,6 @@ function placeUpperPosterDecor(cells, widthBlocks, heightBlocks, upperPosters, d
 
   const chance = lerp(0, 0.22, decoration);
   const maxStartRow = max(1, heightBlocks - 3);
-  const candidates = [];
 
   for (let row = 1; row <= maxStartRow; row++) {
     for (let col = 0; col < widthBlocks; col++) {
@@ -1414,33 +1849,14 @@ function placeUpperPosterDecor(cells, widthBlocks, heightBlocks, upperPosters, d
 
       if (fittingPosters.length === 0) continue;
 
-      candidates.push({ row, col, fittingPosters });
+      const poster = pick(fittingPosters);
+
+      if (poster.type === "vertical") {
+        placeVerticalBackDecor(cells, row, col, poster.parts);
+      } else {
+        placeRectBackDecor(cells, row, col, poster.rows);
+      }
     }
-  }
-
-  const maxCount = decoration > 0.8 && widthBlocks >= 5 && heightBlocks >= 5 ? 2 : 1;
-  const usedPosters = [];
-  let placedCount = 0;
-
-  while (placedCount < maxCount && candidates.length > 0) {
-    const candidateIndex = floor(random(candidates.length));
-    const candidate = candidates.splice(candidateIndex, 1)[0];
-    const availablePosters = candidate.fittingPosters.filter((poster) => !usedPosters.includes(poster));
-
-    if (availablePosters.length === 0) continue;
-
-    const poster = pick(availablePosters);
-
-    if (poster.type === "vertical") {
-      if (!canPlaceVerticalBackDecor(cells, candidate.row, candidate.col, poster.parts.length)) continue;
-      placeVerticalBackDecor(cells, candidate.row, candidate.col, poster.parts);
-    } else {
-      if (!canPlaceRectBackDecor(cells, candidate.row, candidate.col, poster.rows)) continue;
-      placeRectBackDecor(cells, candidate.row, candidate.col, poster.rows);
-    }
-
-    usedPosters.push(poster);
-    placedCount++;
   }
 }
 
@@ -1718,6 +2134,15 @@ function randomGap(state) {
   return random(minGap, maxGap);
 }
 
+function randomGapForCityStyle(state) {
+  if (currentCityStyle !== CITY_STYLE_ALPINE) return randomGap(state);
+
+  const minGap = lerp(BLOCK * 0.65, BLOCK * 0.22, state.density);
+  const maxGap = lerp(BLOCK * 1.7, BLOCK * 0.75, state.density);
+
+  return random(minGap, maxGap);
+}
+
 function chooseBuildingTint(state) {
   const cold = color(150, 165, 180);
   const warm = color(220, 178, 145);
@@ -1891,7 +2316,11 @@ function drawHouseBacking(house, houseDrawX, bodyTopY, alpha, target = null) {
 function drawRoof(house, roofY, houseDrawX, target = null) {
   if (!house.hasRoof || !house.roofFamily) return;
 
-  const roof = assets.roofs[house.roofFamily];
+  const roofAssets = getRoofAssetsForCityStyle(house.cityStyle);
+  if (!roofAssets) return;
+
+  const roof = roofAssets[house.roofFamily];
+  if (!roof) return;
 
   for (let col = 0; col < house.widthBlocks; col++) {
     const x = houseDrawX + col * BLOCK;
@@ -1902,11 +2331,15 @@ function drawRoof(house, roofY, houseDrawX, target = null) {
       roofPart = roof.left;
     } else if (col === house.widthBlocks - 1) {
       roofPart = roof.right;
+    } else if (house.roofMidFeatures && house.roofMidFeatures[col]) {
+      roofPart = house.roofMidFeatures[col];
     } else {
-      roofPart = roof.mid;
+      roofPart = Array.isArray(roof.mid) ? roof.mid[0] : roof.mid;
     }
 
-    drawTile(roofPart, x, roofY, target);
+    if (roofPart) {
+      drawTile(roofPart, x, roofY, target);
+    }
   }
 }
 
@@ -2061,6 +2494,26 @@ function tempoToSpeed(tempo) {
 function keyPressed() {
   let shouldRegenerateCity = false;
 
+  if (keyCode === LEFT_ARROW) {
+    setCityStyle(CITY_STYLE_OLD);
+    return false;
+  }
+
+  if (keyCode === RIGHT_ARROW) {
+    setCityStyle(CITY_STYLE_ALPINE);
+    return false;
+  }
+
+  if (keyCode === UP_ARROW) {
+    setCityStyle(CITY_STYLE_MIX);
+    return false;
+  }
+
+  if (keyCode === DOWN_ARROW) {
+    setCityStyle(CITY_STYLE_JOURNEY);
+    return false;
+  }
+
   if (key === "1") {
     currentState.warmth = constrain(currentState.warmth - 0.1, 0, 1);
     shouldRegenerateCity = true;
@@ -2137,6 +2590,14 @@ function keyPressed() {
     initializeCity();
   }
 
+  syncUIFromState();
+}
+
+function setCityStyle(cityStyle) {
+  currentCityStyle = cityStyle;
+  midBgOffset = 0;
+  asphaltOffset = 0;
+  initializeCity();
   syncUIFromState();
 }
 
