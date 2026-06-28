@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instagram Post Generator</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: #efede7;
+      color: #222;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: auto !important;
+      height: min(100vh, calc(100vw * 1.25)) !important;
+      max-width: calc(100vw - 340px);
+      max-height: 100vh;
+      margin: 0 auto;
+    }
+
+    .ui {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 10;
+      width: 286px;
+    }
+
+    .ui.is-collapsed {
+      width: auto;
+    }
+
+    .ui-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-toggle,
+    button,
+    select,
+    input,
+    textarea {
+      font-family: Arial, sans-serif;
+    }
+
+    .panel-toggle,
+    button {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .panel-toggle {
+      min-width: 34px;
+      height: 36px;
+      padding: 0 9px;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    button {
+      padding: 9px 13px;
+      font-size: 12px;
+    }
+
+    button:hover,
+    .panel-toggle:hover {
+      background: white;
+    }
+
+    .title {
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      opacity: 0.82;
+    }
+
+    .ui-content {
+      max-height: calc(100vh - 88px);
+      overflow-y: auto;
+      box-sizing: border-box;
+      padding: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    }
+
+    .ui.is-collapsed .ui-header {
+      margin-bottom: 0;
+    }
+
+    .ui.is-collapsed .title,
+    .ui.is-collapsed .ui-content {
+      display: none;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .control {
+      margin-bottom: 12px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+      font-size: 12px;
+      opacity: 0.82;
+    }
+
+    select,
+    input,
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.84);
+      color: #222;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    select,
+    input {
+      height: 34px;
+      padding: 0 10px;
+    }
+
+    textarea {
+      min-height: 58px;
+      resize: vertical;
+      padding: 9px 10px;
+    }
+
+    .palette-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .palette-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 30px;
+      padding: 0 9px 0 7px;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+      font-size: 11px;
+    }
+
+    .palette-button:hover {
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .palette-button.is-active {
+      background: #222;
+      color: #fff;
+    }
+
+    .palette-swatch {
+      display: flex;
+      align-items: center;
+    }
+
+    .palette-dot {
+      width: 12px;
+      height: 12px;
+      margin-left: -4px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 50%;
+    }
+
+    .palette-dot:first-child {
+      margin-left: 0;
+    }
+
+    .palette-button.is-active .palette-dot {
+      border-color: rgba(255, 255, 255, 0.72);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      canvas {
+        width: min(100vw, calc(100vh * 0.8)) !important;
+        height: auto !important;
+        max-width: 100vw;
+        max-height: none;
+        margin-top: 64px;
+      }
+
+      .ui {
+        width: calc(100vw - 36px);
+      }
+
+      .ui-content {
+        max-height: 46vh;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="shared-nav.css">
+</head>
+
+<body>
+  <div class="ui">
+    <div class="ui-header">
+      <button class="panel-toggle" type="button" aria-label="collapse controls" aria-expanded="true">⋮</button>
+      <div class="title">instagram post</div>
+    </div>
+
+    <div class="ui-content">
+      <div class="buttons">
+        <button id="generateBtn">generate</button>
+        <button id="exportBtn">export PNG</button>
+      </div>
+
+      <div class="control">
+        <div class="control-row"><span>image type</span></div>
+        <select id="imageTypeSelect">
+          <option value="random">random</option>
+          <option value="building">building</option>
+          <option value="street">street</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <div class="control-row"><span>layout</span></div>
+        <select id="layoutSelect">
+          <option value="random">random</option>
+          <option value="1">1 large title top</option>
+          <option value="2">2 street slice top</option>
+          <option value="3">3 museum object</option>
+          <option value="4">4 full bleed crop</option>
+          <option value="5">5 archive card</option>
+          <option value="6">6 facade close-up</option>
+          <option value="7">7 big type small image</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <div class="control-row"><span>headline</span></div>
+        <textarea id="headlineInput">Imaginary City Archive</textarea>
+      </div>
+
+      <div class="control">
+        <div class="control-row"><span>subtitle</span></div>
+        <textarea id="subtitleInput">Fragments of streets that never existed.</textarea>
+      </div>
+
+      <div class="control">
+        <div class="control-row"><span>metadata</span></div>
+        <textarea id="metadataInput">ARCHIVE NO. 001
+2026
+GENERATED CITY FRAGMENT</textarea>
+      </div>
+
+      <div class="control">
+        <div class="control-row"><span>palette</span></div>
+        <div class="palette-controls" id="paletteControls" aria-label="post color scheme"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="node_modules/p5/lib/p5.min.js"></script>
+  <script src="palettes.js"></script>
+
+  <script>
+    const POST_W = 1080;
+    const POST_H = 1350;
+    const PAD = 92;
+    const THEME_LABELS = {
+      originalNeutral: "Neutral",
+      mutedBlue: "Blue",
+      monochrome: "B/W",
+    };
+
+    const headlineOptions = [
+      "Imaginary City Archive",
+      "Future Nostalgia",
+      "Generated Memory",
+      "Soft Urban Fragments",
+      "The City Remembers",
+    ];
+    const subtitleOptions = [
+      "A fictional archive of generated places.",
+      "Fragments of streets that never existed.",
+      "Memory, architecture, and procedural imagination.",
+      "A city built from rhythm, texture, and chance.",
+      "An exhibition about places between memory and fiction.",
+    ];
+    const metadataOptions = [
+      "ARCHIVE NO. 001\n2026\nGENERATED FACADE STUDY",
+      "ARCHIVE NO. 024\nGENERATED CITY FRAGMENT\nDENSITY / MEMORY / VARIATION",
+      "2026\nSTREET FRAGMENT / SYSTEM OUTPUT",
+      "MEMORY DENSITY: HIGH\nVARIATION: RANDOM",
+      "GENERATED FACADE STUDY\nSOFT URBAN FRAGMENTS",
+    ];
+
+    let archiveItems = [];
+    let currentImage = null;
+    let currentImageType = "building";
+    let currentLayout = null;
+    let paletteAssignments = {};
+    const paletteApi = createLocalPaletteApi();
+    let activePaletteId = paletteApi.defaultPaletteId;
+    let paletteAssignment = getPaletteAssignment(activePaletteId);
+    let silhouetteCache = null;
+    let silhouetteCacheSource = null;
+    let silhouetteCacheColor = null;
+    let ui = {};
+
+    function setup() {
+      createCanvas(POST_W, POST_H);
+      pixelDensity(1);
+      imageMode(CORNER);
+      textFont("Arial");
+      noLoop();
+
+      ui = {
+        generateBtn: document.getElementById("generateBtn"),
+        exportBtn: document.getElementById("exportBtn"),
+        imageTypeSelect: document.getElementById("imageTypeSelect"),
+        layoutSelect: document.getElementById("layoutSelect"),
+        headlineInput: document.getElementById("headlineInput"),
+        subtitleInput: document.getElementById("subtitleInput"),
+        metadataInput: document.getElementById("metadataInput"),
+        panel: document.querySelector(".ui"),
+        panelToggle: document.querySelector(".panel-toggle"),
+      };
+
+      ui.generateBtn.addEventListener("click", generateInstagramPost);
+      ui.exportBtn.addEventListener("click", () => saveCanvas("imaginary_city_instagram_post", "png"));
+      [ui.headlineInput, ui.subtitleInput, ui.metadataInput].forEach((input) => {
+        input.addEventListener("input", redraw);
+      });
+      ui.layoutSelect.addEventListener("change", generateInstagramPost);
+      ui.imageTypeSelect.addEventListener("change", generateInstagramPost);
+      ui.panelToggle.addEventListener("click", togglePanel);
+
+      setupPaletteControls();
+      loadArchiveItems();
+    }
+
+    function draw() {
+      drawInstagramPost();
+    }
+
+    async function loadArchiveItems() {
+      try {
+        const response = await fetch("/api/buildings");
+
+        if (!response.ok) {
+          throw new Error("Could not load archive items");
+        }
+
+        const items = await response.json();
+        archiveItems = items.map(normalizeSavedItem).filter((item) => item.imageSource);
+      } catch (error) {
+        console.warn("Could not load archive items. Using generated fallback artwork.", error);
+        archiveItems = [];
+      }
+
+      generateInstagramPost();
+    }
+
+    function generateInstagramPost() {
+      resetCurrentPaletteAssignment();
+      silhouetteCache = null;
+
+      maybeRandomizeCopy();
+
+      const requestedType = ui.imageTypeSelect.value;
+      currentImageType = requestedType === "random" ? pick(["building", "street"]) : requestedType;
+      const candidates = archiveItems.filter((item) => item.type === currentImageType);
+      const fallbackCandidates = archiveItems.filter((item) => item.type !== currentImageType);
+      const item = pick(candidates.length ? candidates : fallbackCandidates);
+      currentLayout = createLayout(currentImageType);
+
+      if (!item) {
+        currentImage = createFallbackArchiveImage(currentImageType);
+        redraw();
+        return;
+      }
+
+      loadImage(
+        getItemImageSource(item),
+        (img) => {
+          currentImage = img;
+          redraw();
+        },
+        (error) => {
+          console.warn("Could not load archive image. Using fallback artwork.", item, error);
+          currentImage = createFallbackArchiveImage(currentImageType);
+          redraw();
+        }
+      );
+    }
+
+    function maybeRandomizeCopy() {
+      if (document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)) {
+        return;
+      }
+
+      ui.headlineInput.value = pick(headlineOptions);
+      ui.subtitleInput.value = pick(subtitleOptions);
+      ui.metadataInput.value = pick(metadataOptions);
+    }
+
+    function normalizeSavedItem(item) {
+      if (typeof item === "string") {
+        return {
+          type: "building",
+          filename: "legacy item",
+          imageSource: item,
+        };
+      }
+
+      return {
+        ...item,
+        type: item.type === "street" ? "street" : "building",
+        filename: item.filename || item.id || "archive item",
+        imageSource: getItemImageSource(item),
+      };
+    }
+
+    function getItemImageSource(item) {
+      return item.imageData || item.imageUrl || item.src || item.path || null;
+    }
+
+    function createLayout(imageType) {
+      const selected = ui.layoutSelect.value;
+      const variant = selected === "random" ? floor(random(1, 8)) : Number(selected);
+      const accentLine = random() < 0.65;
+
+      const layouts = {
+        1: {
+          variant,
+          name: "large title top",
+          imageMode: "contain",
+          imageRect: makeRect(120, 850, 840, 330),
+          headline: textSpec(makeRect(82, 88, 900, 320), 126, 0.86, LEFT, TOP),
+          subtitle: textSpec(makeRect(88, 392, 560, 120), 35, 1.16, LEFT, TOP),
+          metadata: textSpec(makeRect(702, 1178, 240, 80), 20, 1.18, LEFT, TOP),
+          line: accentLine ? { x1: 88, y1: 614, x2: 992, y2: 614 } : null,
+        },
+        2: {
+          variant,
+          name: "street slice top",
+          imageMode: "cover",
+          imageRect: makeRect(0, 0, POST_W, 355),
+          headline: textSpec(makeRect(88, 505, 890, 360), 138, 0.84, LEFT, TOP),
+          subtitle: textSpec(makeRect(92, 884, 575, 90), 31, 1.16, LEFT, TOP),
+          metadata: textSpec(makeRect(92, 1206, 420, 86), 22, 1.2, LEFT, TOP),
+        },
+        3: {
+          variant,
+          name: "museum object",
+          imageMode: "contain",
+          imageRect: makeRect(322 + random(-62, 62), 468 + random(-40, 40), 436, 342),
+          headline: textSpec(makeRect(92, 1028, 720, 160), 78, 0.9, LEFT, TOP),
+          subtitle: textSpec(makeRect(92, 1194, 650, 64), 28, 1.18, LEFT, TOP),
+          metadata: textSpec(makeRect(92, 104, 460, 180), 48, 1.05, LEFT, TOP, true),
+          line: { x1: 92, y1: 888, x2: 988, y2: 888 },
+        },
+        4: {
+          variant,
+          name: "full bleed crop",
+          imageMode: "cover",
+          imageRect: makeRect(0, 0, POST_W, POST_H),
+          overlay: true,
+          headline: textSpec(makeRect(78, 82, 830, 285), 108, 0.86, LEFT, TOP),
+          subtitle: textSpec(makeRect(82, 1080, 660, 82), 31, 1.16, LEFT, TOP),
+          metadata: textSpec(makeRect(82, 1204, 450, 72), 19, 1.22, LEFT, TOP),
+        },
+        5: {
+          variant,
+          name: "archive card",
+          imageMode: "cover",
+          imageRect: makeRect(96, 132, 470, 445),
+          headline: textSpec(makeRect(92, 672, 860, 260), 102, 0.87, LEFT, TOP),
+          subtitle: textSpec(makeRect(96, 952, 560, 82), 30, 1.16, LEFT, TOP),
+          metadata: textSpec(makeRect(648, 146, 276, 220), 23, 1.25, LEFT, TOP),
+          border: makeRect(58, 58, 964, 1234),
+          line: { x1: 96, y1: 624, x2: 984, y2: 624 },
+        },
+        6: {
+          variant,
+          name: "facade close-up",
+          imageMode: "cover",
+          imageRect: makeRect(random() < 0.55 ? 0 : 290, 0, random() < 0.55 ? 780 : 790, POST_H),
+          overlay: true,
+          headline: textSpec(makeRect(74, 750, 860, 260), 116, 0.85, LEFT, TOP),
+          subtitle: textSpec(makeRect(78, 1016, 580, 86), 29, 1.16, LEFT, TOP),
+          metadata: textSpec(makeRect(78, 1136, 400, 80), 19, 1.2, LEFT, TOP),
+        },
+        7: {
+          variant,
+          name: "big type small image",
+          imageMode: "contain",
+          imageRect: makeRect(706 + random(-48, 20), 920 + random(-80, 35), 250, 260),
+          headline: textSpec(makeRect(72, 76, 920, 620), 154, 0.8, LEFT, TOP),
+          subtitle: textSpec(makeRect(78, 760, 570, 86), 32, 1.15, LEFT, TOP),
+          metadata: textSpec(makeRect(78, 1130, 385, 88), 20, 1.2, LEFT, TOP),
+          line: accentLine ? { x1: 78, y1: 704, x2: 476, y2: 704 } : null,
+        },
+      };
+
+      if (imageType === "building" && variant === 2) {
+        layouts[2].imageRect = makeRect(0, 0, POST_W, 430);
+      }
+
+      if (imageType === "street" && variant === 3) {
+        layouts[3].imageRect = makeRect(244, 494, 590, 250);
+      }
+
+      const layout = layouts[variant] || layouts[1];
+      layout.cropX = variant === 6 ? random(0.18, 0.82) : random(0.08, 0.92);
+      layout.cropY = variant === 2 ? random(0.08, 0.38) : random(0.18, 0.78);
+
+      return layout;
+    }
+
+    function drawInstagramPost() {
+      background(paletteAssignment.pageBackground);
+
+      if (!currentLayout || !currentImage) {
+        drawWaitingState();
+        return;
+      }
+
+      const title = ui.headlineInput.value.trim() || "Imaginary City Archive";
+      const subtitle = ui.subtitleInput.value.trim();
+      const metadata = ui.metadataInput.value.trim();
+
+      if (currentLayout.border) {
+        drawCardBorder(currentLayout.border);
+      }
+
+      drawImageElement(currentImage, currentLayout.imageRect, currentLayout.imageMode, currentLayout);
+
+      if (currentLayout.overlay) {
+        drawOverlayWash(currentLayout);
+      }
+
+      if (currentLayout.line) {
+        drawAccentLine(currentLayout.line);
+      }
+
+      drawHeadline(title, currentLayout.headline, currentLayout.overlay);
+      drawSupportingText(subtitle, currentLayout.subtitle, currentLayout.overlay ? "overlayBody" : "bodyText");
+      drawSupportingText(metadata, currentLayout.metadata, currentLayout.overlay ? "overlayMeta" : "secondaryText");
+    }
+
+    function drawWaitingState() {
+      fill(paletteAssignment.bodyText);
+      noStroke();
+      textFont("Arial");
+      textSize(24);
+      textAlign(LEFT, TOP);
+      text("Loading archive fragments.", PAD, PAD);
+    }
+
+    function drawImageElement(img, target, mode, layout) {
+      if (!img) return;
+
+      push();
+      if (layout.variant === 5) {
+        fill(255, 255, 255, paletteAssignment.id === "monochrome" ? 0 : 70);
+        stroke(paletteAssignment.secondaryText);
+        strokeWeight(1);
+        rect(target.x - 14, target.y - 14, target.w + 28, target.h + 28);
+      }
+
+      const source = mode === "cover" ? getCoverSourceRect(img, target, layout) : null;
+      drawStyledImage(img, target, source);
+
+      if (layout.variant === 3) {
+        noFill();
+        stroke(paletteAssignment.accent);
+        strokeWeight(1);
+        rect(target.x - 26, target.y - 26, target.w + 52, target.h + 52);
+      }
+      pop();
+    }
+
+    function drawStyledImage(img, target, source) {
+      if (paletteAssignment.id === "monochrome") {
+        const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+        drawImageWithOptionalSource(silhouette, target, source);
+        return;
+      }
+
+      if (paletteAssignment.id !== "originalNeutral") {
+        const tintColor = paletteApi.hexToRgb(paletteAssignment.illustration);
+        tint(tintColor[0], tintColor[1], tintColor[2], 220);
+      }
+
+      drawImageWithOptionalSource(img, target, source);
+
+      if (paletteAssignment.id !== "originalNeutral") {
+        noTint();
+      }
+    }
+
+    function drawImageWithOptionalSource(img, target, source) {
+      if (source) {
+        image(img, target.x, target.y, target.w, target.h, source.sx, source.sy, source.sw, source.sh);
+        return;
+      }
+
+      const fitted = getContainRect(img, target);
+      image(img, fitted.x, fitted.y, fitted.w, fitted.h);
+    }
+
+    function getCoverSourceRect(img, target, layout) {
+      const targetRatio = target.w / target.h;
+      const imgRatio = img.width / img.height;
+      let sw = img.width;
+      let sh = img.height;
+
+      if (imgRatio > targetRatio) {
+        sw = img.height * targetRatio;
+      } else {
+        sh = img.width / targetRatio;
+      }
+
+      const maxX = max(0, img.width - sw);
+      const maxY = max(0, img.height - sh);
+      return {
+        sx: maxX * layout.cropX,
+        sy: maxY * layout.cropY,
+        sw,
+        sh,
+      };
+    }
+
+    function getContainRect(img, target) {
+      const scale = min(target.w / img.width, target.h / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+
+      return {
+        x: target.x + (target.w - w) / 2,
+        y: target.y + (target.h - h) / 2,
+        w,
+        h,
+      };
+    }
+
+    function drawOverlayWash(layout) {
+      push();
+      noStroke();
+      const bg = color(paletteAssignment.pageBackground);
+      bg.setAlpha(layout.variant === 4 ? 172 : 124);
+      fill(bg);
+
+      if (layout.variant === 4) {
+        rect(0, 0, POST_W, 415);
+        rect(0, 1012, POST_W, 338);
+      } else {
+        rect(0, 690, POST_W, 660);
+      }
+      pop();
+    }
+
+    function drawHeadline(value, spec, isOverlay) {
+      const r = spec.rect;
+      const title = value.toUpperCase();
+      const size = fitTextSize(title, r, spec.size, 52, 0.8);
+      const leading = size * spec.leading;
+      const lines = wrapTextLines(title, r.w, size, "Arial Black");
+
+      fill(isOverlay ? paletteAssignment.headline : paletteAssignment.headline);
+      noStroke();
+      textFont("Arial Black");
+      textStyle(BOLD);
+      textSize(size);
+      textLeading(leading);
+      textAlign(spec.alignX, spec.alignY);
+
+      lines.forEach((line, index) => {
+        text(line, r.x, r.y + index * leading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function drawSupportingText(value, spec, colorRole) {
+      if (!value) return;
+
+      const r = spec.rect;
+      const textValue = spec.uppercase ? value.toUpperCase() : value;
+      const colorValue = paletteAssignment[colorRole] || paletteAssignment[colorRole === "overlayMeta" ? "secondaryText" : "bodyText"];
+
+      fill(colorValue);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(spec.size);
+      textLeading(spec.size * spec.leading);
+      textAlign(spec.alignX, spec.alignY);
+      text(textValue, r.x, r.y, r.w, r.h);
+    }
+
+    function fitTextSize(textValue, r, preferredSize, minSize, leadingRatio) {
+      for (let size = preferredSize; size >= minSize; size -= 2) {
+        const lines = wrapTextLines(textValue, r.w, size, "Arial Black");
+        const textHeight = lines.length * size * leadingRatio;
+
+        if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
+          return size;
+        }
+      }
+
+      return minSize;
+    }
+
+    function wrapTextLines(textValue, maxWidth, size, fontName) {
+      textFont(fontName);
+      textSize(size);
+
+      const words = textValue.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let currentLine = "";
+
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines;
+    }
+
+    function drawAccentLine(lineSpec) {
+      stroke(paletteAssignment.accent);
+      strokeWeight(2);
+      line(lineSpec.x1, lineSpec.y1, lineSpec.x2, lineSpec.y2);
+    }
+
+    function drawCardBorder(r) {
+      noFill();
+      stroke(paletteAssignment.secondaryText);
+      strokeWeight(1);
+      rect(r.x, r.y, r.w, r.h);
+    }
+
+    function getSilhouetteGraphic(img, silhouetteColor) {
+      if (
+        silhouetteCache &&
+        silhouetteCacheSource === img &&
+        silhouetteCacheColor === silhouetteColor
+      ) {
+        return silhouetteCache;
+      }
+
+      if (silhouetteCache) {
+        silhouetteCache.remove();
+      }
+
+      const [r, g, b] = paletteApi.hexToRgb(silhouetteColor);
+      const pg = createGraphics(img.width, img.height);
+
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.image(img, 0, 0, img.width, img.height);
+      pg.loadPixels();
+
+      for (let i = 0; i < pg.pixels.length; i += 4) {
+        const alpha = pg.pixels[i + 3];
+
+        if (alpha > 8) {
+          pg.pixels[i] = r;
+          pg.pixels[i + 1] = g;
+          pg.pixels[i + 2] = b;
+          pg.pixels[i + 3] = 255;
+        } else {
+          pg.pixels[i + 3] = 0;
+        }
+      }
+
+      pg.updatePixels();
+      silhouetteCache = pg;
+      silhouetteCacheSource = img;
+      silhouetteCacheColor = silhouetteColor;
+
+      return silhouetteCache;
+    }
+
+    function createFallbackArchiveImage(type) {
+      return type === "street" ? createFallbackStreetImage() : createFallbackBuildingImage();
+    }
+
+    function createFallbackBuildingImage() {
+      const pg = createGraphics(520, 680);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const wall = pick(["#1C1C1C", "#4F5F6A", "#7B6D5E"]);
+      pg.fill(wall);
+      pg.rect(110, 120, 300, 470);
+      pg.fill("#F1EEE8");
+
+      for (let y = 166; y < 500; y += 58) {
+        for (let x = 150; x < 360; x += 62) {
+          if (random() > 0.14) {
+            pg.rect(x, y, 30, 38);
+          }
+        }
+      }
+
+      pg.fill("#E7E0D3");
+      pg.rect(224, 518, 68, 72);
+      pg.fill("#1C1C1C");
+      pg.rect(74, 590, 372, 18);
+
+      return pg;
+    }
+
+    function createFallbackStreetImage() {
+      const pg = createGraphics(980, 520);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const groundY = 448;
+      let x = 22;
+      let index = 0;
+
+      while (x < pg.width - 60) {
+        const w = random(86, 154);
+        const h = random(190, 390);
+        const y = groundY - h;
+        const wall = ["#1C1C1C", "#4F5F6A", "#7B6D5E", "#AFC6D8"][index % 4];
+
+        pg.fill(wall);
+        pg.rect(x, y, w, h);
+        pg.fill("#F1EEE8");
+
+        for (let wy = y + 30; wy < groundY - 48; wy += 42) {
+          for (let wx = x + 18; wx < x + w - 24; wx += 36) {
+            if (random() > 0.22) {
+              pg.rect(wx, wy, 18, 24);
+            }
+          }
+        }
+
+        x += w + random(10, 26);
+        index += 1;
+      }
+
+      pg.fill("#1C1C1C");
+      pg.rect(0, groundY, pg.width, 18);
+
+      return pg;
+    }
+
+    function setupPaletteControls() {
+      const paletteControls = document.getElementById("paletteControls");
+
+      Object.entries(paletteApi.colorPalettes).forEach(([paletteId, palette]) => {
+        const button = createThemeButton(paletteId, palette);
+        paletteControls.appendChild(button);
+      });
+
+      updatePaletteButtons();
+    }
+
+    function createThemeButton(paletteId, palette) {
+      const button = document.createElement("button");
+      const swatch = document.createElement("span");
+      const label = document.createElement("span");
+      const themeLabel = THEME_LABELS[paletteId] || palette.name;
+
+      button.className = "palette-button";
+      button.type = "button";
+      button.dataset.palette = paletteId;
+      button.title = palette.name;
+      button.setAttribute("aria-label", themeLabel);
+
+      palette.colors.forEach((colorValue) => {
+        const dot = document.createElement("span");
+        dot.className = "palette-dot";
+        dot.style.background = colorValue;
+        swatch.appendChild(dot);
+      });
+
+      swatch.className = "palette-swatch";
+      label.textContent = themeLabel;
+      button.append(swatch, label);
+      button.addEventListener("click", () => activatePalette(paletteId));
+
+      return button;
+    }
+
+    function createLocalPaletteApi() {
+      if (
+        typeof COLOR_PALETTES !== "undefined" &&
+        typeof DEFAULT_PALETTE_ID !== "undefined" &&
+        typeof createPaletteAssignment === "function" &&
+        typeof hexToRgb === "function"
+      ) {
+        return {
+          colorPalettes: COLOR_PALETTES,
+          defaultPaletteId: DEFAULT_PALETTE_ID,
+          createPaletteAssignment,
+          hexToRgb,
+        };
+      }
+
+      return {
+        colorPalettes: {
+          originalNeutral: {
+            name: "Original / Neutral",
+            colors: ["#1C1C1C", "#F1EEE8", "#E7E0D3"],
+          },
+          mutedBlue: {
+            name: "Muted Blue",
+            colors: ["#AFC6D8", "#C7D6E2", "#E8E5DE"],
+          },
+          monochrome: {
+            name: "Monochrome",
+            colors: ["#000000", "#FFFFFF"],
+          },
+        },
+        defaultPaletteId: "originalNeutral",
+        createPaletteAssignment(paletteId) {
+          const palette = this.colorPalettes[paletteId] || this.colorPalettes.originalNeutral;
+          const background = palette.colors[1];
+          const textColor = palette.colors[0];
+
+          return {
+            id: this.colorPalettes[paletteId] ? paletteId : "originalNeutral",
+            pageBackground: background,
+            headline: textColor,
+            bodyText: textColor,
+            secondaryText: textColor,
+            overlayBody: textColor,
+            overlayMeta: textColor,
+            illustration: textColor,
+            illustrationAlt: textColor,
+            accent: textColor,
+            text: textColor,
+          };
+        },
+        hexToRgb(hexColor) {
+          const hex = hexColor.replace("#", "");
+          return [
+            parseInt(hex.slice(0, 2), 16),
+            parseInt(hex.slice(2, 4), 16),
+            parseInt(hex.slice(4, 6), 16),
+          ];
+        },
+      };
+    }
+
+    function getPaletteAssignment(paletteId) {
+      if (!paletteAssignments[paletteId]) {
+        paletteAssignments[paletteId] = enhancePaletteAssignment(paletteApi.createPaletteAssignment(paletteId));
+      }
+
+      return paletteAssignments[paletteId];
+    }
+
+    function activatePalette(paletteId) {
+      if (paletteId === activePaletteId) {
+        shuffleActivePaletteAssignment();
+        return;
+      }
+
+      activePaletteId = paletteId;
+      paletteAssignment = getPaletteAssignment(activePaletteId);
+      updatePaletteButtons();
+      redraw();
+    }
+
+    function resetCurrentPaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+      updatePaletteButtons();
+    }
+
+    function shuffleActivePaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+      updatePaletteButtons();
+      redraw();
+    }
+
+    function createDifferentPaletteAssignment(paletteId, previousAssignment) {
+      let nextAssignment = enhancePaletteAssignment(paletteApi.createPaletteAssignment(paletteId));
+      const previousKey = previousAssignment ? getPaletteAssignmentKey(previousAssignment) : null;
+
+      for (let tries = 0; previousKey && tries < 8; tries++) {
+        if (getPaletteAssignmentKey(nextAssignment) !== previousKey) {
+          return nextAssignment;
+        }
+
+        nextAssignment = enhancePaletteAssignment(paletteApi.createPaletteAssignment(paletteId));
+      }
+
+      return nextAssignment;
+    }
+
+    function enhancePaletteAssignment(assignment) {
+      return {
+        ...assignment,
+        overlayBody: assignment.bodyText,
+        overlayMeta: assignment.secondaryText,
+      };
+    }
+
+    function getPaletteAssignmentKey(assignment) {
+      return [
+        assignment.pageBackground,
+        assignment.headline,
+        assignment.bodyText,
+        assignment.secondaryText,
+        assignment.illustration,
+        assignment.accent,
+      ].join("|");
+    }
+
+    function updatePaletteButtons() {
+      Array.from(document.querySelectorAll(".palette-button")).forEach((button) => {
+        const isActive = button.dataset.palette === activePaletteId;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    function togglePanel() {
+      const isCollapsed = ui.panel.classList.toggle("is-collapsed");
+      ui.panelToggle.setAttribute("aria-expanded", String(!isCollapsed));
+      ui.panelToggle.setAttribute("aria-label", isCollapsed ? "expand controls" : "collapse controls");
+    }
+
+    function textSpec(rectValue, size, leading, alignX, alignY, uppercase = false) {
+      return {
+        rect: rectValue,
+        size,
+        leading,
+        alignX,
+        alignY,
+        uppercase,
+      };
+    }
+
+    function makeRect(x, y, w, h) {
+      return { x, y, w, h };
+    }
+
+    function pick(arr) {
+      if (!arr || !arr.length) return null;
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+  </script>
+  <script src="shared-nav.js"></script>
+</body>
+</html>
