@@ -401,14 +401,13 @@ GENERATED CITY FRAGMENT</textarea>
       resetCurrentPaletteAssignment();
       silhouetteCache = null;
 
-      maybeRandomizeCopy();
-
       const requestedType = ui.imageTypeSelect.value;
       currentImageType = requestedType === "random" ? pick(["building", "street"]) : requestedType;
       const candidates = archiveItems.filter((item) => item.type === currentImageType);
       const fallbackCandidates = archiveItems.filter((item) => item.type !== currentImageType);
       const item = pick(candidates.length ? candidates : fallbackCandidates);
       currentLayout = createLayout(currentImageType);
+      updateCopyForLayout(currentLayout);
 
       if (!item) {
         currentImage = createFallbackArchiveImage(currentImageType);
@@ -430,8 +429,15 @@ GENERATED CITY FRAGMENT</textarea>
       );
     }
 
-    function maybeRandomizeCopy() {
+    function updateCopyForLayout(layout) {
       if (document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)) {
+        return;
+      }
+
+      if (layout.variant === 4) {
+        ui.headlineInput.value = "";
+        ui.subtitleInput.value = "";
+        ui.metadataInput.value = "";
         return;
       }
 
@@ -472,8 +478,8 @@ GENERATED CITY FRAGMENT</textarea>
           name: "large title top",
           imageMode: "contain",
           imageRect: makeRect(120, 850, 840, 330),
-          headline: textSpec(makeRect(82, 88, 900, 320), 126, 0.86, LEFT, TOP),
-          subtitle: textSpec(makeRect(88, 392, 560, 120), 35, 1.16, LEFT, TOP),
+          headline: textSpec(makeRect(82, 88, 900, 410), 126, 0.86, LEFT, TOP),
+          subtitle: textSpec(makeRect(88, 392, 620, 120), 35, 1.16, LEFT, TOP),
           metadata: textSpec(makeRect(702, 1178, 240, 80), 20, 1.18, LEFT, TOP),
           line: accentLine ? { x1: 88, y1: 614, x2: 992, y2: 614 } : null,
         },
@@ -501,7 +507,8 @@ GENERATED CITY FRAGMENT</textarea>
           name: "full bleed crop",
           imageMode: "cover",
           imageRect: makeRect(0, 0, POST_W, POST_H),
-          overlay: true,
+          textOverImage: true,
+          directText: true,
           headline: textSpec(makeRect(78, 82, 830, 285), 108, 0.86, LEFT, TOP),
           subtitle: textSpec(makeRect(82, 1080, 660, 82), 31, 1.16, LEFT, TOP),
           metadata: textSpec(makeRect(82, 1204, 450, 72), 19, 1.22, LEFT, TOP),
@@ -514,18 +521,17 @@ GENERATED CITY FRAGMENT</textarea>
           headline: textSpec(makeRect(92, 672, 860, 260), 102, 0.87, LEFT, TOP),
           subtitle: textSpec(makeRect(96, 952, 560, 82), 30, 1.16, LEFT, TOP),
           metadata: textSpec(makeRect(648, 146, 276, 220), 23, 1.25, LEFT, TOP),
-          border: makeRect(58, 58, 964, 1234),
           line: { x1: 96, y1: 624, x2: 984, y2: 624 },
         },
         6: {
           variant,
           name: "facade close-up",
           imageMode: "cover",
-          imageRect: makeRect(random() < 0.55 ? 0 : 290, 0, random() < 0.55 ? 780 : 790, POST_H),
-          overlay: true,
-          headline: textSpec(makeRect(74, 750, 860, 260), 116, 0.85, LEFT, TOP),
-          subtitle: textSpec(makeRect(78, 1016, 580, 86), 29, 1.16, LEFT, TOP),
-          metadata: textSpec(makeRect(78, 1136, 400, 80), 19, 1.2, LEFT, TOP),
+          imageRect: makeRect(0, 0, 640, POST_H),
+          solidPanel: makeRect(640, 0, 440, POST_H),
+          headline: textSpec(makeRect(684, 124, 320, 560), 88, 0.86, LEFT, TOP),
+          subtitle: textSpec(makeRect(688, 746, 300, 150), 28, 1.16, LEFT, TOP),
+          metadata: textSpec(makeRect(688, 1068, 282, 112), 19, 1.2, LEFT, TOP),
         },
         7: {
           variant,
@@ -565,24 +571,64 @@ GENERATED CITY FRAGMENT</textarea>
       const title = ui.headlineInput.value.trim() || "Imaginary City Archive";
       const subtitle = ui.subtitleInput.value.trim();
       const metadata = ui.metadataInput.value.trim();
+      const renderLayout = resolveDynamicLayout(currentLayout, title);
 
-      if (currentLayout.border) {
-        drawCardBorder(currentLayout.border);
+      drawImageElement(currentImage, renderLayout.imageRect, renderLayout.imageMode, renderLayout);
+
+      if (renderLayout.solidPanel) {
+        drawSolidPanel(renderLayout.solidPanel);
       }
 
-      drawImageElement(currentImage, currentLayout.imageRect, currentLayout.imageMode, currentLayout);
-
-      if (currentLayout.overlay) {
-        drawOverlayWash(currentLayout);
+      if (renderLayout.line) {
+        drawAccentLine(renderLayout.line);
       }
 
-      if (currentLayout.line) {
-        drawAccentLine(currentLayout.line);
+      drawHeadline(title, renderLayout.headline, renderLayout);
+      drawSupportingText(subtitle, renderLayout.subtitle, renderLayout.textOverImage ? "headline" : "bodyText", renderLayout);
+      drawSupportingText(metadata, renderLayout.metadata, renderLayout.textOverImage ? "headline" : "secondaryText", renderLayout);
+    }
+
+    function resolveDynamicLayout(layout, title) {
+      const nextLayout = copyLayout(layout);
+
+      if (nextLayout.variant !== 1) {
+        return nextLayout;
       }
 
-      drawHeadline(title, currentLayout.headline, currentLayout.overlay);
-      drawSupportingText(subtitle, currentLayout.subtitle, currentLayout.overlay ? "overlayBody" : "bodyText");
-      drawSupportingText(metadata, currentLayout.metadata, currentLayout.overlay ? "overlayMeta" : "secondaryText");
+      const titleMetrics = measureTitleBlock(title, nextLayout.headline);
+      const subtitleGap = 28;
+      const subtitleY = min(
+        titleMetrics.y + titleMetrics.height + subtitleGap,
+        nextLayout.imageRect.y - nextLayout.subtitle.rect.h - 112
+      );
+
+      nextLayout.subtitle.rect.y = max(356, subtitleY);
+
+      if (nextLayout.line) {
+        nextLayout.line.y1 = nextLayout.subtitle.rect.y + nextLayout.subtitle.rect.h + 74;
+        nextLayout.line.y2 = nextLayout.line.y1;
+      }
+
+      return nextLayout;
+    }
+
+    function copyLayout(layout) {
+      return {
+        ...layout,
+        imageRect: { ...layout.imageRect },
+        headline: copyTextSpec(layout.headline),
+        subtitle: copyTextSpec(layout.subtitle),
+        metadata: copyTextSpec(layout.metadata),
+        line: layout.line ? { ...layout.line } : null,
+        solidPanel: layout.solidPanel ? { ...layout.solidPanel } : null,
+      };
+    }
+
+    function copyTextSpec(spec) {
+      return {
+        ...spec,
+        rect: { ...spec.rect },
+      };
     }
 
     function drawWaitingState() {
@@ -598,22 +644,8 @@ GENERATED CITY FRAGMENT</textarea>
       if (!img) return;
 
       push();
-      if (layout.variant === 5) {
-        fill(255, 255, 255, paletteAssignment.id === "monochrome" ? 0 : 70);
-        stroke(paletteAssignment.secondaryText);
-        strokeWeight(1);
-        rect(target.x - 14, target.y - 14, target.w + 28, target.h + 28);
-      }
-
       const source = mode === "cover" ? getCoverSourceRect(img, target, layout) : null;
       drawStyledImage(img, target, source);
-
-      if (layout.variant === 3) {
-        noFill();
-        stroke(paletteAssignment.accent);
-        strokeWeight(1);
-        rect(target.x - 26, target.y - 26, target.w + 52, target.h + 52);
-      }
       pop();
     }
 
@@ -681,30 +713,26 @@ GENERATED CITY FRAGMENT</textarea>
       };
     }
 
-    function drawOverlayWash(layout) {
+    function drawSolidPanel(r) {
       push();
       noStroke();
-      const bg = color(paletteAssignment.pageBackground);
-      bg.setAlpha(layout.variant === 4 ? 172 : 124);
-      fill(bg);
-
-      if (layout.variant === 4) {
-        rect(0, 0, POST_W, 415);
-        rect(0, 1012, POST_W, 338);
-      } else {
-        rect(0, 690, POST_W, 660);
-      }
+      fill(paletteAssignment.pageBackground);
+      rect(r.x, r.y, r.w, r.h);
       pop();
     }
 
-    function drawHeadline(value, spec, isOverlay) {
+    function drawHeadline(value, spec, layout) {
       const r = spec.rect;
       const title = value.toUpperCase();
       const size = fitTextSize(title, r, spec.size, 52, 0.8);
       const leading = size * spec.leading;
       const lines = wrapTextLines(title, r.w, size, "Arial Black");
 
-      fill(isOverlay ? paletteAssignment.headline : paletteAssignment.headline);
+      if (layout.textOverImage && !layout.directText) {
+        drawTextShadow(r.x, r.y, lines, size, leading, "Arial Black");
+      }
+
+      fill(paletteAssignment.headline);
       noStroke();
       textFont("Arial Black");
       textStyle(BOLD);
@@ -720,12 +748,16 @@ GENERATED CITY FRAGMENT</textarea>
       textFont("Arial");
     }
 
-    function drawSupportingText(value, spec, colorRole) {
+    function drawSupportingText(value, spec, colorRole, layout) {
       if (!value) return;
 
       const r = spec.rect;
       const textValue = spec.uppercase ? value.toUpperCase() : value;
       const colorValue = paletteAssignment[colorRole] || paletteAssignment[colorRole === "overlayMeta" ? "secondaryText" : "bodyText"];
+
+      if (layout.textOverImage && !layout.directText) {
+        drawBodyTextShadow(textValue, spec);
+      }
 
       fill(colorValue);
       noStroke();
@@ -735,6 +767,51 @@ GENERATED CITY FRAGMENT</textarea>
       textLeading(spec.size * spec.leading);
       textAlign(spec.alignX, spec.alignY);
       text(textValue, r.x, r.y, r.w, r.h);
+    }
+
+    function measureTitleBlock(value, spec) {
+      const title = value.toUpperCase();
+      const size = fitTextSize(title, spec.rect, spec.size, 52, 0.8);
+      const lines = wrapTextLines(title, spec.rect.w, size, "Arial Black");
+
+      return {
+        y: spec.rect.y,
+        size,
+        lineCount: lines.length,
+        height: lines.length * size * spec.leading,
+      };
+    }
+
+    function drawTextShadow(x, y, lines, size, leading, fontName) {
+      push();
+      textFont(fontName);
+      textStyle(BOLD);
+      textSize(size);
+      textLeading(leading);
+      textAlign(LEFT, TOP);
+      const shadowColor = color(paletteAssignment.pageBackground);
+      shadowColor.setAlpha(190);
+      fill(shadowColor);
+      noStroke();
+      lines.forEach((line, index) => {
+        text(line, x + 4, y + index * leading + 5);
+      });
+      pop();
+    }
+
+    function drawBodyTextShadow(value, spec) {
+      push();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(spec.size);
+      textLeading(spec.size * spec.leading);
+      textAlign(spec.alignX, spec.alignY);
+      const shadowColor = color(paletteAssignment.pageBackground);
+      shadowColor.setAlpha(180);
+      fill(shadowColor);
+      noStroke();
+      text(value, spec.rect.x + 3, spec.rect.y + 4, spec.rect.w, spec.rect.h);
+      pop();
     }
 
     function fitTextSize(textValue, r, preferredSize, minSize, leadingRatio) {
@@ -780,13 +857,6 @@ GENERATED CITY FRAGMENT</textarea>
       stroke(paletteAssignment.accent);
       strokeWeight(2);
       line(lineSpec.x1, lineSpec.y1, lineSpec.x2, lineSpec.y2);
-    }
-
-    function drawCardBorder(r) {
-      noFill();
-      stroke(paletteAssignment.secondaryText);
-      strokeWeight(1);
-      rect(r.x, r.y, r.w, r.h);
     }
 
     function getSilhouetteGraphic(img, silhouetteColor) {
