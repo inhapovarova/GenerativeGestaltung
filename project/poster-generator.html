@@ -22,6 +22,13 @@
       height: 100vh !important;
     }
 
+    body[data-format="ticket"] canvas {
+      max-width: calc(100vw - 96px);
+      max-height: calc(100vh - 140px);
+      width: min(1040px, calc(100vw - 96px)) !important;
+      height: auto !important;
+    }
+
   </style>
   <link rel="stylesheet" href="generator-toolbar.css">
   <link rel="stylesheet" href="shared-nav.css">
@@ -46,6 +53,7 @@
   <div class="format-toggle" id="formatToggle" aria-label="output format">
     <button id="posterModeBtn" class="is-active" type="button" aria-pressed="true">Poster</button>
     <button id="postModeBtn" type="button" aria-pressed="false">Post</button>
+    <button id="ticketModeBtn" type="button" aria-pressed="false">Ticket</button>
   </div>
 
   <div class="generator-text-popover" id="textPopover">
@@ -106,6 +114,36 @@ A sandbox for slow exploration</textarea>
 GENERATED CITY FRAGMENT</textarea>
       </div>
     </div>
+
+    <div class="generator-mode-fields" id="ticketTextFields" hidden>
+      <div class="generator-text-control">
+        <label for="ticketTitleInput">exhibition title</label>
+        <textarea id="ticketTitleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="ticketDateInput">date</label>
+        <textarea id="ticketDateInput">20 JULY 2026</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="ticketTimeInput">time</label>
+        <textarea id="ticketTimeInput">19:30</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="ticketLocationInput">location</label>
+        <textarea id="ticketLocationInput">Faculty for Design
+Munich University of Applied Sciences
+Lothstraße 17
+80335 Munich</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="ticketNumberInput">ticket number</label>
+        <textarea id="ticketNumberInput">CTRF-00038</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="ticketNoteInput">short note</label>
+        <textarea id="ticketNoteInput">Generated access / unbuilt streets / memory-forward archive</textarea>
+      </div>
+    </div>
   </div>
 
   <script src="node_modules/p5/lib/p5.min.js"></script>
@@ -116,9 +154,44 @@ GENERATED CITY FRAGMENT</textarea>
     const POSTER_H = 1754;
     const POST_W = 1080;
     const POST_H = 1350;
+    const TICKET_W = 1600;
+    const TICKET_H = 520;
 
     const MARGIN_X = POSTER_W * (24 / 210);
     const MARGIN_Y = POSTER_H * (24 / 297);
+    const TICKET_MARGIN_X = 64;
+    const TICKET_MARGIN_Y = 48;
+    const TICKET_WORK_W = TICKET_W - TICKET_MARGIN_X * 2;
+    const TICKET_WORK_H = TICKET_H - TICKET_MARGIN_Y * 2;
+    const TICKET_ZONE_GAP = 34;
+    const TICKET_TITLE_ZONE_W = 470;
+    const TICKET_IMAGE_ZONE_W = 520;
+    const TICKET_INFO_ZONE_W = TICKET_WORK_W - TICKET_TITLE_ZONE_W - TICKET_IMAGE_ZONE_W - TICKET_ZONE_GAP * 2;
+    const TICKET_TITLE_ZONE = {
+      x: TICKET_MARGIN_X,
+      y: TICKET_MARGIN_Y,
+      w: TICKET_TITLE_ZONE_W,
+      h: TICKET_WORK_H,
+    };
+    const TICKET_IMAGE_ZONE = {
+      x: TICKET_TITLE_ZONE.x + TICKET_TITLE_ZONE.w + TICKET_ZONE_GAP,
+      y: TICKET_MARGIN_Y,
+      w: TICKET_IMAGE_ZONE_W,
+      h: TICKET_WORK_H,
+    };
+    const TICKET_INFO_ZONE = {
+      x: TICKET_IMAGE_ZONE.x + TICKET_IMAGE_ZONE.w + TICKET_ZONE_GAP,
+      y: TICKET_MARGIN_Y,
+      w: TICKET_INFO_ZONE_W,
+      h: TICKET_WORK_H,
+    };
+    const TICKET_MAIN_ZONE = {
+      x: TICKET_TITLE_ZONE.x,
+      y: TICKET_MARGIN_Y,
+      w: TICKET_TITLE_ZONE.w + TICKET_IMAGE_ZONE.w + TICKET_ZONE_GAP,
+      h: TICKET_WORK_H,
+    };
+    const TICKET_PERFORATION_X = TICKET_INFO_ZONE.x - TICKET_ZONE_GAP * 0.5;
 
     const COLS = 6;
     const ROWS = 8;
@@ -150,6 +223,9 @@ GENERATED CITY FRAGMENT</textarea>
     let postImage = null;
     let postLayout = null;
     let postImageType = "building";
+    let ticketBuilding = null;
+    let ticketBuildingIsFallback = false;
+    let ticketLayout = null;
 
     const posterContent = {
       title: "THE CITY THAT REMEMBERS FORWARD",
@@ -164,6 +240,15 @@ GENERATED CITY FRAGMENT</textarea>
       headline: "Imaginary City Archive",
       subtitle: "Fragments of streets that never existed.",
       metadata: "ARCHIVE NO. 001\n2026\nGENERATED CITY FRAGMENT",
+    };
+
+    const ticketContent = {
+      title: "THE CITY THAT REMEMBERS FORWARD",
+      date: "20 JULY 2026",
+      time: "19:30",
+      location: "Faculty for Design\nMunich University of Applied Sciences\nLothstraße 17\n80335 Munich",
+      number: "CTRF-00038",
+      note: "Generated access / unbuilt streets / memory-forward archive",
     };
 
     const postHeadlineOptions = [
@@ -280,12 +365,20 @@ GENERATED CITY FRAGMENT</textarea>
         postHeadlineInput: document.getElementById("postHeadlineInput"),
         postSubtitleInput: document.getElementById("postSubtitleInput"),
         postMetadataInput: document.getElementById("postMetadataInput"),
+        ticketTitleInput: document.getElementById("ticketTitleInput"),
+        ticketDateInput: document.getElementById("ticketDateInput"),
+        ticketTimeInput: document.getElementById("ticketTimeInput"),
+        ticketLocationInput: document.getElementById("ticketLocationInput"),
+        ticketNumberInput: document.getElementById("ticketNumberInput"),
+        ticketNoteInput: document.getElementById("ticketNoteInput"),
         posterTextFields: document.getElementById("posterTextFields"),
         postTextFields: document.getElementById("postTextFields"),
+        ticketTextFields: document.getElementById("ticketTextFields"),
       };
 
       syncPosterTextInputs();
       syncPostTextInputs();
+      syncTicketTextInputs();
       textUi.textBtn.addEventListener("click", toggleTextPopover);
       [
         textUi.titleInput,
@@ -304,6 +397,16 @@ GENERATED CITY FRAGMENT</textarea>
       ].forEach((input) => {
         input.addEventListener("input", updatePostContentFromInputs);
       });
+      [
+        textUi.ticketTitleInput,
+        textUi.ticketDateInput,
+        textUi.ticketTimeInput,
+        textUi.ticketLocationInput,
+        textUi.ticketNumberInput,
+        textUi.ticketNoteInput,
+      ].forEach((input) => {
+        input.addEventListener("input", updateTicketContentFromInputs);
+      });
 
       document.addEventListener("click", closeTextPopoverOnOutsideClick);
       document.addEventListener("keydown", closeTextPopoverOnEscape);
@@ -312,9 +415,11 @@ GENERATED CITY FRAGMENT</textarea>
     function setupModeControls() {
       const posterModeBtn = document.getElementById("posterModeBtn");
       const postModeBtn = document.getElementById("postModeBtn");
+      const ticketModeBtn = document.getElementById("ticketModeBtn");
 
       posterModeBtn.addEventListener("click", () => activateMode("poster"));
       postModeBtn.addEventListener("click", () => activateMode("post"));
+      ticketModeBtn.addEventListener("click", () => activateMode("ticket"));
       updateModeControls();
     }
 
@@ -333,24 +438,39 @@ GENERATED CITY FRAGMENT</textarea>
         return;
       }
 
-      resizeCanvas(POST_W, POST_H);
-      if (!postLayout || !postImage) {
-        generatePost();
+      if (activeMode === "post") {
+        resizeCanvas(POST_W, POST_H);
+        if (!postLayout || !postImage) {
+          generatePost();
+        }
+        return;
+      }
+
+      resizeCanvas(TICKET_W, TICKET_H);
+      if (!ticketLayout || !ticketBuilding) {
+        generateTicket();
       }
     }
 
     function updateModeControls() {
       const posterModeBtn = document.getElementById("posterModeBtn");
       const postModeBtn = document.getElementById("postModeBtn");
+      const ticketModeBtn = document.getElementById("ticketModeBtn");
       const isPoster = activeMode === "poster";
+      const isPost = activeMode === "post";
+      const isTicket = activeMode === "ticket";
 
       posterModeBtn.classList.toggle("is-active", isPoster);
-      postModeBtn.classList.toggle("is-active", !isPoster);
+      postModeBtn.classList.toggle("is-active", isPost);
+      ticketModeBtn.classList.toggle("is-active", isTicket);
       posterModeBtn.setAttribute("aria-pressed", String(isPoster));
-      postModeBtn.setAttribute("aria-pressed", String(!isPoster));
+      postModeBtn.setAttribute("aria-pressed", String(isPost));
+      ticketModeBtn.setAttribute("aria-pressed", String(isTicket));
       textUi.posterTextFields.hidden = !isPoster;
-      textUi.postTextFields.hidden = isPoster;
-      document.getElementById("generateBtn").setAttribute("aria-label", isPoster ? "shuffle poster" : "shuffle post");
+      textUi.postTextFields.hidden = !isPost;
+      textUi.ticketTextFields.hidden = !isTicket;
+      document.body.dataset.format = activeMode;
+      document.getElementById("generateBtn").setAttribute("aria-label", `shuffle ${activeMode}`);
     }
 
     function generateActiveFormat() {
@@ -359,7 +479,12 @@ GENERATED CITY FRAGMENT</textarea>
         return;
       }
 
-      generatePost();
+      if (activeMode === "post") {
+        generatePost();
+        return;
+      }
+
+      generateTicket();
     }
 
     function saveActiveFormat() {
@@ -368,7 +493,12 @@ GENERATED CITY FRAGMENT</textarea>
         return;
       }
 
-      saveCanvas("imaginary_city_instagram_post", "png");
+      if (activeMode === "post") {
+        saveCanvas("imaginary_city_instagram_post", "png");
+        return;
+      }
+
+      saveCanvas("generated_ticket", "png");
     }
 
     function syncPosterTextInputs() {
@@ -386,6 +516,15 @@ GENERATED CITY FRAGMENT</textarea>
       textUi.postMetadataInput.value = postContent.metadata;
     }
 
+    function syncTicketTextInputs() {
+      textUi.ticketTitleInput.value = ticketContent.title;
+      textUi.ticketDateInput.value = ticketContent.date;
+      textUi.ticketTimeInput.value = ticketContent.time;
+      textUi.ticketLocationInput.value = ticketContent.location;
+      textUi.ticketNumberInput.value = ticketContent.number;
+      textUi.ticketNoteInput.value = ticketContent.note;
+    }
+
     function updatePosterContentFromInputs() {
       posterContent.title = textUi.titleInput.value;
       posterContent.textIntro = textUi.introInput.value;
@@ -400,6 +539,15 @@ GENERATED CITY FRAGMENT</textarea>
       postContent.headline = textUi.postHeadlineInput.value;
       postContent.subtitle = textUi.postSubtitleInput.value;
       postContent.metadata = textUi.postMetadataInput.value;
+    }
+
+    function updateTicketContentFromInputs() {
+      ticketContent.title = textUi.ticketTitleInput.value;
+      ticketContent.date = textUi.ticketDateInput.value;
+      ticketContent.time = textUi.ticketTimeInput.value;
+      ticketContent.location = textUi.ticketLocationInput.value;
+      ticketContent.number = textUi.ticketNumberInput.value;
+      ticketContent.note = textUi.ticketNoteInput.value;
     }
 
     function refreshCurrentLayoutText() {
@@ -461,7 +609,12 @@ GENERATED CITY FRAGMENT</textarea>
         return;
       }
 
-      drawPost();
+      if (activeMode === "post") {
+        drawPost();
+        return;
+      }
+
+      drawTicket();
     }
 
     async function loadBuildingList() {
@@ -555,6 +708,48 @@ GENERATED CITY FRAGMENT</textarea>
       );
     }
 
+    function generateTicket() {
+      if (!buildings.length) {
+        console.warn("No usable saved building images found. Using generated fallback artwork.");
+        generateTicketFallback();
+        return;
+      }
+
+      resetCurrentPaletteAssignment();
+      silhouetteCache = null;
+      const buildingData = pick(buildings);
+      const imageSource = getItemImageSource(buildingData);
+
+      if (!imageSource) {
+        console.warn("Saved item is missing an image source:", buildingData);
+        generateTicketFallback();
+        return;
+      }
+
+      loadImage(
+        imageSource,
+        (img) => {
+          ticketBuilding = img;
+          ticketBuildingIsFallback = false;
+          ticketLayout = createTicketLayout();
+          updateTicketCopyForLayout();
+        },
+        (error) => {
+          console.warn("Could not load saved image source for ticket. Using generated fallback artwork.", imageSource, error);
+          generateTicketFallback();
+        }
+      );
+    }
+
+    function generateTicketFallback() {
+      resetCurrentPaletteAssignment();
+      silhouetteCache = null;
+      ticketBuilding = createFallbackBuildingImage();
+      ticketBuildingIsFallback = true;
+      ticketLayout = createTicketLayout();
+      updateTicketCopyForLayout();
+    }
+
     function updatePostCopyForLayout(layout) {
       if (document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)) {
         return;
@@ -571,6 +766,15 @@ GENERATED CITY FRAGMENT</textarea>
       }
 
       syncPostTextInputs();
+    }
+
+    function updateTicketCopyForLayout() {
+      if (document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)) {
+        return;
+      }
+
+      ticketContent.number = `CTRF-${floor(random(10000, 99999))}`;
+      syncTicketTextInputs();
     }
 
     function createPostLayout(imageType) {
@@ -1098,6 +1302,345 @@ GENERATED CITY FRAGMENT</textarea>
       drawPostHeadline(title, renderLayout.headline, renderLayout);
       drawPostSupportingText(subtitle, renderLayout.subtitle, renderLayout.textOverImage ? "headline" : "bodyText", renderLayout);
       drawPostSupportingText(metadata, renderLayout.metadata, renderLayout.textOverImage ? "headline" : "secondaryText", renderLayout);
+    }
+
+    function createTicketLayout() {
+      const mode = pick(["classic", "swapped", "bigCity", "bigTitle"]);
+      const zones = createTicketModeZones(mode);
+      const titleSize = random(zones.titleSize[0], zones.titleSize[1]);
+      const titleLeading = random(0.78, 0.88);
+      const titleLines = ticketTitleLines(ticketContent.title, zones.title.w - zones.titlePadRight, titleSize);
+      const titleHeight = titleLines.length * titleSize * titleLeading;
+      const titleY = zones.title.y + random(0, max(2, zones.title.h - titleHeight));
+      const imageW = zones.image.w * random(zones.imageScale[0], zones.imageScale[1]);
+      const imageH = zones.image.h * random(zones.imageHeight[0], zones.imageHeight[1]);
+      const imageX = zones.image.x + (zones.image.w - imageW) / 2 + random(zones.imageJitterX[0], zones.imageJitterX[1]);
+      const imageY = zones.image.y + (zones.image.h - imageH) / 2 + random(zones.imageJitterY[0], zones.imageJitterY[1]);
+      const infoInsetX = random(22, 42);
+      const infoY = TICKET_INFO_ZONE.y + random(44, 72);
+      const infoAlign = random() < 0.82 ? LEFT : RIGHT;
+
+      return {
+        mode,
+        title: {
+          rect: {
+            x: zones.title.x + random(0, zones.titleJitterX),
+            y: titleY,
+            w: zones.title.w - zones.titlePadRight,
+            h: zones.title.h - (titleY - zones.title.y),
+          },
+          size: titleSize,
+          leadingRatio: titleLeading,
+        },
+        image: {
+          x: constrain(imageX, zones.image.x, zones.image.x + zones.image.w - imageW),
+          y: constrain(imageY, zones.image.y, zones.image.y + zones.image.h - imageH),
+          w: imageW,
+          h: imageH,
+        },
+        info: {
+          x: TICKET_INFO_ZONE.x + infoInsetX,
+          y: infoY,
+          w: TICKET_INFO_ZONE.w - infoInsetX - 22,
+          h: TICKET_INFO_ZONE.h - (infoY - TICKET_INFO_ZONE.y) - 36,
+          align: infoAlign,
+          leading: random(22, 26),
+          bodySize: random(17, 19),
+        },
+        perforationX: TICKET_PERFORATION_X,
+        microTop: {
+          x: TICKET_MAIN_ZONE.x + random(0, 24),
+          y: TICKET_MARGIN_Y - random(14, 22),
+        },
+        microBottom: {
+          x: TICKET_MAIN_ZONE.x + random(0, 18),
+          y: TICKET_MARGIN_Y + TICKET_WORK_H + random(8, 15),
+        },
+        serialTopPos: {
+          x: TICKET_MAIN_ZONE.x + random(0, 18),
+          y: TICKET_MARGIN_Y + TICKET_WORK_H - random(44, 66),
+        },
+        serialSideY: TICKET_MARGIN_Y + TICKET_WORK_H - random(0, 22),
+        serialTop: `CTRF-${floor(random(10000, 99999))}-00038`,
+        serialBottom: `UNBUILT-${floor(random(1000, 9999))}/MEMORY`,
+      };
+    }
+
+    function createTicketModeZones(mode) {
+      const mainTop = TICKET_MARGIN_Y + 16;
+      const mainBottom = TICKET_MARGIN_Y + TICKET_WORK_H - 24;
+
+      if (mode === "swapped") {
+        return {
+          title: {
+            x: TICKET_IMAGE_ZONE.x + 10,
+            y: mainTop + 18,
+            w: TICKET_IMAGE_ZONE.w - 18,
+            h: TICKET_WORK_H - 96,
+          },
+          image: {
+            x: TICKET_TITLE_ZONE.x,
+            y: mainTop + 12,
+            w: TICKET_TITLE_ZONE.w,
+            h: TICKET_WORK_H - 68,
+          },
+          titleSize: [58, 72],
+          titleJitterX: 14,
+          titlePadRight: 18,
+          imageScale: [0.84, 0.98],
+          imageHeight: [0.66, 0.88],
+          imageJitterX: [-18, 18],
+          imageJitterY: [-16, 22],
+        };
+      }
+
+      if (mode === "bigCity") {
+        return {
+          title: {
+            x: TICKET_MAIN_ZONE.x + 18,
+            y: mainTop,
+            w: TICKET_MAIN_ZONE.w * 0.48,
+            h: TICKET_WORK_H * 0.32,
+          },
+          image: {
+            x: TICKET_MAIN_ZONE.x,
+            y: TICKET_MARGIN_Y + TICKET_WORK_H * 0.44,
+            w: TICKET_MAIN_ZONE.w - 12,
+            h: TICKET_WORK_H * 0.44,
+          },
+          titleSize: [40, 52],
+          titleJitterX: 12,
+          titlePadRight: 14,
+          imageScale: [0.92, 1],
+          imageHeight: [0.7, 1],
+          imageJitterX: [-12, 12],
+          imageJitterY: [-12, 10],
+        };
+      }
+
+      if (mode === "bigTitle") {
+        return {
+          title: {
+            x: TICKET_MAIN_ZONE.x,
+            y: mainTop + 4,
+            w: TICKET_MAIN_ZONE.w - 18,
+            h: TICKET_WORK_H * 0.56,
+          },
+          image: {
+            x: TICKET_MAIN_ZONE.x + TICKET_MAIN_ZONE.w * 0.48,
+            y: mainBottom - TICKET_WORK_H * 0.24,
+            w: TICKET_MAIN_ZONE.w * 0.48,
+            h: TICKET_WORK_H * 0.22,
+          },
+          titleSize: [82, 106],
+          titleJitterX: 16,
+          titlePadRight: 24,
+          imageScale: [0.74, 0.96],
+          imageHeight: [0.72, 1],
+          imageJitterX: [-18, 16],
+          imageJitterY: [-8, 8],
+        };
+      }
+
+      return {
+        title: {
+          x: TICKET_TITLE_ZONE.x,
+          y: mainTop,
+          w: TICKET_TITLE_ZONE.w,
+          h: TICKET_WORK_H - 82,
+        },
+        image: {
+          x: TICKET_IMAGE_ZONE.x,
+          y: mainTop + 18,
+          w: TICKET_IMAGE_ZONE.w,
+          h: TICKET_WORK_H - 84,
+        },
+        titleSize: [62, 78],
+        titleJitterX: 18,
+        titlePadRight: 22,
+        imageScale: [0.82, 0.98],
+        imageHeight: [0.62, 0.82],
+        imageJitterX: [-22, 22],
+        imageJitterY: [-18, 24],
+      };
+    }
+
+    function drawTicket() {
+      background(paletteAssignment.pageBackground);
+
+      if (!ticketLayout || !ticketBuilding) {
+        fill(paletteAssignment.text);
+        noStroke();
+        textSize(20);
+        textAlign(LEFT, TOP);
+        text("Save buildings first, then shuffle.", TICKET_MARGIN_X, TICKET_MARGIN_Y);
+        return;
+      }
+
+      drawTicketMicroText();
+      drawTicketTitle(ticketLayout.title, ticketContent.title);
+      drawTicketImageBlock(ticketBuilding, ticketLayout.image);
+      drawTicketPerforation(ticketLayout.perforationX);
+      drawTicketInfo(ticketLayout.info);
+      drawTicketSerials();
+    }
+
+    function drawTicketTitle(block, title) {
+      fill(paletteAssignment.headline);
+      noStroke();
+
+      const titleText = title.trim().toUpperCase() || "IMAGINARY CITY ARCHIVE";
+      const lines = ticketTitleLines(titleText, block.rect.w, block.size || 78);
+      const fontSize = fitTicketTitleLines(lines, block.rect, block.size || 78, block.leadingRatio || 0.86);
+      const leading = fontSize * (block.leadingRatio || 0.86);
+
+      textFont("Arial Black");
+      textSize(fontSize);
+      textLeading(leading);
+      textStyle(BOLD);
+      textAlign(LEFT, TOP);
+
+      lines.forEach((line, index) => {
+        text(line, block.rect.x, block.rect.y + index * leading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function drawTicketImageBlock(img, r) {
+      if (!img) return;
+
+      const imageRect = getImageFitRect(img, r);
+
+      push();
+      drawingContext.save();
+      drawingContext.beginPath();
+      drawingContext.rect(r.x, r.y, r.w, r.h);
+      drawingContext.clip();
+
+      if (ticketBuildingIsFallback || paletteAssignment.id === "monochrome") {
+        const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+        image(silhouette, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      } else if (paletteAssignment.id !== "originalNeutral") {
+        const tintColor = posterPaletteApi.hexToRgb(paletteAssignment.illustration);
+        tint(tintColor[0], tintColor[1], tintColor[2]);
+        image(img, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+        noTint();
+      } else {
+        image(img, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      }
+
+      drawingContext.restore();
+      pop();
+    }
+
+    function drawTicketInfo(r) {
+      noStroke();
+      fill(paletteAssignment.bodyText);
+      textAlign(r.align || LEFT, TOP);
+
+      textFont("Arial Black");
+      textStyle(BOLD);
+      textSize(28);
+      textLeading(26);
+      text("EXHIBITION", r.x, r.y, r.w, 34);
+
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(r.bodySize || 18);
+      textLeading(r.leading || 24);
+      text([ticketContent.date, ticketContent.time].filter(Boolean).join(", "), r.x, r.y + 44, r.w, 28);
+
+      textSize(r.bodySize || 18);
+      textLeading(r.leading || 24);
+      text(ticketContent.location, r.x, r.y + 112, r.w, r.h - 112);
+    }
+
+    function drawTicketPerforation(x) {
+      const strokeColor = color(paletteAssignment.secondaryText);
+      strokeColor.setAlpha(paletteAssignment.id === "monochrome" ? 210 : 132);
+
+      stroke(strokeColor);
+      strokeWeight(2);
+      drawingContext.setLineDash([10, 14]);
+      line(x, TICKET_MARGIN_Y, x, TICKET_MARGIN_Y + TICKET_WORK_H);
+      drawingContext.setLineDash([]);
+    }
+
+    function drawTicketMicroText() {
+      const textColor = color(paletteAssignment.secondaryText);
+      textColor.setAlpha(paletteAssignment.id === "monochrome" ? 170 : 118);
+
+      fill(textColor);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(9);
+      textAlign(LEFT, TOP);
+      text(ticketContent.note.toUpperCase(), ticketLayout.microTop.x, ticketLayout.microTop.y);
+      text("THREE-ZONE TICKET FIELD / ARCHIVE INDEX 00038", ticketLayout.microBottom.x, ticketLayout.microBottom.y);
+    }
+
+    function drawTicketSerials() {
+      const serialColor = color(paletteAssignment.accent);
+      serialColor.setAlpha(paletteAssignment.id === "monochrome" ? 255 : 180);
+      const topSerial = ticketContent.number.trim() || ticketLayout.serialTop;
+
+      fill(serialColor);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(11);
+      textAlign(LEFT, TOP);
+      text(topSerial, ticketLayout.serialTopPos.x, ticketLayout.serialTopPos.y);
+
+      push();
+      translate(TICKET_W - TICKET_MARGIN_X + 14, ticketLayout.serialSideY);
+      rotate(-HALF_PI);
+      text(ticketLayout.serialBottom, 0, 0);
+      pop();
+    }
+
+    function fitTicketTitleLines(lines, r, preferredSize, leadingRatio) {
+      for (let size = preferredSize; size >= 42; size -= 2) {
+        textFont("Arial Black");
+        textSize(size);
+        const leading = size * leadingRatio;
+        const textHeight = lines.length * leading;
+
+        if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
+          return size;
+        }
+      }
+
+      return 42;
+    }
+
+    function ticketTitleLines(textValue, maxWidth, size) {
+      textFont("Arial Black");
+      textSize(size);
+
+      const words = textValue.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let currentLine = "";
+
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines.length ? lines : ["IMAGINARY", "CITY", "ARCHIVE"];
     }
 
     function resolvePostDynamicLayout(layout, title) {
