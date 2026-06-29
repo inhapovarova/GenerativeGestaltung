@@ -1,8 +1,7 @@
 (function () {
   const links = [
     { href: "single-building.html", label: "single building" },
-    { href: "poster-generator.html", label: "create poster" },
-    { href: "instagram-post.html", label: "instagram post" },
+    { href: "poster-generator.html", label: "marketing generator" },
     { href: "random-street.html", label: "random street" },
     { href: "index.html", label: "sandbox" },
     { href: "gallery.html", label: "gallery" },

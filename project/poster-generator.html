@@ -43,24 +43,30 @@
     <button id="saveBtn" type="button">save</button>
   </div>
 
+  <div class="format-toggle" id="formatToggle" aria-label="output format">
+    <button id="posterModeBtn" class="is-active" type="button" aria-pressed="true">Poster</button>
+    <button id="postModeBtn" type="button" aria-pressed="false">Post</button>
+  </div>
+
   <div class="generator-text-popover" id="textPopover">
-    <div class="generator-text-control">
-      <label for="titleInput">title</label>
-      <textarea id="titleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
-    </div>
-    <div class="generator-text-control">
-      <label for="introInput">description</label>
-      <textarea id="introInput">A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.</textarea>
-    </div>
-    <div class="generator-text-control">
-      <label for="poemInput">subtitle</label>
-      <textarea id="poemInput">Windows repeat like thoughts.
+    <div class="generator-mode-fields" id="posterTextFields">
+      <div class="generator-text-control">
+        <label for="titleInput">title</label>
+        <textarea id="titleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="introInput">description</label>
+        <textarea id="introInput">A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="poemInput">subtitle</label>
+        <textarea id="poemInput">Windows repeat like thoughts.
 Doors appear like invitations.
 Streets rearrange themselves before they can be remembered.</textarea>
-    </div>
-    <div class="generator-text-control">
-      <label for="dateInput">metadata</label>
-      <textarea id="dateInput">38.07.2026, 19:30
+      </div>
+      <div class="generator-text-control">
+        <label for="dateInput">metadata</label>
+        <textarea id="dateInput">38.07.2026, 19:30
 Opening Night
 
 The Museum of Unbuilt Streets
@@ -69,18 +75,36 @@ Old Future District
 00023 City City
 
 38.07.2026, 38.13.2026</textarea>
-    </div>
-    <div class="generator-text-control">
-      <label for="extraInput">extra info</label>
-      <textarea id="extraInput">Generated houses
+      </div>
+      <div class="generator-text-control">
+        <label for="extraInput">extra info</label>
+        <textarea id="extraInput">Generated houses
 Random streets
 Poster machines
 Saved facades
 A sandbox for slow exploration</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="extra2Input">small note</label>
+        <textarea id="extra2Input">Free entry</textarea>
+      </div>
     </div>
-    <div class="generator-text-control">
-      <label for="extra2Input">small note</label>
-      <textarea id="extra2Input">Free entry</textarea>
+
+    <div class="generator-mode-fields" id="postTextFields" hidden>
+      <div class="generator-text-control">
+        <label for="postHeadlineInput">headline</label>
+        <textarea id="postHeadlineInput">Imaginary City Archive</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="postSubtitleInput">subtitle</label>
+        <textarea id="postSubtitleInput">Fragments of streets that never existed.</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="postMetadataInput">metadata</label>
+        <textarea id="postMetadataInput">ARCHIVE NO. 001
+2026
+GENERATED CITY FRAGMENT</textarea>
+      </div>
     </div>
   </div>
 
@@ -90,6 +114,8 @@ A sandbox for slow exploration</textarea>
   <script>
     const POSTER_W = 1240;
     const POSTER_H = 1754;
+    const POST_W = 1080;
+    const POST_H = 1350;
 
     const MARGIN_X = POSTER_W * (24 / 210);
     const MARGIN_Y = POSTER_H * (24 / 297);
@@ -120,6 +146,10 @@ A sandbox for slow exploration</textarea>
     let activePaletteId = posterPaletteApi.defaultPaletteId;
     let paletteAssignment = getPaletteAssignment(activePaletteId);
     let textUi = {};
+    let activeMode = "poster";
+    let postImage = null;
+    let postLayout = null;
+    let postImageType = "building";
 
     const posterContent = {
       title: "THE CITY THAT REMEMBERS FORWARD",
@@ -129,6 +159,34 @@ A sandbox for slow exploration</textarea>
       extraInfo: "Generated houses\nRandom streets\nPoster machines\nSaved facades\nA sandbox for slow exploration",
       extraInfo2: "Free entry",
     };
+
+    const postContent = {
+      headline: "Imaginary City Archive",
+      subtitle: "Fragments of streets that never existed.",
+      metadata: "ARCHIVE NO. 001\n2026\nGENERATED CITY FRAGMENT",
+    };
+
+    const postHeadlineOptions = [
+      "Imaginary City Archive",
+      "Future Nostalgia",
+      "Generated Memory",
+      "Soft Urban Fragments",
+      "The City Remembers",
+    ];
+    const postSubtitleOptions = [
+      "A fictional archive of generated places.",
+      "Fragments of streets that never existed.",
+      "Memory, architecture, and procedural imagination.",
+      "A city built from rhythm, texture, and chance.",
+      "An exhibition about places between memory and fiction.",
+    ];
+    const postMetadataOptions = [
+      "ARCHIVE NO. 001\n2026\nGENERATED FACADE STUDY",
+      "ARCHIVE NO. 024\nGENERATED CITY FRAGMENT\nDENSITY / MEMORY / VARIATION",
+      "2026\nSTREET FRAGMENT / SYSTEM OUTPUT",
+      "MEMORY DENSITY: HIGH\nVARIATION: RANDOM",
+      "GENERATED FACADE STUDY\nSOFT URBAN FRAGMENTS",
+    ];
 
     function createPosterPaletteApi() {
       if (
@@ -197,12 +255,13 @@ A sandbox for slow exploration</textarea>
       imageMode(CORNER);
       textFont("Arial");
 
-      document.getElementById("generateBtn").addEventListener("click", generatePoster);
+      document.getElementById("generateBtn").addEventListener("click", generateActiveFormat);
       setupTextControls();
       setupPaletteControls();
+      setupModeControls();
 
       document.getElementById("saveBtn").addEventListener("click", () => {
-        saveCanvas("generated_poster", "png");
+        saveActiveFormat();
       });
 
       loadBuildingList();
@@ -218,9 +277,15 @@ A sandbox for slow exploration</textarea>
         dateInput: document.getElementById("dateInput"),
         extraInput: document.getElementById("extraInput"),
         extra2Input: document.getElementById("extra2Input"),
+        postHeadlineInput: document.getElementById("postHeadlineInput"),
+        postSubtitleInput: document.getElementById("postSubtitleInput"),
+        postMetadataInput: document.getElementById("postMetadataInput"),
+        posterTextFields: document.getElementById("posterTextFields"),
+        postTextFields: document.getElementById("postTextFields"),
       };
 
       syncPosterTextInputs();
+      syncPostTextInputs();
       textUi.textBtn.addEventListener("click", toggleTextPopover);
       [
         textUi.titleInput,
@@ -232,9 +297,78 @@ A sandbox for slow exploration</textarea>
       ].forEach((input) => {
         input.addEventListener("input", updatePosterContentFromInputs);
       });
+      [
+        textUi.postHeadlineInput,
+        textUi.postSubtitleInput,
+        textUi.postMetadataInput,
+      ].forEach((input) => {
+        input.addEventListener("input", updatePostContentFromInputs);
+      });
 
       document.addEventListener("click", closeTextPopoverOnOutsideClick);
       document.addEventListener("keydown", closeTextPopoverOnEscape);
+    }
+
+    function setupModeControls() {
+      const posterModeBtn = document.getElementById("posterModeBtn");
+      const postModeBtn = document.getElementById("postModeBtn");
+
+      posterModeBtn.addEventListener("click", () => activateMode("poster"));
+      postModeBtn.addEventListener("click", () => activateMode("post"));
+      updateModeControls();
+    }
+
+    function activateMode(mode) {
+      if (activeMode === mode) return;
+
+      activeMode = mode;
+      closeTextPopover();
+      updateModeControls();
+
+      if (activeMode === "poster") {
+        resizeCanvas(POSTER_W, POSTER_H);
+        if (!currentLayout || !currentBuilding) {
+          generatePoster();
+        }
+        return;
+      }
+
+      resizeCanvas(POST_W, POST_H);
+      if (!postLayout || !postImage) {
+        generatePost();
+      }
+    }
+
+    function updateModeControls() {
+      const posterModeBtn = document.getElementById("posterModeBtn");
+      const postModeBtn = document.getElementById("postModeBtn");
+      const isPoster = activeMode === "poster";
+
+      posterModeBtn.classList.toggle("is-active", isPoster);
+      postModeBtn.classList.toggle("is-active", !isPoster);
+      posterModeBtn.setAttribute("aria-pressed", String(isPoster));
+      postModeBtn.setAttribute("aria-pressed", String(!isPoster));
+      textUi.posterTextFields.hidden = !isPoster;
+      textUi.postTextFields.hidden = isPoster;
+      document.getElementById("generateBtn").setAttribute("aria-label", isPoster ? "shuffle poster" : "shuffle post");
+    }
+
+    function generateActiveFormat() {
+      if (activeMode === "poster") {
+        generatePoster();
+        return;
+      }
+
+      generatePost();
+    }
+
+    function saveActiveFormat() {
+      if (activeMode === "poster") {
+        saveCanvas("generated_poster", "png");
+        return;
+      }
+
+      saveCanvas("imaginary_city_instagram_post", "png");
     }
 
     function syncPosterTextInputs() {
@@ -246,6 +380,12 @@ A sandbox for slow exploration</textarea>
       textUi.extra2Input.value = posterContent.extraInfo2;
     }
 
+    function syncPostTextInputs() {
+      textUi.postHeadlineInput.value = postContent.headline;
+      textUi.postSubtitleInput.value = postContent.subtitle;
+      textUi.postMetadataInput.value = postContent.metadata;
+    }
+
     function updatePosterContentFromInputs() {
       posterContent.title = textUi.titleInput.value;
       posterContent.textIntro = textUi.introInput.value;
@@ -254,6 +394,12 @@ A sandbox for slow exploration</textarea>
       posterContent.extraInfo = textUi.extraInput.value;
       posterContent.extraInfo2 = textUi.extra2Input.value;
       refreshCurrentLayoutText();
+    }
+
+    function updatePostContentFromInputs() {
+      postContent.headline = textUi.postHeadlineInput.value;
+      postContent.subtitle = textUi.postSubtitleInput.value;
+      postContent.metadata = textUi.postMetadataInput.value;
     }
 
     function refreshCurrentLayoutText() {
@@ -310,7 +456,12 @@ A sandbox for slow exploration</textarea>
     }
 
     function draw() {
-      drawPoster();
+      if (activeMode === "poster") {
+        drawPoster();
+        return;
+      }
+
+      drawPost();
     }
 
     async function loadBuildingList() {
@@ -376,9 +527,148 @@ A sandbox for slow exploration</textarea>
       );
     }
 
+    function generatePost() {
+      resetCurrentPaletteAssignment();
+      silhouetteCache = null;
+
+      postImageType = pick(["building", "street"]);
+      const candidates = buildings.filter((item) => item.type === postImageType);
+      const fallbackCandidates = buildings.filter((item) => item.type !== postImageType);
+      const item = pick(candidates.length ? candidates : fallbackCandidates);
+      postLayout = createPostLayout(postImageType);
+      updatePostCopyForLayout(postLayout);
+
+      if (!item) {
+        postImage = createPostFallbackImage(postImageType);
+        return;
+      }
+
+      loadImage(
+        getItemImageSource(item),
+        (img) => {
+          postImage = img;
+        },
+        (error) => {
+          console.warn("Could not load saved image source for post. Using generated fallback artwork.", item, error);
+          postImage = createPostFallbackImage(postImageType);
+        }
+      );
+    }
+
+    function updatePostCopyForLayout(layout) {
+      if (document.activeElement && ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName)) {
+        return;
+      }
+
+      if (layout.variant === 4) {
+        postContent.headline = "";
+        postContent.subtitle = "";
+        postContent.metadata = "";
+      } else {
+        postContent.headline = pick(postHeadlineOptions);
+        postContent.subtitle = pick(postSubtitleOptions);
+        postContent.metadata = pick(postMetadataOptions);
+      }
+
+      syncPostTextInputs();
+    }
+
+    function createPostLayout(imageType) {
+      const variant = floor(random(1, 8));
+      const accentLine = random() < 0.65;
+
+      const layouts = {
+        1: {
+          variant,
+          name: "large title top",
+          imageMode: "contain",
+          imageRect: postRect(120, 850, 840, 330),
+          headline: postTextSpec(postRect(82, 88, 900, 410), 126, 0.86, LEFT, TOP),
+          subtitle: postTextSpec(postRect(88, 392, 620, 120), 35, 1.16, LEFT, TOP),
+          metadata: postTextSpec(postRect(702, 1178, 240, 80), 20, 1.18, LEFT, TOP),
+          line: accentLine ? { x1: 88, y1: 614, x2: 992, y2: 614 } : null,
+        },
+        2: {
+          variant,
+          name: "street slice top",
+          imageMode: "cover",
+          imageRect: postRect(0, 0, POST_W, 355),
+          headline: postTextSpec(postRect(88, 505, 890, 360), 138, 0.84, LEFT, TOP),
+          subtitle: postTextSpec(postRect(92, 884, 575, 90), 31, 1.16, LEFT, TOP),
+          metadata: postTextSpec(postRect(92, 1206, 420, 86), 22, 1.2, LEFT, TOP),
+        },
+        3: {
+          variant,
+          name: "museum object",
+          imageMode: "contain",
+          imageRect: postRect(322 + random(-62, 62), 468 + random(-40, 40), 436, 342),
+          headline: postTextSpec(postRect(92, 1028, 720, 160), 78, 0.9, LEFT, TOP),
+          subtitle: postTextSpec(postRect(92, 1194, 650, 64), 28, 1.18, LEFT, TOP),
+          metadata: postTextSpec(postRect(92, 104, 460, 180), 48, 1.05, LEFT, TOP, true),
+          line: { x1: 92, y1: 888, x2: 988, y2: 888 },
+        },
+        4: {
+          variant,
+          name: "full bleed crop",
+          imageMode: "cover",
+          imageRect: postRect(0, 0, POST_W, POST_H),
+          textOverImage: true,
+          directText: true,
+          headline: postTextSpec(postRect(78, 82, 830, 285), 108, 0.86, LEFT, TOP),
+          subtitle: postTextSpec(postRect(82, 1080, 660, 82), 31, 1.16, LEFT, TOP),
+          metadata: postTextSpec(postRect(82, 1204, 450, 72), 19, 1.22, LEFT, TOP),
+        },
+        5: {
+          variant,
+          name: "archive card",
+          imageMode: "cover",
+          imageRect: postRect(96, 132, 470, 445),
+          headline: postTextSpec(postRect(92, 672, 860, 260), 102, 0.87, LEFT, TOP),
+          subtitle: postTextSpec(postRect(96, 952, 560, 82), 30, 1.16, LEFT, TOP),
+          metadata: postTextSpec(postRect(648, 146, 276, 220), 23, 1.25, LEFT, TOP),
+          line: { x1: 96, y1: 624, x2: 984, y2: 624 },
+        },
+        6: {
+          variant,
+          name: "facade close-up",
+          imageMode: "cover",
+          imageRect: postRect(0, 0, 640, POST_H),
+          solidPanel: postRect(640, 0, 440, POST_H),
+          headline: postTextSpec(postRect(684, 124, 320, 560), 88, 0.86, LEFT, TOP),
+          subtitle: postTextSpec(postRect(688, 746, 300, 150), 28, 1.16, LEFT, TOP),
+          metadata: postTextSpec(postRect(688, 1068, 282, 112), 19, 1.2, LEFT, TOP),
+        },
+        7: {
+          variant,
+          name: "big type small image",
+          imageMode: "contain",
+          imageRect: postRect(706 + random(-48, 20), 920 + random(-80, 35), 250, 260),
+          headline: postTextSpec(postRect(72, 76, 920, 620), 154, 0.8, LEFT, TOP),
+          subtitle: postTextSpec(postRect(78, 760, 570, 86), 32, 1.15, LEFT, TOP),
+          metadata: postTextSpec(postRect(78, 1130, 385, 88), 20, 1.2, LEFT, TOP),
+          line: accentLine ? { x1: 78, y1: 704, x2: 476, y2: 704 } : null,
+        },
+      };
+
+      if (imageType === "building" && variant === 2) {
+        layouts[2].imageRect = postRect(0, 0, POST_W, 430);
+      }
+
+      if (imageType === "street" && variant === 3) {
+        layouts[3].imageRect = postRect(244, 494, 590, 250);
+      }
+
+      const layout = layouts[variant] || layouts[1];
+      layout.cropX = variant === 6 ? random(0.18, 0.82) : random(0.08, 0.92);
+      layout.cropY = variant === 2 ? random(0.08, 0.38) : random(0.18, 0.78);
+
+      return layout;
+    }
+
     function normalizeSavedItem(item) {
       if (typeof item === "string") {
         return {
+          type: "building",
           filename: "saved item",
           imageSource: item,
         };
@@ -386,6 +676,7 @@ A sandbox for slow exploration</textarea>
 
       return {
         ...item,
+        type: item.type === "street" ? "street" : "building",
         filename: item.filename || item.id || "saved item",
         imageSource: getItemImageSource(item),
       };
@@ -437,6 +728,75 @@ A sandbox for slow exploration</textarea>
 
       pg.fill("#1C1C1C");
       pg.rect(0, streetY, pg.width, 12);
+
+      return pg;
+    }
+
+    function createPostFallbackImage(type) {
+      return type === "street" ? createPostFallbackStreetImage() : createPostFallbackBuildingImage();
+    }
+
+    function createPostFallbackBuildingImage() {
+      const pg = createGraphics(520, 680);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const wall = pick(["#1C1C1C", "#4F5F6A", "#7B6D5E"]);
+      pg.fill(wall);
+      pg.rect(110, 120, 300, 470);
+      pg.fill("#F1EEE8");
+
+      for (let y = 166; y < 500; y += 58) {
+        for (let x = 150; x < 360; x += 62) {
+          if (random() > 0.14) {
+            pg.rect(x, y, 30, 38);
+          }
+        }
+      }
+
+      pg.fill("#E7E0D3");
+      pg.rect(224, 518, 68, 72);
+      pg.fill("#1C1C1C");
+      pg.rect(74, 590, 372, 18);
+
+      return pg;
+    }
+
+    function createPostFallbackStreetImage() {
+      const pg = createGraphics(980, 520);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const groundY = 448;
+      let x = 22;
+      let index = 0;
+
+      while (x < pg.width - 60) {
+        const w = random(86, 154);
+        const h = random(190, 390);
+        const y = groundY - h;
+        const wall = ["#1C1C1C", "#4F5F6A", "#7B6D5E", "#AFC6D8"][index % 4];
+
+        pg.fill(wall);
+        pg.rect(x, y, w, h);
+        pg.fill("#F1EEE8");
+
+        for (let wy = y + 30; wy < groundY - 48; wy += 42) {
+          for (let wx = x + 18; wx < x + w - 24; wx += 36) {
+            if (random() > 0.22) {
+              pg.rect(wx, wy, 18, 24);
+            }
+          }
+        }
+
+        x += w + random(10, 26);
+        index += 1;
+      }
+
+      pg.fill("#1C1C1C");
+      pg.rect(0, groundY, pg.width, 18);
 
       return pg;
     }
@@ -702,6 +1062,289 @@ A sandbox for slow exploration</textarea>
 
       // Uncomment for grid debug:
       // drawGrid();
+    }
+
+    function drawPost() {
+      background(paletteAssignment.pageBackground);
+
+      if (!postLayout || !postImage) {
+        fill(paletteAssignment.text);
+        noStroke();
+        textSize(24);
+        textAlign(LEFT, TOP);
+        text("Loading archive fragments.", 92, 92);
+        return;
+      }
+
+      const title = postContent.headline.trim() || (postLayout.variant === 4 ? "" : "Imaginary City Archive");
+      const subtitle = postContent.subtitle.trim();
+      const metadata = postContent.metadata.trim();
+      const renderLayout = resolvePostDynamicLayout(postLayout, title);
+
+      drawPostImageElement(postImage, renderLayout.imageRect, renderLayout.imageMode, renderLayout);
+
+      if (renderLayout.solidPanel) {
+        noStroke();
+        fill(paletteAssignment.pageBackground);
+        rect(renderLayout.solidPanel.x, renderLayout.solidPanel.y, renderLayout.solidPanel.w, renderLayout.solidPanel.h);
+      }
+
+      if (renderLayout.line) {
+        stroke(paletteAssignment.accent);
+        strokeWeight(2);
+        line(renderLayout.line.x1, renderLayout.line.y1, renderLayout.line.x2, renderLayout.line.y2);
+      }
+
+      drawPostHeadline(title, renderLayout.headline, renderLayout);
+      drawPostSupportingText(subtitle, renderLayout.subtitle, renderLayout.textOverImage ? "headline" : "bodyText", renderLayout);
+      drawPostSupportingText(metadata, renderLayout.metadata, renderLayout.textOverImage ? "headline" : "secondaryText", renderLayout);
+    }
+
+    function resolvePostDynamicLayout(layout, title) {
+      const nextLayout = copyPostLayout(layout);
+
+      if (nextLayout.variant !== 1) {
+        return nextLayout;
+      }
+
+      const titleMetrics = measurePostTitleBlock(title, nextLayout.headline);
+      const subtitleGap = 28;
+      const subtitleY = min(
+        titleMetrics.y + titleMetrics.height + subtitleGap,
+        nextLayout.imageRect.y - nextLayout.subtitle.rect.h - 112
+      );
+
+      nextLayout.subtitle.rect.y = max(356, subtitleY);
+
+      if (nextLayout.line) {
+        nextLayout.line.y1 = nextLayout.subtitle.rect.y + nextLayout.subtitle.rect.h + 74;
+        nextLayout.line.y2 = nextLayout.line.y1;
+      }
+
+      return nextLayout;
+    }
+
+    function copyPostLayout(layout) {
+      return {
+        ...layout,
+        imageRect: { ...layout.imageRect },
+        headline: copyPostTextSpec(layout.headline),
+        subtitle: copyPostTextSpec(layout.subtitle),
+        metadata: copyPostTextSpec(layout.metadata),
+        line: layout.line ? { ...layout.line } : null,
+        solidPanel: layout.solidPanel ? { ...layout.solidPanel } : null,
+      };
+    }
+
+    function copyPostTextSpec(spec) {
+      return {
+        ...spec,
+        rect: { ...spec.rect },
+      };
+    }
+
+    function drawPostImageElement(img, target, mode, layout) {
+      if (!img) return;
+
+      const source = mode === "cover" ? getPostCoverSourceRect(img, target, layout) : null;
+      drawPostStyledImage(img, target, source);
+    }
+
+    function drawPostStyledImage(img, target, source) {
+      if (paletteAssignment.id === "monochrome") {
+        const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+        drawPostImageWithOptionalSource(silhouette, target, source);
+        return;
+      }
+
+      if (paletteAssignment.id !== "originalNeutral") {
+        const tintColor = posterPaletteApi.hexToRgb(paletteAssignment.illustration);
+        tint(tintColor[0], tintColor[1], tintColor[2], 220);
+      }
+
+      drawPostImageWithOptionalSource(img, target, source);
+
+      if (paletteAssignment.id !== "originalNeutral") {
+        noTint();
+      }
+    }
+
+    function drawPostImageWithOptionalSource(img, target, source) {
+      if (source) {
+        image(img, target.x, target.y, target.w, target.h, source.sx, source.sy, source.sw, source.sh);
+        return;
+      }
+
+      const fitted = getPostContainRect(img, target);
+      image(img, fitted.x, fitted.y, fitted.w, fitted.h);
+    }
+
+    function getPostCoverSourceRect(img, target, layout) {
+      const targetRatio = target.w / target.h;
+      const imgRatio = img.width / img.height;
+      let sw = img.width;
+      let sh = img.height;
+
+      if (imgRatio > targetRatio) {
+        sw = img.height * targetRatio;
+      } else {
+        sh = img.width / targetRatio;
+      }
+
+      const maxX = max(0, img.width - sw);
+      const maxY = max(0, img.height - sh);
+
+      return {
+        sx: maxX * layout.cropX,
+        sy: maxY * layout.cropY,
+        sw,
+        sh,
+      };
+    }
+
+    function getPostContainRect(img, target) {
+      const scale = min(target.w / img.width, target.h / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+
+      return {
+        x: target.x + (target.w - w) / 2,
+        y: target.y + (target.h - h) / 2,
+        w,
+        h,
+      };
+    }
+
+    function drawPostHeadline(value, spec, layout) {
+      if (!value) return;
+
+      const r = spec.rect;
+      const title = value.toUpperCase();
+      const size = fitPostTextSize(title, r, spec.size, 52, 0.8);
+      const leading = size * spec.leading;
+      const lines = wrapPostTextLines(title, r.w, size, "Arial Black");
+
+      if (layout.textOverImage && !layout.directText) {
+        drawPostTextShadow(r.x, r.y, lines, size, leading, "Arial Black");
+      }
+
+      fill(paletteAssignment.headline);
+      noStroke();
+      textFont("Arial Black");
+      textStyle(BOLD);
+      textSize(size);
+      textLeading(leading);
+      textAlign(spec.alignX, spec.alignY);
+
+      lines.forEach((line, index) => {
+        text(line, r.x, r.y + index * leading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function drawPostSupportingText(value, spec, colorRole, layout) {
+      if (!value) return;
+
+      const r = spec.rect;
+      const textValue = spec.uppercase ? value.toUpperCase() : value;
+      const colorValue = paletteAssignment[colorRole] || paletteAssignment.bodyText;
+
+      if (layout.textOverImage && !layout.directText) {
+        drawPostBodyTextShadow(textValue, spec);
+      }
+
+      fill(colorValue);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(spec.size);
+      textLeading(spec.size * spec.leading);
+      textAlign(spec.alignX, spec.alignY);
+      text(textValue, r.x, r.y, r.w, r.h);
+    }
+
+    function measurePostTitleBlock(value, spec) {
+      const title = value.toUpperCase();
+      const size = fitPostTextSize(title, spec.rect, spec.size, 52, 0.8);
+      const lines = wrapPostTextLines(title, spec.rect.w, size, "Arial Black");
+
+      return {
+        y: spec.rect.y,
+        height: lines.length * size * spec.leading,
+      };
+    }
+
+    function drawPostTextShadow(x, y, lines, size, leading, fontName) {
+      push();
+      textFont(fontName);
+      textStyle(BOLD);
+      textSize(size);
+      textLeading(leading);
+      textAlign(LEFT, TOP);
+      const shadowColor = color(paletteAssignment.pageBackground);
+      shadowColor.setAlpha(190);
+      fill(shadowColor);
+      noStroke();
+      lines.forEach((line, index) => {
+        text(line, x + 4, y + index * leading + 5);
+      });
+      pop();
+    }
+
+    function drawPostBodyTextShadow(value, spec) {
+      push();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(spec.size);
+      textLeading(spec.size * spec.leading);
+      textAlign(spec.alignX, spec.alignY);
+      const shadowColor = color(paletteAssignment.pageBackground);
+      shadowColor.setAlpha(180);
+      fill(shadowColor);
+      noStroke();
+      text(value, spec.rect.x + 3, spec.rect.y + 4, spec.rect.w, spec.rect.h);
+      pop();
+    }
+
+    function fitPostTextSize(textValue, r, preferredSize, minSize, leadingRatio) {
+      for (let size = preferredSize; size >= minSize; size -= 2) {
+        const lines = wrapPostTextLines(textValue, r.w, size, "Arial Black");
+        const textHeight = lines.length * size * leadingRatio;
+
+        if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
+          return size;
+        }
+      }
+
+      return minSize;
+    }
+
+    function wrapPostTextLines(textValue, maxWidth, size, fontName) {
+      textFont(fontName);
+      textSize(size);
+
+      const words = textValue.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let currentLine = "";
+
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines;
     }
 
     function drawImageBlock(img, r) {
@@ -972,6 +1615,21 @@ A sandbox for slow exploration</textarea>
       const block = textBlock(col, row, colSpan, rowSpan, textValue, size, leading);
       block.contentKey = textValue === posterContent.extraInfo ? "extraInfo" : "extraInfo2";
       return block;
+    }
+
+    function postTextSpec(rectValue, size, leading, alignX, alignY, uppercase = false) {
+      return {
+        rect: rectValue,
+        size,
+        leading,
+        alignX,
+        alignY,
+        uppercase,
+      };
+    }
+
+    function postRect(x, y, w, h) {
+      return { x, y, w, h };
     }
 
     function rectFromGrid(col, row, colSpan, rowSpan) {
