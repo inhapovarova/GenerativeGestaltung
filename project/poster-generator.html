@@ -22,6 +22,13 @@
       height: 100vh !important;
     }
 
+    body[data-format="ticket"] {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     body[data-format="ticket"] canvas {
       max-width: calc(100vw - 96px);
       max-height: calc(100vh - 140px);
