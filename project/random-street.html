@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Random Street</title>
+  <title>Street</title>
   <style>
     html, body {
       margin: 0;
@@ -133,6 +133,20 @@
       background: white;
     }
 
+    .shuffle-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      padding: 0;
+    }
+
+    .shuffle-button svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.7;
+    }
+
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>
@@ -140,7 +154,7 @@
   <div class="ui is-collapsed">
     <div class="ui-header">
       <button class="panel-toggle" type="button" aria-label="expand controls" aria-expanded="false">⋮</button>
-      <div class="title">random street</div>
+      <div class="title">street</div>
     </div>
 
     <div class="ui-content">
@@ -199,8 +213,16 @@
       </div>
 
       <div class="buttons">
-        <button id="randomBtn">random</button>
-        <button id="saveRowBtn">save row</button>
+        <button id="randomBtn" class="shuffle-button" type="button" aria-label="shuffle street" title="shuffle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path d="M4 7h3.2c2.8 0 4.2 10 7 10H20" />
+            <path d="M17 14l3 3-3 3" />
+            <path d="M4 17h3.2c1.1 0 2-1.5 2.9-3.4" />
+            <path d="M13.2 8.9C14 7.8 14.9 7 16.2 7H20" />
+            <path d="M17 4l3 3-3 3" />
+          </svg>
+        </button>
+        <button id="saveRowBtn">save</button>
       </div>
     </div>
   </div>
@@ -697,7 +719,7 @@
         const result = await response.json();
 
         if (result.ok) {
-          console.log("Saved row:", result.path);
+          console.log("Saved street:", result.path);
           saveButton.textContent = "saved";
           setTimeout(() => {
             saveButton.textContent = originalLabel;
@@ -705,7 +727,7 @@
         } else {
           console.error(result);
           saveButton.textContent = originalLabel;
-          alert("Could not save row.");
+          alert("Could not save.");
         }
       } catch (error) {
         console.error(error);

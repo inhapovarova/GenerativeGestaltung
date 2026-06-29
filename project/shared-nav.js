@@ -1,13 +1,14 @@
 (function () {
   const links = [
-    { href: "single-building.html", label: "single building" },
+    { href: "scene-generator.html", label: "building / street" },
     { href: "poster-generator.html", label: "create poster" },
-    { href: "random-street.html", label: "random street" },
     { href: "index.html", label: "sandbox" },
     { href: "gallery.html", label: "gallery" },
   ];
 
   function initSharedNav() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("embedded") === "1") return;
     if (document.querySelector(".shared-nav-root")) return;
 
     const root = document.createElement("div");
