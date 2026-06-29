@@ -22,100 +22,66 @@
       height: 100vh !important;
     }
 
-    .ui {
-      position: fixed;
-      top: 18px;
-      left: 18px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .palette-controls {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      padding: 3px;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    }
-
-    button {
-      appearance: none;
-      border: 1px solid rgba(0, 0, 0, 0.14);
-      background: rgba(255, 255, 255, 0.9);
-      color: #222;
-      padding: 10px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: white;
-    }
-
-    .palette-button {
-      border: 0;
-      background: transparent;
-      color: #222;
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      height: 32px;
-      padding: 0 11px 0 8px;
-      box-shadow: none;
-      font-size: 12px;
-      line-height: 1;
-    }
-
-    .palette-button:hover {
-      background: rgba(255, 255, 255, 0.72);
-    }
-
-    .palette-button.is-active {
-      background: #222;
-      color: #fff;
-      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.16);
-    }
-
-    .palette-swatch {
-      display: flex;
-      align-items: center;
-      flex: 0 0 auto;
-    }
-
-    .palette-label {
-      white-space: nowrap;
-    }
-
-    .palette-dot {
-      width: 13px;
-      height: 13px;
-      border: 1px solid rgba(0, 0, 0, 0.18);
-      border-radius: 50%;
-      margin-left: -4px;
-    }
-
-    .palette-dot:first-child {
-      margin-left: 0;
-    }
-
-    .palette-button.is-active .palette-dot {
-      border-color: rgba(255, 255, 255, 0.72);
-    }
   </style>
+  <link rel="stylesheet" href="generator-toolbar.css">
   <link rel="stylesheet" href="shared-nav.css">
 </head>
 
 <body>
-  <div class="ui">
-    <button id="generateBtn">shuffle</button>
+  <div class="ui generator-toolbar">
+    <button id="textBtn" class="icon-button text-button" type="button" aria-label="edit text" aria-expanded="false" aria-controls="textPopover">T</button>
+    <button id="generateBtn" class="icon-button" type="button" aria-label="shuffle poster" title="shuffle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path d="M4 7h3.2c2.8 0 4.2 10 7 10H20" />
+        <path d="M17 14l3 3-3 3" />
+        <path d="M4 17h3.2c1.1 0 2-1.5 2.9-3.4" />
+        <path d="M13.2 8.9C14 7.8 14.9 7 16.2 7H20" />
+        <path d="M17 4l3 3-3 3" />
+      </svg>
+    </button>
     <div class="palette-controls" id="paletteControls" aria-label="poster color scheme"></div>
-    <button id="saveBtn">save</button>
+    <button id="saveBtn" type="button">save</button>
+  </div>
+
+  <div class="generator-text-popover" id="textPopover">
+    <div class="generator-text-control">
+      <label for="titleInput">title</label>
+      <textarea id="titleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+    </div>
+    <div class="generator-text-control">
+      <label for="introInput">description</label>
+      <textarea id="introInput">A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.</textarea>
+    </div>
+    <div class="generator-text-control">
+      <label for="poemInput">subtitle</label>
+      <textarea id="poemInput">Windows repeat like thoughts.
+Doors appear like invitations.
+Streets rearrange themselves before they can be remembered.</textarea>
+    </div>
+    <div class="generator-text-control">
+      <label for="dateInput">metadata</label>
+      <textarea id="dateInput">38.07.2026, 19:30
+Opening Night
+
+The Museum of Unbuilt Streets
+42 Soft Corner Lane
+Old Future District
+00023 City City
+
+38.07.2026, 38.13.2026</textarea>
+    </div>
+    <div class="generator-text-control">
+      <label for="extraInput">extra info</label>
+      <textarea id="extraInput">Generated houses
+Random streets
+Poster machines
+Saved facades
+A sandbox for slow exploration</textarea>
+    </div>
+    <div class="generator-text-control">
+      <label for="extra2Input">small note</label>
+      <textarea id="extra2Input">Free entry</textarea>
+    </div>
   </div>
 
   <script src="node_modules/p5/lib/p5.min.js"></script>
@@ -153,6 +119,7 @@
     let paletteAssignments = {};
     let activePaletteId = posterPaletteApi.defaultPaletteId;
     let paletteAssignment = getPaletteAssignment(activePaletteId);
+    let textUi = {};
 
     const posterContent = {
       title: "THE CITY THAT REMEMBERS FORWARD",
@@ -231,6 +198,7 @@
       textFont("Arial");
 
       document.getElementById("generateBtn").addEventListener("click", generatePoster);
+      setupTextControls();
       setupPaletteControls();
 
       document.getElementById("saveBtn").addEventListener("click", () => {
@@ -238,6 +206,107 @@
       });
 
       loadBuildingList();
+    }
+
+    function setupTextControls() {
+      textUi = {
+        textBtn: document.getElementById("textBtn"),
+        textPopover: document.getElementById("textPopover"),
+        titleInput: document.getElementById("titleInput"),
+        introInput: document.getElementById("introInput"),
+        poemInput: document.getElementById("poemInput"),
+        dateInput: document.getElementById("dateInput"),
+        extraInput: document.getElementById("extraInput"),
+        extra2Input: document.getElementById("extra2Input"),
+      };
+
+      syncPosterTextInputs();
+      textUi.textBtn.addEventListener("click", toggleTextPopover);
+      [
+        textUi.titleInput,
+        textUi.introInput,
+        textUi.poemInput,
+        textUi.dateInput,
+        textUi.extraInput,
+        textUi.extra2Input,
+      ].forEach((input) => {
+        input.addEventListener("input", updatePosterContentFromInputs);
+      });
+
+      document.addEventListener("click", closeTextPopoverOnOutsideClick);
+      document.addEventListener("keydown", closeTextPopoverOnEscape);
+    }
+
+    function syncPosterTextInputs() {
+      textUi.titleInput.value = posterContent.title;
+      textUi.introInput.value = posterContent.textIntro;
+      textUi.poemInput.value = posterContent.textPoem;
+      textUi.dateInput.value = posterContent.dateAddress;
+      textUi.extraInput.value = posterContent.extraInfo;
+      textUi.extra2Input.value = posterContent.extraInfo2;
+    }
+
+    function updatePosterContentFromInputs() {
+      posterContent.title = textUi.titleInput.value;
+      posterContent.textIntro = textUi.introInput.value;
+      posterContent.textPoem = textUi.poemInput.value;
+      posterContent.dateAddress = textUi.dateInput.value;
+      posterContent.extraInfo = textUi.extraInput.value;
+      posterContent.extraInfo2 = textUi.extra2Input.value;
+      refreshCurrentLayoutText();
+    }
+
+    function refreshCurrentLayoutText() {
+      if (!currentLayout) return;
+
+      currentLayout.titleText = posterContent.title;
+
+      if (currentLayout.textBlocks[0]) {
+        currentLayout.textBlocks[0].text = posterContent.textIntro;
+      }
+
+      if (currentLayout.textBlocks[1]) {
+        currentLayout.textBlocks[1].text = posterContent.textPoem;
+      }
+
+      if (currentLayout.date) {
+        currentLayout.date.text = posterContent.dateAddress;
+      }
+
+      currentLayout.extras.forEach((block) => {
+        if (block.contentKey === "extraInfo") {
+          block.text = posterContent.extraInfo;
+        }
+
+        if (block.contentKey === "extraInfo2") {
+          block.text = posterContent.extraInfo2;
+        }
+      });
+    }
+
+    function toggleTextPopover(event) {
+      event.stopPropagation();
+      const isOpen = textUi.textPopover.classList.toggle("is-open");
+      textUi.textBtn.setAttribute("aria-expanded", String(isOpen));
+    }
+
+    function closeTextPopoverOnOutsideClick(event) {
+      if (textUi.textPopover.contains(event.target) || textUi.textBtn.contains(event.target)) {
+        return;
+      }
+
+      closeTextPopover();
+    }
+
+    function closeTextPopoverOnEscape(event) {
+      if (event.key === "Escape") {
+        closeTextPopover();
+      }
+    }
+
+    function closeTextPopover() {
+      textUi.textPopover.classList.remove("is-open");
+      textUi.textBtn.setAttribute("aria-expanded", "false");
     }
 
     function draw() {
@@ -900,7 +969,9 @@
 
     function optionalBlock(show, col, row, colSpan, rowSpan, textValue, size, leading) {
       if (!show) return null;
-      return textBlock(col, row, colSpan, rowSpan, textValue, size, leading);
+      const block = textBlock(col, row, colSpan, rowSpan, textValue, size, leading);
+      block.contentKey = textValue === posterContent.extraInfo ? "extraInfo" : "extraInfo2";
+      return block;
     }
 
     function rectFromGrid(col, row, colSpan, rowSpan) {

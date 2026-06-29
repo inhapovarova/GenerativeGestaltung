@@ -211,11 +211,12 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="generator-toolbar.css">
   <link rel="stylesheet" href="shared-nav.css">
 </head>
 
 <body>
-  <div class="ui">
+  <div class="ui generator-toolbar">
     <button id="textBtn" class="icon-button text-button" type="button" aria-label="edit text" aria-expanded="false" aria-controls="textPopover">T</button>
     <button id="generateBtn" class="icon-button" type="button" aria-label="shuffle post" title="shuffle">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -230,16 +231,16 @@
     <button id="exportBtn" type="button">save</button>
   </div>
 
-  <div class="text-popover" id="textPopover">
-    <div class="text-control">
+  <div class="text-popover generator-text-popover" id="textPopover">
+    <div class="text-control generator-text-control">
       <label for="headlineInput">headline</label>
       <textarea id="headlineInput">Imaginary City Archive</textarea>
     </div>
-    <div class="text-control">
+    <div class="text-control generator-text-control">
       <label for="subtitleInput">subtitle</label>
       <textarea id="subtitleInput">Fragments of streets that never existed.</textarea>
     </div>
-    <div class="text-control">
+    <div class="text-control generator-text-control">
       <label for="metadataInput">metadata</label>
       <textarea id="metadataInput">ARCHIVE NO. 001
 2026
