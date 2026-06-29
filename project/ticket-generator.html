@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Generator</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #efede7;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: calc(100vw - 96px);
+      max-height: calc(100vh - 140px);
+      width: min(630px, calc(100vw - 96px)) !important;
+      height: auto !important;
+    }
+
+    .ui {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .palette-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(0, 0, 0, 0.14);
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: white;
+    }
+
+    .palette-button {
+      border: 0;
+      background: transparent;
+      color: #222;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 32px;
+      padding: 0 11px 0 8px;
+      box-shadow: none;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .palette-button:hover {
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .palette-button.is-active {
+      background: #222;
+      color: #fff;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.16);
+    }
+
+    .palette-swatch {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .palette-label {
+      white-space: nowrap;
+    }
+
+    .palette-dot {
+      width: 13px;
+      height: 13px;
+      border: 1px solid rgba(0, 0, 0, 0.18);
+      border-radius: 50%;
+      margin-left: -4px;
+    }
+
+    .palette-dot:first-child {
+      margin-left: 0;
+    }
+
+    .palette-button.is-active .palette-dot {
+      border-color: rgba(255, 255, 255, 0.72);
+    }
+  </style>
+  <link rel="stylesheet" href="shared-nav.css">
+</head>
+
+<body>
+  <div class="ui">
+    <button id="generateBtn">shuffle</button>
+    <div class="palette-controls" id="paletteControls" aria-label="ticket color scheme"></div>
+    <button id="saveBtn">save</button>
+  </div>
+
+  <script src="node_modules/p5/lib/p5.min.js"></script>
+  <script src="palettes.js"></script>
+
+  <script>
+    const TICKET_W = 1600;
+    const TICKET_H = 520;
+
+    const MARGIN_X = 64;
+    const MARGIN_Y = 48;
+
+    const WORK_W = TICKET_W - MARGIN_X * 2;
+    const WORK_H = TICKET_H - MARGIN_Y * 2;
+    const ZONE_GAP = 34;
+    const TITLE_ZONE_W = 470;
+    const IMAGE_ZONE_W = 520;
+    const INFO_ZONE_W = WORK_W - TITLE_ZONE_W - IMAGE_ZONE_W - ZONE_GAP * 2;
+
+    const TITLE_ZONE = {
+      x: MARGIN_X,
+      y: MARGIN_Y,
+      w: TITLE_ZONE_W,
+      h: WORK_H,
+    };
+
+    const IMAGE_ZONE = {
+      x: TITLE_ZONE.x + TITLE_ZONE.w + ZONE_GAP,
+      y: MARGIN_Y,
+      w: IMAGE_ZONE_W,
+      h: WORK_H,
+    };
+
+    const INFO_ZONE = {
+      x: IMAGE_ZONE.x + IMAGE_ZONE.w + ZONE_GAP,
+      y: MARGIN_Y,
+      w: INFO_ZONE_W,
+      h: WORK_H,
+    };
+
+    const MAIN_ZONE = {
+      x: TITLE_ZONE.x,
+      y: MARGIN_Y,
+      w: TITLE_ZONE.w + IMAGE_ZONE.w + ZONE_GAP,
+      h: WORK_H,
+    };
+
+    const PERFORATION_X = INFO_ZONE.x - ZONE_GAP * 0.5;
+
+    const THEME_LABELS = {
+      originalNeutral: "Neutral",
+      mutedBlue: "Blue",
+      monochrome: "B/W",
+    };
+
+    const ticketContent = {
+      title: "THE CITY THAT REMEMBERS FORWARD",
+      infoLabel: "EXHIBITION",
+      date: "20 JULY 2026",
+      venue: "Faculty for Design\nMunich University of Applied Sciences",
+      gate: "Lothstraße 17",
+      seat: "80335 Munich",
+      number: "",
+      micro: "GENERATED ACCESS / UNBUILT STREETS / MEMORY-FORWARD ARCHIVE / VALID FOR ONE TEMPORARY CITY",
+    };
+
+    let buildings = [];
+    let currentBuilding = null;
+    let currentBuildingIsFallback = false;
+    let currentLayout = null;
+    let silhouetteCache = null;
+    let silhouetteCacheSource = null;
+    let silhouetteCacheColor = null;
+    const posterPaletteApi = createPosterPaletteApi();
+    let paletteAssignments = {};
+    let activePaletteId = posterPaletteApi.defaultPaletteId;
+    let paletteAssignment = getPaletteAssignment(activePaletteId);
+
+    function createPosterPaletteApi() {
+      if (
+        typeof COLOR_PALETTES !== "undefined" &&
+        typeof DEFAULT_PALETTE_ID !== "undefined" &&
+        typeof createPaletteAssignment === "function" &&
+        typeof hexToRgb === "function"
+      ) {
+        return {
+          colorPalettes: COLOR_PALETTES,
+          defaultPaletteId: DEFAULT_PALETTE_ID,
+          createPaletteAssignment,
+          hexToRgb,
+        };
+      }
+
+      const fallbackPalettes = {
+        originalNeutral: {
+          name: "Original / Neutral",
+          colors: ["#1C1C1C", "#F1EEE8", "#E7E0D3"],
+        },
+        mutedBlue: {
+          name: "Muted Blue",
+          colors: ["#AFC6D8", "#C7D6E2", "#E8E5DE"],
+        },
+        monochrome: {
+          name: "Monochrome",
+          colors: ["#000000", "#FFFFFF"],
+        },
+      };
+
+      return {
+        colorPalettes: fallbackPalettes,
+        defaultPaletteId: "originalNeutral",
+        createPaletteAssignment(paletteId) {
+          const palette = fallbackPalettes[paletteId] || fallbackPalettes.originalNeutral;
+          const background = palette.colors[1];
+          const textColor = palette.colors[0];
+
+          return {
+            id: palette === fallbackPalettes[paletteId] ? paletteId : "originalNeutral",
+            pageBackground: background,
+            headline: textColor,
+            bodyText: textColor,
+            secondaryText: textColor,
+            illustration: textColor,
+            illustrationAlt: textColor,
+            accent: textColor,
+            text: textColor,
+          };
+        },
+        hexToRgb(hexColor) {
+          const hex = hexColor.replace("#", "");
+          return [
+            parseInt(hex.slice(0, 2), 16),
+            parseInt(hex.slice(2, 4), 16),
+            parseInt(hex.slice(4, 6), 16),
+          ];
+        },
+      };
+    }
+
+    function setup() {
+      createCanvas(TICKET_W, TICKET_H);
+      pixelDensity(1);
+      imageMode(CORNER);
+      textFont("Arial");
+
+      document.getElementById("generateBtn").addEventListener("click", generateTicket);
+      setupPaletteControls();
+
+      document.getElementById("saveBtn").addEventListener("click", () => {
+        saveCanvas("generated_ticket", "png");
+      });
+
+      loadBuildingList();
+    }
+
+    function draw() {
+      drawTicket();
+    }
+
+    async function loadBuildingList() {
+      try {
+        const response = await fetch("/api/buildings");
+
+        if (!response.ok) {
+          throw new Error("Could not load saved building list");
+        }
+
+        const items = await response.json();
+        buildings = items
+          .map(normalizeSavedItem)
+          .filter((item) => {
+            if (item.imageSource) {
+              return true;
+            }
+
+            console.warn("Skipping saved item without an image source:", item);
+            return false;
+          });
+
+        if (!buildings.length) {
+          console.warn("No usable saved building images found. Using generated fallback artwork.");
+          generateTicketFallback();
+          return;
+        }
+
+        generateTicket();
+      } catch (error) {
+        console.error("Could not load buildings:", error);
+        generateTicketFallback();
+      }
+    }
+
+    function generateTicket() {
+      if (!buildings.length) {
+        console.warn("No usable saved building images found. Using generated fallback artwork.");
+        generateTicketFallback();
+        return;
+      }
+
+      resetCurrentPaletteAssignment();
+      const buildingData = pick(buildings);
+      const imageSource = getItemImageSource(buildingData);
+
+      if (!imageSource) {
+        console.warn("Saved item is missing an image source:", buildingData);
+        generateTicketFallback();
+        return;
+      }
+
+      loadImage(
+        imageSource,
+        (img) => {
+          currentBuilding = img;
+          currentBuildingIsFallback = false;
+          currentLayout = createLayout();
+        },
+        (error) => {
+          console.warn("Could not load saved image source. Using generated fallback artwork.", imageSource, error);
+          generateTicketFallback();
+        }
+      );
+    }
+
+    function normalizeSavedItem(item) {
+      if (typeof item === "string") {
+        return {
+          filename: "saved item",
+          imageSource: item,
+        };
+      }
+
+      return {
+        ...item,
+        filename: item.filename || item.id || "saved item",
+        imageSource: getItemImageSource(item),
+      };
+    }
+
+    function getItemImageSource(item) {
+      return item.imageData || item.imageUrl || item.src || item.path || null;
+    }
+
+    function generateTicketFallback() {
+      resetCurrentPaletteAssignment();
+      currentBuilding = createFallbackBuildingImage();
+      currentBuildingIsFallback = true;
+      currentLayout = createLayout();
+    }
+
+    function createFallbackBuildingImage() {
+      const pg = createGraphics(760, 420);
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.noStroke();
+
+      const buildingCount = floor(random(4, 8));
+      const streetY = pg.height - 36;
+      let x = 20;
+
+      for (let i = 0; i < buildingCount; i++) {
+        const w = random(70, 130);
+        const h = random(150, 330);
+        const y = streetY - h;
+        const hueStep = i % 3;
+        const wallColor = hueStep === 0 ? "#1C1C1C" : hueStep === 1 ? "#4D5A63" : "#7B6D5E";
+
+        pg.fill(wallColor);
+        pg.rect(x, y, w, h);
+        pg.fill("#F1EEE8");
+
+        for (let wy = y + 26; wy < streetY - 42; wy += 34) {
+          for (let wx = x + 14; wx < x + w - 20; wx += 28) {
+            if (random() > 0.18) {
+              pg.rect(wx, wy, 14, 18);
+            }
+          }
+        }
+
+        pg.fill("#F1EEE8");
+        pg.rect(x + w * 0.38, streetY - 48, w * 0.24, 48);
+        x += w + random(8, 22);
+      }
+
+      pg.fill("#1C1C1C");
+      pg.rect(0, streetY, pg.width, 12);
+
+      return pg;
+    }
+
+    function setupPaletteControls() {
+      const paletteControls = document.getElementById("paletteControls");
+
+      Object.entries(posterPaletteApi.colorPalettes).forEach(([paletteId, palette]) => {
+        const button = createThemeButton(paletteId, palette);
+        paletteControls.appendChild(button);
+      });
+
+      updatePaletteButtons();
+    }
+
+    function createThemeButton(paletteId, palette) {
+      const button = document.createElement("button");
+      const swatch = document.createElement("span");
+      const label = document.createElement("span");
+      const themeLabel = THEME_LABELS[paletteId] || palette.name;
+
+      button.className = "palette-button";
+      button.type = "button";
+      button.dataset.palette = paletteId;
+      button.title = palette.name;
+      button.setAttribute("aria-label", themeLabel);
+
+      swatch.className = "palette-swatch";
+      palette.colors.forEach((colorValue) => {
+        const dot = document.createElement("span");
+        dot.className = "palette-dot";
+        dot.style.background = colorValue;
+        swatch.appendChild(dot);
+      });
+
+      label.className = "palette-label";
+      label.textContent = themeLabel;
+
+      button.append(swatch, label);
+      button.addEventListener("click", () => {
+        activatePalette(paletteId);
+      });
+
+      return button;
+    }
+
+    function getPaletteAssignment(paletteId) {
+      if (!paletteAssignments[paletteId]) {
+        paletteAssignments[paletteId] = posterPaletteApi.createPaletteAssignment(paletteId);
+      }
+
+      return paletteAssignments[paletteId];
+    }
+
+    function activatePalette(paletteId) {
+      if (paletteId === activePaletteId) {
+        shuffleActivePaletteAssignment();
+        return;
+      }
+
+      activePaletteId = paletteId;
+      paletteAssignment = getPaletteAssignment(activePaletteId);
+      updatePaletteButtons();
+    }
+
+    function resetCurrentPaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+    }
+
+    function shuffleActivePaletteAssignment() {
+      paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+      paletteAssignments[activePaletteId] = paletteAssignment;
+      updatePaletteButtons();
+    }
+
+    function createDifferentPaletteAssignment(paletteId, previousAssignment) {
+      let nextAssignment = posterPaletteApi.createPaletteAssignment(paletteId);
+      const previousKey = previousAssignment ? getPaletteAssignmentKey(previousAssignment) : null;
+
+      for (let tries = 0; previousKey && tries < 8; tries++) {
+        if (getPaletteAssignmentKey(nextAssignment) !== previousKey) {
+          return nextAssignment;
+        }
+
+        nextAssignment = posterPaletteApi.createPaletteAssignment(paletteId);
+      }
+
+      return nextAssignment;
+    }
+
+    function getPaletteAssignmentKey(assignment) {
+      return [
+        assignment.pageBackground,
+        assignment.headline,
+        assignment.bodyText,
+        assignment.secondaryText,
+        assignment.illustration,
+        assignment.accent,
+      ].join("|");
+    }
+
+    function updatePaletteButtons() {
+      Array.from(document.querySelectorAll(".palette-button")).forEach((button) => {
+        const isActive = button.dataset.palette === activePaletteId;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    function createLayout() {
+      const mode = pick(["classic", "swapped", "bigCity", "bigTitle"]);
+      const zones = createModeZones(mode);
+      const titleVariant = pick([
+        ["THE CITY", "THAT", "REMEMBERS", "FORWARD"],
+        ["THE CITY THAT", "REMEMBERS", "FORWARD"],
+        ["THE CITY", "THAT REMEMBERS", "FORWARD"],
+      ]);
+      const titleSize = random(zones.titleSize[0], zones.titleSize[1]);
+      const titleLeading = random(0.78, 0.88);
+      const titleHeight = titleVariant.length * titleSize * titleLeading;
+      const titleY = zones.title.y + random(0, max(2, zones.title.h - titleHeight));
+      const imageW = zones.image.w * random(zones.imageScale[0], zones.imageScale[1]);
+      const imageH = zones.image.h * random(zones.imageHeight[0], zones.imageHeight[1]);
+      const imageX = zones.image.x + (zones.image.w - imageW) / 2 + random(zones.imageJitterX[0], zones.imageJitterX[1]);
+      const imageY = zones.image.y + (zones.image.h - imageH) / 2 + random(zones.imageJitterY[0], zones.imageJitterY[1]);
+      const infoInsetX = random(22, 42);
+      const infoY = INFO_ZONE.y + random(44, 72);
+      const infoAlign = random() < 0.82 ? LEFT : RIGHT;
+
+      return {
+        mode,
+        title: {
+          rect: {
+            x: zones.title.x + random(0, zones.titleJitterX),
+            y: titleY,
+            w: zones.title.w - zones.titlePadRight,
+            h: zones.title.h - (titleY - zones.title.y),
+          },
+          lines: titleVariant,
+          size: titleSize,
+          leadingRatio: titleLeading,
+        },
+        image: {
+          x: constrain(imageX, zones.image.x, zones.image.x + zones.image.w - imageW),
+          y: constrain(imageY, zones.image.y, zones.image.y + zones.image.h - imageH),
+          w: imageW,
+          h: imageH,
+        },
+        info: {
+          x: INFO_ZONE.x + infoInsetX,
+          y: infoY,
+          w: INFO_ZONE.w - infoInsetX - 22,
+          h: INFO_ZONE.h - (infoY - INFO_ZONE.y) - 36,
+          align: infoAlign,
+          leading: random(22, 26),
+          bodySize: random(17, 19),
+        },
+        perforationX: PERFORATION_X,
+        microTop: {
+          x: MAIN_ZONE.x + random(0, 24),
+          y: MARGIN_Y - random(14, 22),
+        },
+        microBottom: {
+          x: MAIN_ZONE.x + random(0, 18),
+          y: MARGIN_Y + WORK_H + random(8, 15),
+        },
+        serialTopPos: {
+          x: MAIN_ZONE.x + random(0, 18),
+          y: MARGIN_Y + WORK_H - random(44, 66),
+        },
+        serialSideY: MARGIN_Y + WORK_H - random(0, 22),
+        serialTop: `CTRF-${floor(random(10000, 99999))}-00038`,
+        serialBottom: `UNBUILT-${floor(random(1000, 9999))}/MEMORY`,
+      };
+    }
+
+    function createModeZones(mode) {
+      const mainTop = MARGIN_Y + 16;
+      const mainBottom = MARGIN_Y + WORK_H - 24;
+
+      if (mode === "swapped") {
+        return {
+          title: {
+            x: IMAGE_ZONE.x + 10,
+            y: mainTop + 18,
+            w: IMAGE_ZONE.w - 18,
+            h: WORK_H - 96,
+          },
+          image: {
+            x: TITLE_ZONE.x,
+            y: mainTop + 12,
+            w: TITLE_ZONE.w,
+            h: WORK_H - 68,
+          },
+          titleSize: [58, 72],
+          titleJitterX: 14,
+          titlePadRight: 18,
+          imageScale: [0.84, 0.98],
+          imageHeight: [0.66, 0.88],
+          imageJitterX: [-18, 18],
+          imageJitterY: [-16, 22],
+        };
+      }
+
+      if (mode === "bigCity") {
+        return {
+          title: {
+            x: MAIN_ZONE.x + 18,
+            y: mainTop,
+            w: MAIN_ZONE.w * 0.48,
+            h: WORK_H * 0.32,
+          },
+          image: {
+            x: MAIN_ZONE.x,
+            y: MARGIN_Y + WORK_H * 0.44,
+            w: MAIN_ZONE.w - 12,
+            h: WORK_H * 0.44,
+          },
+          titleSize: [40, 52],
+          titleJitterX: 12,
+          titlePadRight: 14,
+          imageScale: [0.92, 1],
+          imageHeight: [0.7, 1],
+          imageJitterX: [-12, 12],
+          imageJitterY: [-12, 10],
+        };
+      }
+
+      if (mode === "bigTitle") {
+        return {
+          title: {
+            x: MAIN_ZONE.x,
+            y: mainTop + 4,
+            w: MAIN_ZONE.w - 18,
+            h: WORK_H * 0.56,
+          },
+          image: {
+            x: MAIN_ZONE.x + MAIN_ZONE.w * 0.48,
+            y: mainBottom - WORK_H * 0.24,
+            w: MAIN_ZONE.w * 0.48,
+            h: WORK_H * 0.22,
+          },
+          titleSize: [82, 106],
+          titleJitterX: 16,
+          titlePadRight: 24,
+          imageScale: [0.74, 0.96],
+          imageHeight: [0.72, 1],
+          imageJitterX: [-18, 16],
+          imageJitterY: [-8, 8],
+        };
+      }
+
+      return {
+        title: {
+          x: TITLE_ZONE.x,
+          y: mainTop,
+          w: TITLE_ZONE.w,
+          h: WORK_H - 82,
+        },
+        image: {
+          x: IMAGE_ZONE.x,
+          y: mainTop + 18,
+          w: IMAGE_ZONE.w,
+          h: WORK_H - 84,
+        },
+        titleSize: [62, 78],
+        titleJitterX: 18,
+        titlePadRight: 22,
+        imageScale: [0.82, 0.98],
+        imageHeight: [0.62, 0.82],
+        imageJitterX: [-22, 22],
+        imageJitterY: [-18, 24],
+      };
+    }
+
+    function drawTicket() {
+      background(paletteAssignment.pageBackground);
+
+      if (!currentLayout || !currentBuilding) {
+        fill(paletteAssignment.text);
+        noStroke();
+        textSize(20);
+        textAlign(LEFT, TOP);
+        text("Save buildings first, then shuffle.", MARGIN_X, MARGIN_Y);
+        return;
+      }
+
+      drawMicroText();
+      drawTitle(currentLayout.title, ticketContent.title);
+      drawImageBlock(currentBuilding, currentLayout.image);
+      drawPerforation(currentLayout.perforationX);
+      drawTicketInfo(currentLayout.info);
+      drawSerials();
+    }
+
+    function drawTitle(r, title) {
+      fill(paletteAssignment.headline);
+      noStroke();
+
+      const titleText = title.toUpperCase();
+      const lines = r.lines || wrapTextLines(titleText, r.rect.w, r.size || 78);
+      const fontSize = fitTitleLines(lines, r.rect, r.size || 78, r.leadingRatio || 0.86);
+      const leading = fontSize * (r.leadingRatio || 0.86);
+
+      textFont("Arial Black");
+      textSize(fontSize);
+      textLeading(leading);
+      textStyle(BOLD);
+      textAlign(LEFT, TOP);
+
+      lines.forEach((line, index) => {
+        text(line, r.rect.x, r.rect.y + index * leading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function drawImageBlock(img, r) {
+      if (!img) return;
+
+      const imageRect = getImageFitRect(img, r);
+
+      push();
+      drawingContext.save();
+      drawingContext.beginPath();
+      drawingContext.rect(r.x, r.y, r.w, r.h);
+      drawingContext.clip();
+
+      if (currentBuildingIsFallback || paletteAssignment.id === "monochrome") {
+        const silhouette = getSilhouetteGraphic(img, paletteAssignment.illustration);
+        image(silhouette, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      } else if (paletteAssignment.id !== "originalNeutral") {
+        const tintColor = posterPaletteApi.hexToRgb(paletteAssignment.illustration);
+        push();
+        tint(tintColor[0], tintColor[1], tintColor[2]);
+        image(img, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+        pop();
+      } else {
+        image(img, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+      }
+
+      drawingContext.restore();
+      pop();
+    }
+
+    function getSilhouetteGraphic(img, silhouetteColor) {
+      if (
+        silhouetteCache &&
+        silhouetteCacheSource === img &&
+        silhouetteCacheColor === silhouetteColor
+      ) {
+        return silhouetteCache;
+      }
+
+      if (silhouetteCache) {
+        silhouetteCache.remove();
+      }
+
+      const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
+      const pg = createGraphics(img.width, img.height);
+
+      pg.pixelDensity(1);
+      pg.clear();
+      pg.imageMode(CORNER);
+      pg.image(img, 0, 0, img.width, img.height);
+      pg.loadPixels();
+
+      for (let i = 0; i < pg.pixels.length; i += 4) {
+        const alpha = pg.pixels[i + 3];
+
+        if (alpha > 8) {
+          pg.pixels[i] = r;
+          pg.pixels[i + 1] = g;
+          pg.pixels[i + 2] = b;
+          pg.pixels[i + 3] = 255;
+        } else {
+          pg.pixels[i + 3] = 0;
+        }
+      }
+
+      pg.updatePixels();
+
+      silhouetteCache = pg;
+      silhouetteCacheSource = img;
+      silhouetteCacheColor = silhouetteColor;
+
+      return silhouetteCache;
+    }
+
+    function drawTicketInfo(r) {
+      noStroke();
+      fill(paletteAssignment.bodyText);
+      textAlign(r.align || LEFT, TOP);
+
+      textFont("Arial Black");
+      textStyle(BOLD);
+      textSize(28);
+      textLeading(26);
+      text(ticketContent.infoLabel, r.x, r.y, r.w, 34);
+
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(r.bodySize || 18);
+      textLeading(r.leading || 24);
+      text(ticketContent.date, r.x, r.y + 44, r.w, 24);
+
+      textSize(r.bodySize || 18);
+      textLeading(r.leading || 24);
+      const detailText = [
+        ticketContent.venue,
+        "",
+        ticketContent.gate,
+        ticketContent.seat,
+      ].join("\n");
+      text(detailText, r.x, r.y + 112, r.w, r.h - 112);
+    }
+
+    function drawPerforation(x) {
+      const strokeColor = color(paletteAssignment.secondaryText);
+      strokeColor.setAlpha(paletteAssignment.id === "monochrome" ? 210 : 132);
+
+      stroke(strokeColor);
+      strokeWeight(2);
+      drawingContext.setLineDash([10, 14]);
+      line(x, MARGIN_Y, x, MARGIN_Y + WORK_H);
+      drawingContext.setLineDash([]);
+    }
+
+    function drawMicroText() {
+      const textColor = color(paletteAssignment.secondaryText);
+      textColor.setAlpha(paletteAssignment.id === "monochrome" ? 170 : 118);
+
+      fill(textColor);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(9);
+      textAlign(LEFT, TOP);
+      text(ticketContent.micro, currentLayout.microTop.x, currentLayout.microTop.y);
+      text("THREE-ZONE TICKET FIELD / ARCHIVE INDEX 00038", currentLayout.microBottom.x, currentLayout.microBottom.y);
+    }
+
+    function drawSerials() {
+      const serialColor = color(paletteAssignment.accent);
+      serialColor.setAlpha(paletteAssignment.id === "monochrome" ? 255 : 180);
+
+      fill(serialColor);
+      noStroke();
+      textFont("Arial");
+      textStyle(NORMAL);
+      textSize(11);
+      textAlign(LEFT, TOP);
+      text(currentLayout.serialTop, currentLayout.serialTopPos.x, currentLayout.serialTopPos.y);
+
+      push();
+      translate(TICKET_W - MARGIN_X + 14, currentLayout.serialSideY);
+      rotate(-HALF_PI);
+      text(currentLayout.serialBottom, 0, 0);
+      pop();
+    }
+
+    function getImageFitRect(img, r) {
+      const scale = min(r.w / img.width, r.h / img.height);
+      const drawW = img.width * scale;
+      const drawH = img.height * scale;
+      const x = r.x + (r.w - drawW) / 2;
+      const y = r.y + (r.h - drawH) / 2;
+
+      return {
+        x,
+        y,
+        w: drawW,
+        h: drawH
+      };
+    }
+
+    function fitTitleLines(lines, r, preferredSize, leadingRatio) {
+      for (let size = preferredSize; size >= 42; size -= 2) {
+        textFont("Arial Black");
+        textSize(size);
+        const leading = size * leadingRatio;
+        const textHeight = lines.length * leading;
+
+        if (textHeight <= r.h && lines.every((line) => textWidth(line) <= r.w)) {
+          return size;
+        }
+      }
+
+      return 42;
+    }
+
+    function wrapTextLines(textValue, maxWidth, size) {
+      textFont("Arial Black");
+      textSize(size);
+
+      const words = textValue.split(" ");
+      const lines = [];
+      let currentLine = "";
+
+      for (let word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      return lines;
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+  </script>
+  <script src="shared-nav.js"></script>
+</body>
+</html>
