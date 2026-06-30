@@ -485,9 +485,6 @@
               loadImage("assets/decor/spans/span_between_laundry_01.png"),
             ],
           },
-          damage: [
-            loadImage("assets/decor/wall_damage/wall_damage_crack_01.png"),
-          ],
         },
       };
     }
@@ -920,7 +917,6 @@
       placeStreetDecor(cells, widthBlocks, heightBlocks, state);
       placeBalconyDecor(cells, widthBlocks, heightBlocks, state);
       placeWallPlantDecor(cells, widthBlocks, heightBlocks, state);
-      placeWallDamageDecor(cells, widthBlocks, heightBlocks, state);
       placeLaundrySpanDecor(cells, widthBlocks, heightBlocks, state);
       placeAirConditionerDecor(cells, widthBlocks, heightBlocks, state);
       placePosterDecor(cells, widthBlocks, heightBlocks, state);
@@ -1099,27 +1095,6 @@
 
           cell.decorFront = pick(wallPlants);
           cell.decorFrontOffsetY = BLOCK * 0.38;
-        }
-      }
-    }
-
-    function placeWallDamageDecor(cells, widthBlocks, heightBlocks, state) {
-      const damageMarks = assets.decor && assets.decor.damage;
-      if (!damageMarks || damageMarks.length === 0) return;
-
-      const decoration = getDecorationAmount(state);
-      if (decoration <= 0) return;
-
-      const chance = lerp(0, 0.08, decoration);
-
-      for (let row = 1; row < heightBlocks; row++) {
-        for (let col = 0; col < widthBlocks; col++) {
-          const cell = cells[row][col];
-
-          if (!isOpenWallCell(cell)) continue;
-          if (random() > chance) continue;
-
-          cell.decorBack = pick(damageMarks);
         }
       }
     }
