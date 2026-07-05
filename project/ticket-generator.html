@@ -340,7 +340,7 @@
         return;
       }
 
-      resetCurrentPaletteAssignment();
+      const nextAssignment = computeNextPaletteAssignment();
       const buildingData = pick(buildings);
       const imageSource = getItemImageSource(buildingData);
 
@@ -353,6 +353,7 @@
       loadImage(
         imageSource,
         (img) => {
+          commitPaletteAssignment(nextAssignment);
           currentBuilding = img;
           currentBuildingIsFallback = false;
           currentLayout = createLayout();
@@ -384,19 +385,21 @@
     }
 
     function generateTicketFallback() {
-      resetCurrentPaletteAssignment();
+      const nextAssignment = computeNextPaletteAssignment();
 
       if (fallbackImageFiles.length) {
         const filename = pick(fallbackImageFiles);
         loadImage(
           `/fallback_images/${filename}`,
           (img) => {
+            commitPaletteAssignment(nextAssignment);
             currentBuilding = img;
             currentBuildingIsFallback = true;
             currentLayout = createLayout();
           },
           (error) => {
             console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            commitPaletteAssignment(nextAssignment);
             currentBuilding = createFallbackBuildingImage();
             currentBuildingIsFallback = true;
             currentLayout = createLayout();
@@ -405,6 +408,7 @@
         return;
       }
 
+      commitPaletteAssignment(nextAssignment);
       currentBuilding = createFallbackBuildingImage();
       currentBuildingIsFallback = true;
       currentLayout = createLayout();
@@ -514,6 +518,20 @@
     function resetCurrentPaletteAssignment() {
       paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
       paletteAssignments[activePaletteId] = paletteAssignment;
+    }
+
+    // Computes a new palette assignment WITHOUT applying it yet, so the
+    // background doesn't change until the new image is actually ready.
+    function computeNextPaletteAssignment() {
+      return createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+    }
+
+    // Applies a previously computed palette assignment. Call this at the
+    // same moment the new building/layout is set, so background + content
+    // change on the same frame.
+    function commitPaletteAssignment(assignment) {
+      paletteAssignment = assignment;
+      paletteAssignments[activePaletteId] = assignment;
     }
 
     function shuffleActivePaletteAssignment() {

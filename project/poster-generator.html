@@ -681,7 +681,7 @@ Lothstraße 17
         return;
       }
 
-      resetCurrentPaletteAssignment();
+      const nextAssignment = computeNextPaletteAssignment();
       const buildingData = pick(buildings);
       const imageSource = getItemImageSource(buildingData);
 
@@ -694,6 +694,7 @@ Lothstraße 17
       loadImage(
         imageSource,
         (img) => {
+          commitPaletteAssignment(nextAssignment);
           currentBuilding = img;
           currentLayout = createLayout();
         },
@@ -705,49 +706,63 @@ Lothstraße 17
     }
 
     function generatePost() {
-      resetCurrentPaletteAssignment();
-      silhouetteCache = null;
+      const nextAssignment = computeNextPaletteAssignment();
 
       postImageType = pick(["building", "street"]);
       const candidates = buildings.filter((item) => item.type === postImageType);
       const fallbackCandidates = buildings.filter((item) => item.type !== postImageType);
       const item = pick(candidates.length ? candidates : fallbackCandidates);
-      postLayout = createPostLayout(postImageType);
-      updatePostCopyForLayout(postLayout);
+      const nextLayout = createPostLayout(postImageType);
 
       if (!item) {
-        loadPostFallbackImage(postImageType);
+        loadPostFallbackImage(postImageType, nextAssignment, nextLayout);
         return;
       }
 
       loadImage(
         getItemImageSource(item),
         (img) => {
+          silhouetteCache = null;
+          commitPaletteAssignment(nextAssignment);
+          postLayout = nextLayout;
+          updatePostCopyForLayout(postLayout);
           postImage = img;
         },
         (error) => {
           console.warn("Could not load saved image source for post. Using generated fallback artwork.", item, error);
-          loadPostFallbackImage(postImageType);
+          loadPostFallbackImage(postImageType, nextAssignment, nextLayout);
         }
       );
     }
 
-    function loadPostFallbackImage(type) {
+    function loadPostFallbackImage(type, nextAssignment, nextLayout) {
       if (fallbackImageFiles.length) {
         const filename = pick(fallbackImageFiles);
         loadImage(
           `/fallback_images/${filename}`,
           (img) => {
+            silhouetteCache = null;
+            commitPaletteAssignment(nextAssignment);
+            postLayout = nextLayout;
+            updatePostCopyForLayout(postLayout);
             postImage = img;
           },
           (error) => {
             console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            silhouetteCache = null;
+            commitPaletteAssignment(nextAssignment);
+            postLayout = nextLayout;
+            updatePostCopyForLayout(postLayout);
             postImage = createPostFallbackImage(type);
           }
         );
         return;
       }
 
+      silhouetteCache = null;
+      commitPaletteAssignment(nextAssignment);
+      postLayout = nextLayout;
+      updatePostCopyForLayout(postLayout);
       postImage = createPostFallbackImage(type);
     }
 
@@ -758,8 +773,7 @@ Lothstraße 17
         return;
       }
 
-      resetCurrentPaletteAssignment();
-      silhouetteCache = null;
+      const nextAssignment = computeNextPaletteAssignment();
       const buildingData = pick(buildings);
       const imageSource = getItemImageSource(buildingData);
 
@@ -772,6 +786,8 @@ Lothstraße 17
       loadImage(
         imageSource,
         (img) => {
+          silhouetteCache = null;
+          commitPaletteAssignment(nextAssignment);
           ticketBuilding = img;
           ticketBuildingIsFallback = false;
           ticketLayout = createTicketLayout();
@@ -785,14 +801,15 @@ Lothstraße 17
     }
 
     function generateTicketFallback() {
-      resetCurrentPaletteAssignment();
-      silhouetteCache = null;
+      const nextAssignment = computeNextPaletteAssignment();
 
       if (fallbackImageFiles.length) {
         const filename = pick(fallbackImageFiles);
         loadImage(
           `/fallback_images/${filename}`,
           (img) => {
+            silhouetteCache = null;
+            commitPaletteAssignment(nextAssignment);
             ticketBuilding = img;
             ticketBuildingIsFallback = true;
             ticketLayout = createTicketLayout();
@@ -800,6 +817,8 @@ Lothstraße 17
           },
           (error) => {
             console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            silhouetteCache = null;
+            commitPaletteAssignment(nextAssignment);
             ticketBuilding = createFallbackBuildingImage();
             ticketBuildingIsFallback = true;
             ticketLayout = createTicketLayout();
@@ -809,6 +828,8 @@ Lothstraße 17
         return;
       }
 
+      silhouetteCache = null;
+      commitPaletteAssignment(nextAssignment);
       ticketBuilding = createFallbackBuildingImage();
       ticketBuildingIsFallback = true;
       ticketLayout = createTicketLayout();
@@ -956,18 +977,20 @@ Lothstraße 17
     }
 
     function generatePosterFallback() {
-      resetCurrentPaletteAssignment();
+      const nextAssignment = computeNextPaletteAssignment();
 
       if (fallbackImageFiles.length) {
         const filename = pick(fallbackImageFiles);
         loadImage(
           `/fallback_images/${filename}`,
           (img) => {
+            commitPaletteAssignment(nextAssignment);
             currentBuilding = img;
             currentLayout = createLayout();
           },
           (error) => {
             console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            commitPaletteAssignment(nextAssignment);
             currentBuilding = createFallbackBuildingImage();
             currentLayout = createLayout();
           }
@@ -975,6 +998,7 @@ Lothstraße 17
         return;
       }
 
+      commitPaletteAssignment(nextAssignment);
       currentBuilding = createFallbackBuildingImage();
       currentLayout = createLayout();
     }
@@ -1152,6 +1176,20 @@ Lothstraße 17
     function resetCurrentPaletteAssignment() {
       paletteAssignment = createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
       paletteAssignments[activePaletteId] = paletteAssignment;
+    }
+
+    // Computes a new palette assignment WITHOUT applying it yet, so the
+    // background doesn't change until the new image is actually ready.
+    function computeNextPaletteAssignment() {
+      return createDifferentPaletteAssignment(activePaletteId, paletteAssignment);
+    }
+
+    // Applies a previously computed palette assignment. Call this at the
+    // same moment the new building/layout is set, so background + content
+    // change on the same frame.
+    function commitPaletteAssignment(assignment) {
+      paletteAssignment = assignment;
+      paletteAssignments[activePaletteId] = assignment;
     }
 
     function shuffleActivePaletteAssignment() {
