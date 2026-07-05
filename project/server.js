@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 
 const generatedDir = path.join(__dirname, "assets", "generated-buildings");
 const DEFAULT_AESTHETIC = "neutral";
