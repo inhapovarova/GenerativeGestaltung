@@ -6,6 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 const generatedDir = path.join(__dirname, "assets", "generated-buildings");
+const fallbackImagesDir = path.join(__dirname, "fallback_images");
 const DEFAULT_AESTHETIC = "neutral";
 const DEFAULT_PALETTE = "originalNeutral";
 
@@ -21,6 +22,11 @@ app.use(express.static(__dirname));
 app.use(
   "/generated-buildings",
   express.static(generatedDir)
+);
+
+app.use(
+  "/fallback_images",
+  express.static(fallbackImagesDir)
 );
 
 function createArchiveId(createdAt) {
@@ -186,6 +192,18 @@ app.get("/api/buildings", (req, res) => {
     });
 
     res.json(items);
+  });
+});
+
+app.get("/api/fallback-images", (req, res) => {
+  fs.readdir(fallbackImagesDir, (err, files) => {
+    if (err) {
+      console.error("Could not read fallback_images folder:", err);
+      return res.status(500).json({ error: "Could not read fallback_images folder" });
+    }
+
+    const images = files.filter((file) => /\.(png|jpg|jpeg)$/i.test(file));
+    res.json(images);
   });
 });
 

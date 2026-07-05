@@ -216,6 +216,7 @@ Lothstraße 17
     };
 
     let buildings = [];
+    let fallbackImageFiles = [];
     let currentBuilding = null;
     let currentLayout = null;
     let silhouetteCache = null;
@@ -356,7 +357,23 @@ Lothstraße 17
         saveActiveFormat();
       });
 
+      loadFallbackImageList();
       loadBuildingList();
+    }
+
+    async function loadFallbackImageList() {
+      try {
+        const response = await fetch("/api/fallback-images");
+
+        if (!response.ok) {
+          throw new Error("Could not load fallback image list");
+        }
+
+        fallbackImageFiles = await response.json();
+      } catch (error) {
+        console.warn("Could not load fallback images, using drawn placeholder instead:", error);
+        fallbackImageFiles = [];
+      }
     }
 
     function setupTextControls() {
@@ -699,7 +716,7 @@ Lothstraße 17
       updatePostCopyForLayout(postLayout);
 
       if (!item) {
-        postImage = createPostFallbackImage(postImageType);
+        loadPostFallbackImage(postImageType);
         return;
       }
 
@@ -710,9 +727,28 @@ Lothstraße 17
         },
         (error) => {
           console.warn("Could not load saved image source for post. Using generated fallback artwork.", item, error);
-          postImage = createPostFallbackImage(postImageType);
+          loadPostFallbackImage(postImageType);
         }
       );
+    }
+
+    function loadPostFallbackImage(type) {
+      if (fallbackImageFiles.length) {
+        const filename = pick(fallbackImageFiles);
+        loadImage(
+          `/fallback_images/${filename}`,
+          (img) => {
+            postImage = img;
+          },
+          (error) => {
+            console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            postImage = createPostFallbackImage(type);
+          }
+        );
+        return;
+      }
+
+      postImage = createPostFallbackImage(type);
     }
 
     function generateTicket() {
@@ -751,6 +787,28 @@ Lothstraße 17
     function generateTicketFallback() {
       resetCurrentPaletteAssignment();
       silhouetteCache = null;
+
+      if (fallbackImageFiles.length) {
+        const filename = pick(fallbackImageFiles);
+        loadImage(
+          `/fallback_images/${filename}`,
+          (img) => {
+            ticketBuilding = img;
+            ticketBuildingIsFallback = true;
+            ticketLayout = createTicketLayout();
+            updateTicketCopyForLayout();
+          },
+          (error) => {
+            console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            ticketBuilding = createFallbackBuildingImage();
+            ticketBuildingIsFallback = true;
+            ticketLayout = createTicketLayout();
+            updateTicketCopyForLayout();
+          }
+        );
+        return;
+      }
+
       ticketBuilding = createFallbackBuildingImage();
       ticketBuildingIsFallback = true;
       ticketLayout = createTicketLayout();
@@ -899,6 +957,24 @@ Lothstraße 17
 
     function generatePosterFallback() {
       resetCurrentPaletteAssignment();
+
+      if (fallbackImageFiles.length) {
+        const filename = pick(fallbackImageFiles);
+        loadImage(
+          `/fallback_images/${filename}`,
+          (img) => {
+            currentBuilding = img;
+            currentLayout = createLayout();
+          },
+          (error) => {
+            console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            currentBuilding = createFallbackBuildingImage();
+            currentLayout = createLayout();
+          }
+        );
+        return;
+      }
+
       currentBuilding = createFallbackBuildingImage();
       currentLayout = createLayout();
     }

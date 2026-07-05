@@ -191,6 +191,7 @@
     };
 
     let buildings = [];
+    let fallbackImageFiles = [];
     let currentBuilding = null;
     let currentBuildingIsFallback = false;
     let currentLayout = null;
@@ -276,7 +277,23 @@
         saveCanvas("generated_ticket", "png");
       });
 
+      loadFallbackImageList();
       loadBuildingList();
+    }
+
+    async function loadFallbackImageList() {
+      try {
+        const response = await fetch("/api/fallback-images");
+
+        if (!response.ok) {
+          throw new Error("Could not load fallback image list");
+        }
+
+        fallbackImageFiles = await response.json();
+      } catch (error) {
+        console.warn("Could not load fallback images, using drawn placeholder instead:", error);
+        fallbackImageFiles = [];
+      }
     }
 
     function draw() {
@@ -368,6 +385,26 @@
 
     function generateTicketFallback() {
       resetCurrentPaletteAssignment();
+
+      if (fallbackImageFiles.length) {
+        const filename = pick(fallbackImageFiles);
+        loadImage(
+          `/fallback_images/${filename}`,
+          (img) => {
+            currentBuilding = img;
+            currentBuildingIsFallback = true;
+            currentLayout = createLayout();
+          },
+          (error) => {
+            console.warn("Could not load fallback image, using drawn placeholder:", filename, error);
+            currentBuilding = createFallbackBuildingImage();
+            currentBuildingIsFallback = true;
+            currentLayout = createLayout();
+          }
+        );
+        return;
+      }
+
       currentBuilding = createFallbackBuildingImage();
       currentBuildingIsFallback = true;
       currentLayout = createLayout();
@@ -757,47 +794,57 @@
     }
 
     function getSilhouetteGraphic(img, silhouetteColor) {
-      if (
-        silhouetteCache &&
-        silhouetteCacheSource === img &&
-        silhouetteCacheColor === silhouetteColor
-      ) {
-        return silhouetteCache;
-      }
-
-      if (silhouetteCache) {
-        silhouetteCache.remove();
-      }
-
-      const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
-      const pg = createGraphics(img.width, img.height);
-
-      pg.pixelDensity(1);
-      pg.clear();
-      pg.imageMode(CORNER);
-      pg.image(img, 0, 0, img.width, img.height);
-      pg.loadPixels();
-
-      for (let i = 0; i < pg.pixels.length; i += 4) {
-        const alpha = pg.pixels[i + 3];
-
-        if (alpha > 8) {
-          pg.pixels[i] = r;
-          pg.pixels[i + 1] = g;
-          pg.pixels[i + 2] = b;
-          pg.pixels[i + 3] = 255;
-        } else {
-          pg.pixels[i + 3] = 0;
+      try {
+        if (
+          silhouetteCache &&
+          silhouetteCacheSource === img &&
+          silhouetteCacheColor === silhouetteColor
+        ) {
+          return silhouetteCache;
         }
+
+        const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
+        const pg = createGraphics(img.width, img.height);
+
+        pg.pixelDensity(1);
+        pg.clear();
+        pg.imageMode(CORNER);
+        pg.image(img, 0, 0, img.width, img.height);
+        pg.loadPixels();
+
+        for (let i = 0; i < pg.pixels.length; i += 4) {
+          const alpha = pg.pixels[i + 3];
+
+          if (alpha > 8) {
+            pg.pixels[i] = r;
+            pg.pixels[i + 1] = g;
+            pg.pixels[i + 2] = b;
+            pg.pixels[i + 3] = 255;
+          } else {
+            pg.pixels[i + 3] = 0;
+          }
+        }
+
+        pg.updatePixels();
+
+        // Only remove the old cache AFTER the new one succeeds, and do it safely.
+        if (silhouetteCache && silhouetteCache !== pg) {
+          try {
+            silhouetteCache.remove();
+          } catch (removeError) {
+            console.warn("Could not remove old silhouette cache (ignored):", removeError);
+          }
+        }
+
+        silhouetteCache = pg;
+        silhouetteCacheSource = img;
+        silhouetteCacheColor = silhouetteColor;
+
+        return silhouetteCache;
+      } catch (error) {
+        console.warn("Silhouette generation failed, falling back to plain image:", error);
+        return img;
       }
-
-      pg.updatePixels();
-
-      silhouetteCache = pg;
-      silhouetteCacheSource = img;
-      silhouetteCacheColor = silhouetteColor;
-
-      return silhouetteCache;
     }
 
     function drawTicketInfo(r) {
