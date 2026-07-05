@@ -1936,55 +1936,57 @@ Lothstraße 17
     }
 
     function getSilhouetteGraphic(img, silhouetteColor) {
-      console.log("SILHOUETTE DEBUG:", {
-        img,
-        hasWidth: img && img.width,
-        hasHeight: img && img.height,
-        silhouetteColor,
-        colorType: typeof silhouetteColor,
-      });
-      
-      if (
-        silhouetteCache &&
-        silhouetteCacheSource === img &&
-        silhouetteCacheColor === silhouetteColor
-      ) {
-        return silhouetteCache;
-      }
-
-      if (silhouetteCache) {
-        silhouetteCache.remove();
-      }
-
-      const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
-      const pg = createGraphics(img.width, img.height);
-
-      pg.pixelDensity(1);
-      pg.clear();
-      pg.imageMode(CORNER);
-      pg.image(img, 0, 0, img.width, img.height);
-      pg.loadPixels();
-
-      for (let i = 0; i < pg.pixels.length; i += 4) {
-        const alpha = pg.pixels[i + 3];
-
-        if (alpha > 8) {
-          pg.pixels[i] = r;
-          pg.pixels[i + 1] = g;
-          pg.pixels[i + 2] = b;
-          pg.pixels[i + 3] = 255;
-        } else {
-          pg.pixels[i + 3] = 0;
+      try {
+        if (
+          silhouetteCache &&
+          silhouetteCacheSource === img &&
+          silhouetteCacheColor === silhouetteColor
+        ) {
+          return silhouetteCache;
         }
+
+        const [r, g, b] = posterPaletteApi.hexToRgb(silhouetteColor);
+        const pg = createGraphics(img.width, img.height);
+
+        pg.pixelDensity(1);
+        pg.clear();
+        pg.imageMode(CORNER);
+        pg.image(img, 0, 0, img.width, img.height);
+        pg.loadPixels();
+
+        for (let i = 0; i < pg.pixels.length; i += 4) {
+          const alpha = pg.pixels[i + 3];
+
+          if (alpha > 8) {
+            pg.pixels[i] = r;
+            pg.pixels[i + 1] = g;
+            pg.pixels[i + 2] = b;
+            pg.pixels[i + 3] = 255;
+          } else {
+            pg.pixels[i + 3] = 0;
+          }
+        }
+
+        pg.updatePixels();
+
+        // Only remove the old cache AFTER the new one succeeds, and do it safely.
+        if (silhouetteCache && silhouetteCache !== pg) {
+          try {
+            silhouetteCache.remove();
+          } catch (removeError) {
+            console.warn("Could not remove old silhouette cache (ignored):", removeError);
+          }
+        }
+
+        silhouetteCache = pg;
+        silhouetteCacheSource = img;
+        silhouetteCacheColor = silhouetteColor;
+
+        return silhouetteCache;
+      } catch (error) {
+        console.warn("Silhouette generation failed, falling back to plain image:", error);
+        return img;
       }
-
-      pg.updatePixels();
-
-      silhouetteCache = pg;
-      silhouetteCacheSource = img;
-      silhouetteCacheColor = silhouetteColor;
-
-      return silhouetteCache;
     }
 
     function getImageFitRect(img, r) {
