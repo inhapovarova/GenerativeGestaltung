@@ -220,8 +220,18 @@ function createPaletteSwatchButton(paletteId, palette, onClick) {
   return button;
 }
 
+// Filter out wrong Hex values and empty strings, then sort by contrast ratio to background color
 function getHighestContrastColor(background, colors) {
-  return [...colors].sort((a, b) => {
+  const validColors = (colors || []).filter(
+    (c) => typeof c === "string" && c.trim().length > 0
+  );
+
+  if (!validColors.length) {
+    console.warn("getHighestContrastColor: no valid colors given, falling back to #000000");
+    return "#000000";
+  }
+
+  return [...validColors].sort((a, b) => {
     return getContrastRatio(b, background) - getContrastRatio(a, background);
   })[0];
 }
@@ -255,7 +265,13 @@ function getColorDistance(a, b) {
   );
 }
 
+// Guards
 function hexToRgb(hexColor) {
+  if (typeof hexColor !== "string" || hexColor.trim().length === 0) {
+    console.warn("hexToRgb received invalid color, falling back to #000000:", hexColor);
+    hexColor = "#000000";
+  }
+
   const hex = hexColor.replace("#", "");
 
   return [
