@@ -1936,6 +1936,14 @@ Lothstraße 17
     }
 
     function getSilhouetteGraphic(img, silhouetteColor) {
+      console.log("SILHOUETTE DEBUG:", {
+        img,
+        hasWidth: img && img.width,
+        hasHeight: img && img.height,
+        silhouetteColor,
+        colorType: typeof silhouetteColor,
+      });
+      
       if (
         silhouetteCache &&
         silhouetteCacheSource === img &&
