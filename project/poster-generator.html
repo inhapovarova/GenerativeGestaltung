@@ -109,7 +109,8 @@ A sandbox for slow exploration</textarea>
     <div class="generator-mode-fields" id="ticketTextFields" hidden>
       <div class="generator-text-control">
         <label for="ticketTitleInput">exhibition title</label>
-        <textarea id="ticketTitleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+        <textarea id="ticketTitleInput">RE;ASSEMBLY;
+city generator</textarea>
       </div>
       <div class="generator-text-control">
         <label for="ticketDateInput">date</label>
@@ -236,7 +237,7 @@ Lothstraße 17
     };
 
     const ticketContent = {
-      title: "THE CITY THAT REMEMBERS FORWARD",
+      title: "RE;ASSEMBLY;\ncity generator",
       date: "20 JULY 2026",
       time: "19:30",
       location: "Faculty for Design\nMunich University of Applied Sciences\nLothstraße 17\n80335 Munich",
@@ -1367,9 +1368,12 @@ Lothstraße 17
     function createTicketLayout() {
       const mode = pick(["classic", "swapped", "bigCity", "bigTitle"]);
       const zones = createTicketModeZones(mode);
+      const splitTitleAtSemicolon = random() < 0.55;
       const titleSize = random(zones.titleSize[0], zones.titleSize[1]);
       const titleLeading = random(0.78, 0.88);
-      const titleLines = ticketTitleLines(ticketContent.title, zones.title.w - zones.titlePadRight, titleSize);
+      const titleLines = splitTitleAtSemicolon
+        ? ["RE;", "ASSEMBLY;", "city generator"]
+        : ["RE;ASSEMBLY;", "city generator"];
       const titleHeight = titleLines.length * titleSize * titleLeading;
       const titleY = zones.title.y + random(0, max(2, zones.title.h - titleHeight));
       const imageW = zones.image.w * random(zones.imageScale[0], zones.imageScale[1]);
@@ -1391,6 +1395,7 @@ Lothstraße 17
           },
           size: titleSize,
           leadingRatio: titleLeading,
+          splitAtSemicolon: splitTitleAtSemicolon,
         },
         image: {
           x: constrain(imageX, zones.image.x, zones.image.x + zones.image.w - imageW),
@@ -1549,8 +1554,13 @@ Lothstraße 17
       fill(paletteAssignment.headline);
       noStroke();
 
-      const titleText = title.trim().toUpperCase() || "IMAGINARY CITY ARCHIVE";
-      const lines = ticketTitleLines(titleText, block.rect.w, block.size || 78);
+      const [mainTitle = "RE;ASSEMBLY;", ...subtitleParts] = title.trim().split(/\n+/);
+      const subtitle = subtitleParts.join(" ").trim() || "city generator";
+      const titleLines = block.splitAtSemicolon && mainTitle.toUpperCase() === "RE;ASSEMBLY;"
+        ? ["RE;", "ASSEMBLY;"]
+        : ticketTitleLines(mainTitle.toUpperCase(), block.rect.w, block.size || 78);
+      const subtitleLines = ticketTitleLines(subtitle, block.rect.w, block.size || 78);
+      const lines = [...titleLines, ...subtitleLines];
       const fontSize = fitTicketTitleLines(lines, block.rect, block.size || 78, block.leadingRatio || 0.86);
       const leading = fontSize * (block.leadingRatio || 0.86);
 
@@ -1560,8 +1570,13 @@ Lothstraße 17
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      lines.forEach((line, index) => {
+      titleLines.forEach((line, index) => {
         text(line, block.rect.x, block.rect.y + index * leading);
+      });
+
+      textStyle(ITALIC);
+      subtitleLines.forEach((line, index) => {
+        text(line, block.rect.x, block.rect.y + (titleLines.length + index) * leading);
       });
 
       textStyle(NORMAL);
