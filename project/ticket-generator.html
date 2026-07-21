@@ -195,6 +195,9 @@
     let currentBuilding = null;
     let currentBuildingIsFallback = false;
     let currentLayout = null;
+    let ticketQrImage = null;
+    let ticketQrTintedImage = null;
+    let ticketQrTintColor = null;
     let silhouetteCache = null;
     let silhouetteCacheSource = null;
     let silhouetteCacheColor = null;
@@ -269,6 +272,18 @@
       pixelDensity(1);
       imageMode(CORNER);
       textFont("Arial");
+
+      loadImage(
+        "assets/qr/ticket-qr.png",
+        (img) => {
+          ticketQrImage = img;
+          ticketQrTintedImage = null;
+          ticketQrTintColor = null;
+        },
+        (error) => {
+          console.warn("Could not load ticket QR code:", error);
+        }
+      );
 
       document.getElementById("generateBtn").addEventListener("click", generateTicket);
       setupPaletteControls();
@@ -876,31 +891,41 @@
     }
 
     function drawTicketInfo(r) {
-      noStroke();
-      fill(paletteAssignment.bodyText);
-      textAlign(r.align || LEFT, TOP);
+      if (!ticketQrImage) return;
 
-      textFont("Arial Black");
-      textStyle(BOLD);
-      textSize(28);
-      textLeading(26);
-      text(ticketContent.infoLabel, r.x, r.y, r.w, 34);
+      const qrSize = min(INFO_ZONE.w, INFO_ZONE.h) * 0.82;
+      const qrX = INFO_ZONE.x + (INFO_ZONE.w - qrSize) / 2;
+      const qrY = INFO_ZONE.y + (INFO_ZONE.h - qrSize) / 2;
+      image(getTintedTicketQr(), qrX, qrY, qrSize, qrSize);
+    }
 
-      textFont("Arial");
-      textStyle(NORMAL);
-      textSize(r.bodySize || 18);
-      textLeading(r.leading || 24);
-      text(ticketContent.date, r.x, r.y + 44, r.w, 24);
+    function getTintedTicketQr() {
+      const qrColor = paletteAssignment.bodyText;
+      if (ticketQrTintedImage && ticketQrTintColor === qrColor) {
+        return ticketQrTintedImage;
+      }
 
-      textSize(r.bodySize || 18);
-      textLeading(r.leading || 24);
-      const detailText = [
-        ticketContent.venue,
-        "",
-        ticketContent.gate,
-        ticketContent.seat,
-      ].join("\n");
-      text(detailText, r.x, r.y + 112, r.w, r.h - 112);
+      const [red, green, blue] = posterPaletteApi.hexToRgb(qrColor);
+      const tintedImage = ticketQrImage.get();
+      tintedImage.loadPixels();
+
+      for (let index = 0; index < tintedImage.pixels.length; index += 4) {
+        const luminance = (
+          tintedImage.pixels[index] * 0.299
+          + tintedImage.pixels[index + 1] * 0.587
+          + tintedImage.pixels[index + 2] * 0.114
+        );
+        const sourceAlpha = tintedImage.pixels[index + 3];
+        tintedImage.pixels[index] = red;
+        tintedImage.pixels[index + 1] = green;
+        tintedImage.pixels[index + 2] = blue;
+        tintedImage.pixels[index + 3] = sourceAlpha * (1 - luminance / 255);
+      }
+
+      tintedImage.updatePixels();
+      ticketQrTintedImage = tintedImage;
+      ticketQrTintColor = qrColor;
+      return tintedImage;
     }
 
     function drawPerforation(x) {
@@ -940,11 +965,6 @@
       textAlign(LEFT, TOP);
       text(currentLayout.serialTop, currentLayout.serialTopPos.x, currentLayout.serialTopPos.y);
 
-      push();
-      translate(TICKET_W - MARGIN_X + 14, currentLayout.serialSideY);
-      rotate(-HALF_PI);
-      text(currentLayout.serialBottom, 0, 0);
-      pop();
     }
 
     function getImageFitRect(img, r) {
