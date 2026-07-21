@@ -1,7 +1,7 @@
 (function () {
   const links = [
     { href: "scene-generator.html", label: "building / street" },
-    { href: "poster-generator.html", label: "poster / post / ticket" },
+    { href: "poster-generator.html", label: "poster / ticket" },
     { href: "index.html", label: "sandbox" },
     { href: "gallery.html", label: "gallery" },
   ];

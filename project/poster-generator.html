@@ -59,7 +59,6 @@
 
   <div class="format-toggle" id="formatToggle" aria-label="output format">
     <button id="posterModeBtn" class="is-active" type="button" aria-pressed="true">Poster</button>
-    <button id="postModeBtn" type="button" aria-pressed="false">Post</button>
     <button id="ticketModeBtn" type="button" aria-pressed="false">Ticket</button>
   </div>
 
@@ -102,23 +101,6 @@ A sandbox for slow exploration</textarea>
       <div class="generator-text-control">
         <label for="extra2Input">small note</label>
         <textarea id="extra2Input">Free entry</textarea>
-      </div>
-    </div>
-
-    <div class="generator-mode-fields" id="postTextFields" hidden>
-      <div class="generator-text-control">
-        <label for="postHeadlineInput">headline</label>
-        <textarea id="postHeadlineInput">Imaginary City Archive</textarea>
-      </div>
-      <div class="generator-text-control">
-        <label for="postSubtitleInput">subtitle</label>
-        <textarea id="postSubtitleInput">Fragments of streets that never existed.</textarea>
-      </div>
-      <div class="generator-text-control">
-        <label for="postMetadataInput">metadata</label>
-        <textarea id="postMetadataInput">ARCHIVE NO. 001
-2026
-GENERATED CITY FRAGMENT</textarea>
       </div>
     </div>
 
@@ -386,9 +368,6 @@ Lothstraße 17
         dateInput: document.getElementById("dateInput"),
         extraInput: document.getElementById("extraInput"),
         extra2Input: document.getElementById("extra2Input"),
-        postHeadlineInput: document.getElementById("postHeadlineInput"),
-        postSubtitleInput: document.getElementById("postSubtitleInput"),
-        postMetadataInput: document.getElementById("postMetadataInput"),
         ticketTitleInput: document.getElementById("ticketTitleInput"),
         ticketDateInput: document.getElementById("ticketDateInput"),
         ticketTimeInput: document.getElementById("ticketTimeInput"),
@@ -396,12 +375,10 @@ Lothstraße 17
         ticketNumberInput: document.getElementById("ticketNumberInput"),
         ticketNoteInput: document.getElementById("ticketNoteInput"),
         posterTextFields: document.getElementById("posterTextFields"),
-        postTextFields: document.getElementById("postTextFields"),
         ticketTextFields: document.getElementById("ticketTextFields"),
       };
 
       syncPosterTextInputs();
-      syncPostTextInputs();
       syncTicketTextInputs();
       textUi.textBtn.addEventListener("click", toggleTextPopover);
       [
@@ -413,13 +390,6 @@ Lothstraße 17
         textUi.extra2Input,
       ].forEach((input) => {
         input.addEventListener("input", updatePosterContentFromInputs);
-      });
-      [
-        textUi.postHeadlineInput,
-        textUi.postSubtitleInput,
-        textUi.postMetadataInput,
-      ].forEach((input) => {
-        input.addEventListener("input", updatePostContentFromInputs);
       });
       [
         textUi.ticketTitleInput,
@@ -438,11 +408,9 @@ Lothstraße 17
 
     function setupModeControls() {
       const posterModeBtn = document.getElementById("posterModeBtn");
-      const postModeBtn = document.getElementById("postModeBtn");
       const ticketModeBtn = document.getElementById("ticketModeBtn");
 
       posterModeBtn.addEventListener("click", () => activateMode("poster"));
-      postModeBtn.addEventListener("click", () => activateMode("post"));
       ticketModeBtn.addEventListener("click", () => activateMode("ticket"));
       updateModeControls();
     }
@@ -462,14 +430,6 @@ Lothstraße 17
         return;
       }
 
-      if (activeMode === "post") {
-        resizeCanvas(POST_W, POST_H);
-        if (!postLayout || !postImage) {
-          generatePost();
-        }
-        return;
-      }
-
       resizeCanvas(TICKET_W, TICKET_H);
       if (!ticketLayout || !ticketBuilding) {
         generateTicket();
@@ -478,20 +438,15 @@ Lothstraße 17
 
     function updateModeControls() {
       const posterModeBtn = document.getElementById("posterModeBtn");
-      const postModeBtn = document.getElementById("postModeBtn");
       const ticketModeBtn = document.getElementById("ticketModeBtn");
       const isPoster = activeMode === "poster";
-      const isPost = activeMode === "post";
       const isTicket = activeMode === "ticket";
 
       posterModeBtn.classList.toggle("is-active", isPoster);
-      postModeBtn.classList.toggle("is-active", isPost);
       ticketModeBtn.classList.toggle("is-active", isTicket);
       posterModeBtn.setAttribute("aria-pressed", String(isPoster));
-      postModeBtn.setAttribute("aria-pressed", String(isPost));
       ticketModeBtn.setAttribute("aria-pressed", String(isTicket));
       textUi.posterTextFields.hidden = !isPoster;
-      textUi.postTextFields.hidden = !isPost;
       textUi.ticketTextFields.hidden = !isTicket;
       document.body.dataset.format = activeMode;
       document.getElementById("generateBtn").setAttribute("aria-label", `shuffle ${activeMode}`);
@@ -503,22 +458,12 @@ Lothstraße 17
         return;
       }
 
-      if (activeMode === "post") {
-        generatePost();
-        return;
-      }
-
       generateTicket();
     }
 
     function saveActiveFormat() {
       if (activeMode === "poster") {
         saveCanvas("generated_poster", "png");
-        return;
-      }
-
-      if (activeMode === "post") {
-        saveCanvas("imaginary_city_instagram_post", "png");
         return;
       }
 
@@ -532,12 +477,6 @@ Lothstraße 17
       textUi.dateInput.value = posterContent.dateAddress;
       textUi.extraInput.value = posterContent.extraInfo;
       textUi.extra2Input.value = posterContent.extraInfo2;
-    }
-
-    function syncPostTextInputs() {
-      textUi.postHeadlineInput.value = postContent.headline;
-      textUi.postSubtitleInput.value = postContent.subtitle;
-      textUi.postMetadataInput.value = postContent.metadata;
     }
 
     function syncTicketTextInputs() {
@@ -557,12 +496,6 @@ Lothstraße 17
       posterContent.extraInfo = textUi.extraInput.value;
       posterContent.extraInfo2 = textUi.extra2Input.value;
       refreshCurrentLayoutText();
-    }
-
-    function updatePostContentFromInputs() {
-      postContent.headline = textUi.postHeadlineInput.value;
-      postContent.subtitle = textUi.postSubtitleInput.value;
-      postContent.metadata = textUi.postMetadataInput.value;
     }
 
     function updateTicketContentFromInputs() {
@@ -630,11 +563,6 @@ Lothstraße 17
     function draw() {
       if (activeMode === "poster") {
         drawPoster();
-        return;
-      }
-
-      if (activeMode === "post") {
-        drawPost();
         return;
       }
 
