@@ -342,8 +342,10 @@
         saveCanvas("generated_ticket", "png");
       });
 
-      loadFallbackImageList();
-      loadBuildingList();
+      // Load the real fallback house images before deciding whether the saved
+      // building collection is available. On slower mobile connections the two
+      // parallel requests used to race, so the drawn placeholder could win.
+      loadFallbackImageList().then(loadBuildingList);
     }
 
     async function loadFallbackImageList() {
