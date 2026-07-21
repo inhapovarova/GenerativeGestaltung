@@ -66,17 +66,19 @@
     <div class="generator-mode-fields" id="posterTextFields">
       <div class="generator-text-control">
         <label for="titleInput">title</label>
-        <textarea id="titleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+        <textarea id="titleInput">RE;ASSEMBLY;</textarea>
       </div>
       <div class="generator-text-control">
-        <label for="introInput">description</label>
-        <textarea id="introInput">A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.</textarea>
+        <label for="subtitleInput">subtitle</label>
+        <textarea id="subtitleInput">generative city builder</textarea>
       </div>
       <div class="generator-text-control">
-        <label for="poemInput">subtitle</label>
-        <textarea id="poemInput">Windows repeat like thoughts.
-Doors appear like invitations.
-Streets rearrange themselves before they can be remembered.</textarea>
+        <label for="introInput">paragraph 1</label>
+        <textarea id="introInput">Every building is made from a limited archive of façades, windows, doors, roofs and decorative elements. Visitors define conditions such as size, density, repetition, lighting and decoration, but they do not position every element themselves.</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="poemInput">paragraph 2</label>
+        <textarea id="poemInput">The system assembles the result through a fixed grid, architectural rules and chance. When a result is shaped by the visitor, the system and randomness at the same time, who is actually creating it?</textarea>
       </div>
       <div class="generator-text-control">
         <label for="dateInput">metadata</label>
@@ -218,9 +220,10 @@ Lothstraße 17
     let ticketLayout = null;
 
     const posterContent = {
-      title: "THE CITY THAT REMEMBERS FORWARD",
-      textIntro: "A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.",
-      textPoem: "Windows repeat like thoughts.\nDoors appear like invitations.\nStreets rearrange themselves before they can be remembered.",
+      title: "RE;ASSEMBLY;",
+      subtitle: "generative city builder",
+      textIntro: "Every building is made from a limited archive of façades, windows, doors, roofs and decorative elements. Visitors define conditions such as size, density, repetition, lighting and decoration, but they do not position every element themselves.",
+      textPoem: "The system assembles the result through a fixed grid, architectural rules and chance. When a result is shaped by the visitor, the system and randomness at the same time, who is actually creating it?",
       dateAddress: "38.07.2026, 19:30\nOpening Night\n\nThe Museum of Unbuilt Streets\n42 Soft Corner Lane\nOld Future District\n00023 City City\n\n38.07.2026, 38.13.2026",
       extraInfo: "Generated houses\nRandom streets\nPoster machines\nSaved facades\nA sandbox for slow exploration",
       extraInfo2: "Free entry",
@@ -363,6 +366,7 @@ Lothstraße 17
         textBtn: document.getElementById("textBtn"),
         textPopover: document.getElementById("textPopover"),
         titleInput: document.getElementById("titleInput"),
+        subtitleInput: document.getElementById("subtitleInput"),
         introInput: document.getElementById("introInput"),
         poemInput: document.getElementById("poemInput"),
         dateInput: document.getElementById("dateInput"),
@@ -383,6 +387,7 @@ Lothstraße 17
       textUi.textBtn.addEventListener("click", toggleTextPopover);
       [
         textUi.titleInput,
+        textUi.subtitleInput,
         textUi.introInput,
         textUi.poemInput,
         textUi.dateInput,
@@ -472,6 +477,7 @@ Lothstraße 17
 
     function syncPosterTextInputs() {
       textUi.titleInput.value = posterContent.title;
+      textUi.subtitleInput.value = posterContent.subtitle;
       textUi.introInput.value = posterContent.textIntro;
       textUi.poemInput.value = posterContent.textPoem;
       textUi.dateInput.value = posterContent.dateAddress;
@@ -490,6 +496,7 @@ Lothstraße 17
 
     function updatePosterContentFromInputs() {
       posterContent.title = textUi.titleInput.value;
+      posterContent.subtitle = textUi.subtitleInput.value;
       posterContent.textIntro = textUi.introInput.value;
       posterContent.textPoem = textUi.poemInput.value;
       posterContent.dateAddress = textUi.dateInput.value;
@@ -511,6 +518,7 @@ Lothstraße 17
       if (!currentLayout) return;
 
       currentLayout.titleText = posterContent.title;
+      currentLayout.subtitleText = posterContent.subtitle;
 
       if (currentLayout.textBlocks[0]) {
         currentLayout.textBlocks[0].text = posterContent.textIntro;
@@ -1270,6 +1278,8 @@ Lothstraße 17
       }
 
       layout.titleText = posterContent.title;
+      layout.subtitleText = posterContent.subtitle;
+      layout.title.splitAtSemicolon = random() < 0.55;
       layout.date.kind = "light";
       layout.extras = layout.extras.filter(Boolean).map((block) => ({
         ...block,
@@ -1302,6 +1312,7 @@ Lothstraße 17
       );
 
       drawTitle(currentLayout.title, currentLayout.titleText);
+      drawPosterSubtitle(currentLayout.title, currentLayout.titleText, currentLayout.subtitleText);
       drawImageBlock(currentBuilding, currentLayout.image);
       posterTextBlocks.forEach((block) => {
         if (block.kind === "light") {
@@ -1543,7 +1554,7 @@ Lothstraße 17
       const fontSize = fitTicketTitleLines(lines, block.rect, block.size || 78, block.leadingRatio || 0.86);
       const leading = fontSize * (block.leadingRatio || 0.86);
 
-      textFont("Arial Black");
+      textFont("Arial");
       textSize(fontSize);
       textLeading(leading);
       textStyle(BOLD);
@@ -2051,23 +2062,115 @@ Lothstraße 17
       noStroke();
 
       const r = block.rect;
-      const titleText = title.toUpperCase();
-      const fontSize = fitTitleSize(titleText, r, block.size);
-      const leading = fontSize * 0.82;
-      const lines = wrapTextLines(titleText, r.w, fontSize);
+      const heading = getPosterHeadingMetrics(block, title, posterContent.subtitle);
 
-      textFont("Arial Black");
-      textSize(fontSize);
-      textLeading(leading);
+      textFont("Arial");
+      textSize(heading.size);
+      textLeading(heading.titleLeading);
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      lines.forEach((line, index) => {
-        text(line, r.x, r.y + index * leading);
+      heading.titleLines.forEach((line, index) => {
+        text(line, r.x, r.y + index * heading.titleLeading);
       });
 
       textStyle(NORMAL);
       textFont("Arial");
+    }
+
+    function drawPosterSubtitle(block, title, subtitle) {
+      const subtitleText = (subtitle || "").trim();
+      if (!subtitleText) return;
+
+      const r = block.rect;
+      const heading = getPosterHeadingMetrics(block, title, subtitleText);
+      const subtitleY = r.y + heading.titleLines.length * heading.titleLeading + heading.gap;
+
+      fill(paletteAssignment.headline);
+      noStroke();
+      textFont("Arial");
+      textSize(heading.size);
+      textLeading(heading.subtitleLeading);
+      textStyle(ITALIC);
+      textAlign(LEFT, TOP);
+      heading.subtitleLines.forEach((line, index) => {
+        text(line, r.x, subtitleY + index * heading.subtitleLeading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function getPosterHeadingMetrics(block, title, subtitle) {
+      const r = block.rect;
+      const titleText = (title || "").trim().toUpperCase();
+      const subtitleText = (subtitle || "").trim();
+
+      for (let size = block.size; size >= 42; size -= 2) {
+        const titleLines = getPosterTitleLines(titleText, r.w, size, block.splitAtSemicolon);
+        const subtitleLines = wrapHeadingLines(subtitleText, r.w, size, ITALIC);
+        const titleLeading = size * 0.82;
+        const subtitleLeading = size * 0.92;
+        const gap = size * 0.06;
+        const totalHeight = titleLines.length * titleLeading + gap + subtitleLines.length * subtitleLeading;
+        const titleFits = headingLinesFit(titleLines, r.w, size, BOLD);
+        const subtitleFits = headingLinesFit(subtitleLines, r.w, size, ITALIC);
+
+        if (totalHeight <= r.h && titleFits && subtitleFits) {
+          return { size, titleLines, subtitleLines, titleLeading, subtitleLeading, gap };
+        }
+      }
+
+      const size = 42;
+      return {
+        size,
+        titleLines: getPosterTitleLines(titleText, r.w, size, block.splitAtSemicolon),
+        subtitleLines: wrapHeadingLines(subtitleText, r.w, size, ITALIC),
+        titleLeading: size * 0.82,
+        subtitleLeading: size * 0.92,
+        gap: size * 0.06,
+      };
+    }
+
+    function getPosterTitleLines(title, maxWidth, size, splitAtSemicolon) {
+      if (splitAtSemicolon && title === "RE;ASSEMBLY;") {
+        return ["RE;", "ASSEMBLY;"];
+      }
+
+      return wrapHeadingLines(title, maxWidth, size, BOLD);
+    }
+
+    function wrapHeadingLines(textValue, maxWidth, size, style) {
+      textFont("Arial");
+      textStyle(style);
+      textSize(size);
+
+      const words = textValue.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let currentLine = "";
+
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+
+      if (currentLine) lines.push(currentLine);
+      textStyle(NORMAL);
+      return lines;
+    }
+
+    function headingLinesFit(lines, maxWidth, size, style) {
+      textFont("Arial");
+      textStyle(style);
+      textSize(size);
+      const fits = lines.every((line) => textWidth(line) <= maxWidth);
+      textStyle(NORMAL);
+      return fits;
     }
 
     function drawBodyText(block) {
@@ -2082,7 +2185,8 @@ Lothstraße 17
       textStyle(NORMAL);
       textAlign(LEFT, TOP);
 
-      text(block.text, r.x, r.y, r.w, r.h);
+      const paragraphText = block.text.replace(/\s+/g, " ").trim();
+      text(paragraphText, r.x, r.y, r.w, r.h);
     }
 
     function drawLightText(block) {
