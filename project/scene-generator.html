@@ -81,13 +81,17 @@
 
     @media (max-width: 640px) {
       .format-toggle {
-        left: 18px;
-        right: 78px;
+        top: auto;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        left: 12px;
+        right: 12px;
         justify-content: stretch;
+        height: 44px;
       }
 
       .format-toggle button {
         flex: 1 1 0;
+        height: 36px;
         padding: 0 8px;
       }
     }

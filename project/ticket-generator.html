@@ -115,6 +115,56 @@
     .palette-button.is-active .palette-dot {
       border-color: rgba(255, 255, 255, 0.72);
     }
+
+    @media (max-width: 760px) {
+      body {
+        min-height: 100dvh;
+        box-sizing: border-box;
+        padding: 76px 12px 12px;
+      }
+
+      canvas {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 100px);
+      }
+
+      .ui {
+        top: 12px;
+        left: 12px;
+        right: 68px;
+        gap: 6px;
+        flex-wrap: nowrap;
+      }
+
+      .ui button {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 12px;
+      }
+
+      .palette-controls {
+        min-width: 0;
+        padding: 2px;
+      }
+
+      .palette-button {
+        min-width: 34px !important;
+        width: 34px;
+        height: 34px !important;
+        padding: 0 !important;
+        justify-content: center;
+      }
+
+      .palette-label {
+        display: none;
+      }
+
+      .palette-dot {
+        width: 11px;
+        height: 11px;
+      }
+    }
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>
@@ -180,7 +230,7 @@
     };
 
     const ticketContent = {
-      title: "THE CITY THAT REMEMBERS FORWARD",
+      title: "RE;ASSEMBLY;\ncity generator",
       infoLabel: "EXHIBITION",
       date: "20 JULY 2026",
       venue: "Faculty for Design\nMunich University of Applied Sciences",
@@ -195,6 +245,9 @@
     let currentBuilding = null;
     let currentBuildingIsFallback = false;
     let currentLayout = null;
+    let ticketQrImage = null;
+    let ticketQrTintedImage = null;
+    let ticketQrTintColor = null;
     let silhouetteCache = null;
     let silhouetteCacheSource = null;
     let silhouetteCacheColor = null;
@@ -269,6 +322,18 @@
       pixelDensity(1);
       imageMode(CORNER);
       textFont("Arial");
+
+      loadImage(
+        "assets/qr/ticket-qr.png",
+        (img) => {
+          ticketQrImage = img;
+          ticketQrTintedImage = null;
+          ticketQrTintColor = null;
+        },
+        (error) => {
+          console.warn("Could not load ticket QR code:", error);
+        }
+      );
 
       document.getElementById("generateBtn").addEventListener("click", generateTicket);
       setupPaletteControls();
@@ -577,11 +642,10 @@
     function createLayout() {
       const mode = pick(["classic", "swapped", "bigCity", "bigTitle"]);
       const zones = createModeZones(mode);
-      const titleVariant = pick([
-        ["THE CITY", "THAT", "REMEMBERS", "FORWARD"],
-        ["THE CITY THAT", "REMEMBERS", "FORWARD"],
-        ["THE CITY", "THAT REMEMBERS", "FORWARD"],
-      ]);
+      const splitTitleAtSemicolon = random() < 0.55;
+      const titleVariant = splitTitleAtSemicolon
+        ? ["RE;", "ASSEMBLY;", "city generator"]
+        : ["RE;ASSEMBLY;", "city generator"];
       const titleSize = random(zones.titleSize[0], zones.titleSize[1]);
       const titleLeading = random(0.78, 0.88);
       const titleHeight = titleVariant.length * titleSize * titleLeading;
@@ -606,6 +670,7 @@
           lines: titleVariant,
           size: titleSize,
           leadingRatio: titleLeading,
+          splitAtSemicolon: splitTitleAtSemicolon,
         },
         image: {
           x: constrain(imageX, zones.image.x, zones.image.x + zones.image.w - imageW),
@@ -764,19 +829,29 @@
       fill(paletteAssignment.headline);
       noStroke();
 
-      const titleText = title.toUpperCase();
-      const lines = r.lines || wrapTextLines(titleText, r.rect.w, r.size || 78);
+      const [mainTitle = "RE;ASSEMBLY;", ...subtitleParts] = title.trim().split(/\n+/);
+      const subtitle = subtitleParts.join(" ").trim() || "city generator";
+      const titleLines = r.splitAtSemicolon && mainTitle.toUpperCase() === "RE;ASSEMBLY;"
+        ? ["RE;", "ASSEMBLY;"]
+        : wrapTextLines(mainTitle.toUpperCase(), r.rect.w, r.size || 78);
+      const subtitleLines = wrapTextLines(subtitle, r.rect.w, r.size || 78);
+      const lines = [...titleLines, ...subtitleLines];
       const fontSize = fitTitleLines(lines, r.rect, r.size || 78, r.leadingRatio || 0.86);
       const leading = fontSize * (r.leadingRatio || 0.86);
 
-      textFont("Arial Black");
+      textFont("Arial");
       textSize(fontSize);
       textLeading(leading);
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      lines.forEach((line, index) => {
+      titleLines.forEach((line, index) => {
         text(line, r.rect.x, r.rect.y + index * leading);
+      });
+
+      textStyle(ITALIC);
+      subtitleLines.forEach((line, index) => {
+        text(line, r.rect.x, r.rect.y + (titleLines.length + index) * leading);
       });
 
       textStyle(NORMAL);
@@ -866,31 +941,41 @@
     }
 
     function drawTicketInfo(r) {
-      noStroke();
-      fill(paletteAssignment.bodyText);
-      textAlign(r.align || LEFT, TOP);
+      if (!ticketQrImage) return;
 
-      textFont("Arial Black");
-      textStyle(BOLD);
-      textSize(28);
-      textLeading(26);
-      text(ticketContent.infoLabel, r.x, r.y, r.w, 34);
+      const qrSize = min(INFO_ZONE.w, INFO_ZONE.h) * 0.82;
+      const qrX = INFO_ZONE.x + (INFO_ZONE.w - qrSize) / 2;
+      const qrY = INFO_ZONE.y + (INFO_ZONE.h - qrSize) / 2;
+      image(getTintedTicketQr(), qrX, qrY, qrSize, qrSize);
+    }
 
-      textFont("Arial");
-      textStyle(NORMAL);
-      textSize(r.bodySize || 18);
-      textLeading(r.leading || 24);
-      text(ticketContent.date, r.x, r.y + 44, r.w, 24);
+    function getTintedTicketQr() {
+      const qrColor = paletteAssignment.bodyText;
+      if (ticketQrTintedImage && ticketQrTintColor === qrColor) {
+        return ticketQrTintedImage;
+      }
 
-      textSize(r.bodySize || 18);
-      textLeading(r.leading || 24);
-      const detailText = [
-        ticketContent.venue,
-        "",
-        ticketContent.gate,
-        ticketContent.seat,
-      ].join("\n");
-      text(detailText, r.x, r.y + 112, r.w, r.h - 112);
+      const [red, green, blue] = posterPaletteApi.hexToRgb(qrColor);
+      const tintedImage = ticketQrImage.get();
+      tintedImage.loadPixels();
+
+      for (let index = 0; index < tintedImage.pixels.length; index += 4) {
+        const luminance = (
+          tintedImage.pixels[index] * 0.299
+          + tintedImage.pixels[index + 1] * 0.587
+          + tintedImage.pixels[index + 2] * 0.114
+        );
+        const sourceAlpha = tintedImage.pixels[index + 3];
+        tintedImage.pixels[index] = red;
+        tintedImage.pixels[index + 1] = green;
+        tintedImage.pixels[index + 2] = blue;
+        tintedImage.pixels[index + 3] = sourceAlpha * (1 - luminance / 255);
+      }
+
+      tintedImage.updatePixels();
+      ticketQrTintedImage = tintedImage;
+      ticketQrTintColor = qrColor;
+      return tintedImage;
     }
 
     function drawPerforation(x) {
@@ -930,11 +1015,6 @@
       textAlign(LEFT, TOP);
       text(currentLayout.serialTop, currentLayout.serialTopPos.x, currentLayout.serialTopPos.y);
 
-      push();
-      translate(TICKET_W - MARGIN_X + 14, currentLayout.serialSideY);
-      rotate(-HALF_PI);
-      text(currentLayout.serialBottom, 0, 0);
-      pop();
     }
 
     function getImageFitRect(img, r) {

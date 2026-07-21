@@ -36,6 +36,35 @@
       height: auto !important;
     }
 
+    @media (max-width: 760px) {
+      body {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 108px 12px 12px;
+      }
+
+      canvas {
+        width: min(calc(100vw - 24px), calc((100dvh - 120px) * 1240 / 1754)) !important;
+        height: auto !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 120px);
+      }
+
+      body[data-format="ticket"] {
+        min-height: 100dvh;
+        padding: 108px 12px 12px;
+      }
+
+      body[data-format="ticket"] canvas {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 120px);
+      }
+    }
+
   </style>
   <link rel="stylesheet" href="generator-toolbar.css">
   <link rel="stylesheet" href="shared-nav.css">
@@ -59,7 +88,6 @@
 
   <div class="format-toggle" id="formatToggle" aria-label="output format">
     <button id="posterModeBtn" class="is-active" type="button" aria-pressed="true">Poster</button>
-    <button id="postModeBtn" type="button" aria-pressed="false">Post</button>
     <button id="ticketModeBtn" type="button" aria-pressed="false">Ticket</button>
   </div>
 
@@ -67,17 +95,19 @@
     <div class="generator-mode-fields" id="posterTextFields">
       <div class="generator-text-control">
         <label for="titleInput">title</label>
-        <textarea id="titleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+        <textarea id="titleInput">RE;ASSEMBLY;</textarea>
       </div>
       <div class="generator-text-control">
-        <label for="introInput">description</label>
-        <textarea id="introInput">A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.</textarea>
+        <label for="subtitleInput">subtitle</label>
+        <textarea id="subtitleInput">generative city builder</textarea>
       </div>
       <div class="generator-text-control">
-        <label for="poemInput">subtitle</label>
-        <textarea id="poemInput">Windows repeat like thoughts.
-Doors appear like invitations.
-Streets rearrange themselves before they can be remembered.</textarea>
+        <label for="introInput">paragraph 1</label>
+        <textarea id="introInput">Every building is made from a limited archive of façades, windows, doors, roofs and decorative elements. Visitors define conditions such as size, density, repetition, lighting and decoration, but they do not position every element themselves.</textarea>
+      </div>
+      <div class="generator-text-control">
+        <label for="poemInput">paragraph 2</label>
+        <textarea id="poemInput">The system assembles the result through a fixed grid, architectural rules and chance. When a result is shaped by the visitor, the system and randomness at the same time, who is actually creating it?</textarea>
       </div>
       <div class="generator-text-control">
         <label for="dateInput">metadata</label>
@@ -105,27 +135,11 @@ A sandbox for slow exploration</textarea>
       </div>
     </div>
 
-    <div class="generator-mode-fields" id="postTextFields" hidden>
-      <div class="generator-text-control">
-        <label for="postHeadlineInput">headline</label>
-        <textarea id="postHeadlineInput">Imaginary City Archive</textarea>
-      </div>
-      <div class="generator-text-control">
-        <label for="postSubtitleInput">subtitle</label>
-        <textarea id="postSubtitleInput">Fragments of streets that never existed.</textarea>
-      </div>
-      <div class="generator-text-control">
-        <label for="postMetadataInput">metadata</label>
-        <textarea id="postMetadataInput">ARCHIVE NO. 001
-2026
-GENERATED CITY FRAGMENT</textarea>
-      </div>
-    </div>
-
     <div class="generator-mode-fields" id="ticketTextFields" hidden>
       <div class="generator-text-control">
         <label for="ticketTitleInput">exhibition title</label>
-        <textarea id="ticketTitleInput">THE CITY THAT REMEMBERS FORWARD</textarea>
+        <textarea id="ticketTitleInput">RE;ASSEMBLY;
+city generator</textarea>
       </div>
       <div class="generator-text-control">
         <label for="ticketDateInput">date</label>
@@ -234,11 +248,15 @@ Lothstraße 17
     let ticketBuilding = null;
     let ticketBuildingIsFallback = false;
     let ticketLayout = null;
+    let ticketQrImage = null;
+    let ticketQrTintedImage = null;
+    let ticketQrTintColor = null;
 
     const posterContent = {
-      title: "THE CITY THAT REMEMBERS FORWARD",
-      textIntro: "A generative exhibition about imaginary buildings, future nostalgia, urban rhythm, and the emotional memory of cities that do not exist yet.",
-      textPoem: "Windows repeat like thoughts.\nDoors appear like invitations.\nStreets rearrange themselves before they can be remembered.",
+      title: "RE;ASSEMBLY;",
+      subtitle: "generative city builder",
+      textIntro: "Every building is made from a limited archive of façades, windows, doors, roofs and decorative elements. Visitors define conditions such as size, density, repetition, lighting and decoration, but they do not position every element themselves.",
+      textPoem: "The system assembles the result through a fixed grid, architectural rules and chance. When a result is shaped by the visitor, the system and randomness at the same time, who is actually creating it?",
       dateAddress: "38.07.2026, 19:30\nOpening Night\n\nThe Museum of Unbuilt Streets\n42 Soft Corner Lane\nOld Future District\n00023 City City\n\n38.07.2026, 38.13.2026",
       extraInfo: "Generated houses\nRandom streets\nPoster machines\nSaved facades\nA sandbox for slow exploration",
       extraInfo2: "Free entry",
@@ -251,7 +269,7 @@ Lothstraße 17
     };
 
     const ticketContent = {
-      title: "THE CITY THAT REMEMBERS FORWARD",
+      title: "RE;ASSEMBLY;\ncity generator",
       date: "20 JULY 2026",
       time: "19:30",
       location: "Faculty for Design\nMunich University of Applied Sciences\nLothstraße 17\n80335 Munich",
@@ -353,6 +371,18 @@ Lothstraße 17
       setupPaletteControls();
       setupModeControls();
 
+      loadImage(
+        "assets/qr/ticket-qr.png",
+        (img) => {
+          ticketQrImage = img;
+          ticketQrTintedImage = null;
+          ticketQrTintColor = null;
+        },
+        (error) => {
+          console.warn("Could not load ticket QR code:", error);
+        }
+      );
+
       document.getElementById("saveBtn").addEventListener("click", () => {
         saveActiveFormat();
       });
@@ -381,14 +411,12 @@ Lothstraße 17
         textBtn: document.getElementById("textBtn"),
         textPopover: document.getElementById("textPopover"),
         titleInput: document.getElementById("titleInput"),
+        subtitleInput: document.getElementById("subtitleInput"),
         introInput: document.getElementById("introInput"),
         poemInput: document.getElementById("poemInput"),
         dateInput: document.getElementById("dateInput"),
         extraInput: document.getElementById("extraInput"),
         extra2Input: document.getElementById("extra2Input"),
-        postHeadlineInput: document.getElementById("postHeadlineInput"),
-        postSubtitleInput: document.getElementById("postSubtitleInput"),
-        postMetadataInput: document.getElementById("postMetadataInput"),
         ticketTitleInput: document.getElementById("ticketTitleInput"),
         ticketDateInput: document.getElementById("ticketDateInput"),
         ticketTimeInput: document.getElementById("ticketTimeInput"),
@@ -396,16 +424,15 @@ Lothstraße 17
         ticketNumberInput: document.getElementById("ticketNumberInput"),
         ticketNoteInput: document.getElementById("ticketNoteInput"),
         posterTextFields: document.getElementById("posterTextFields"),
-        postTextFields: document.getElementById("postTextFields"),
         ticketTextFields: document.getElementById("ticketTextFields"),
       };
 
       syncPosterTextInputs();
-      syncPostTextInputs();
       syncTicketTextInputs();
       textUi.textBtn.addEventListener("click", toggleTextPopover);
       [
         textUi.titleInput,
+        textUi.subtitleInput,
         textUi.introInput,
         textUi.poemInput,
         textUi.dateInput,
@@ -413,13 +440,6 @@ Lothstraße 17
         textUi.extra2Input,
       ].forEach((input) => {
         input.addEventListener("input", updatePosterContentFromInputs);
-      });
-      [
-        textUi.postHeadlineInput,
-        textUi.postSubtitleInput,
-        textUi.postMetadataInput,
-      ].forEach((input) => {
-        input.addEventListener("input", updatePostContentFromInputs);
       });
       [
         textUi.ticketTitleInput,
@@ -438,11 +458,9 @@ Lothstraße 17
 
     function setupModeControls() {
       const posterModeBtn = document.getElementById("posterModeBtn");
-      const postModeBtn = document.getElementById("postModeBtn");
       const ticketModeBtn = document.getElementById("ticketModeBtn");
 
       posterModeBtn.addEventListener("click", () => activateMode("poster"));
-      postModeBtn.addEventListener("click", () => activateMode("post"));
       ticketModeBtn.addEventListener("click", () => activateMode("ticket"));
       updateModeControls();
     }
@@ -462,14 +480,6 @@ Lothstraße 17
         return;
       }
 
-      if (activeMode === "post") {
-        resizeCanvas(POST_W, POST_H);
-        if (!postLayout || !postImage) {
-          generatePost();
-        }
-        return;
-      }
-
       resizeCanvas(TICKET_W, TICKET_H);
       if (!ticketLayout || !ticketBuilding) {
         generateTicket();
@@ -478,20 +488,15 @@ Lothstraße 17
 
     function updateModeControls() {
       const posterModeBtn = document.getElementById("posterModeBtn");
-      const postModeBtn = document.getElementById("postModeBtn");
       const ticketModeBtn = document.getElementById("ticketModeBtn");
       const isPoster = activeMode === "poster";
-      const isPost = activeMode === "post";
       const isTicket = activeMode === "ticket";
 
       posterModeBtn.classList.toggle("is-active", isPoster);
-      postModeBtn.classList.toggle("is-active", isPost);
       ticketModeBtn.classList.toggle("is-active", isTicket);
       posterModeBtn.setAttribute("aria-pressed", String(isPoster));
-      postModeBtn.setAttribute("aria-pressed", String(isPost));
       ticketModeBtn.setAttribute("aria-pressed", String(isTicket));
       textUi.posterTextFields.hidden = !isPoster;
-      textUi.postTextFields.hidden = !isPost;
       textUi.ticketTextFields.hidden = !isTicket;
       document.body.dataset.format = activeMode;
       document.getElementById("generateBtn").setAttribute("aria-label", `shuffle ${activeMode}`);
@@ -500,11 +505,6 @@ Lothstraße 17
     function generateActiveFormat() {
       if (activeMode === "poster") {
         generatePoster();
-        return;
-      }
-
-      if (activeMode === "post") {
-        generatePost();
         return;
       }
 
@@ -517,27 +517,17 @@ Lothstraße 17
         return;
       }
 
-      if (activeMode === "post") {
-        saveCanvas("imaginary_city_instagram_post", "png");
-        return;
-      }
-
       saveCanvas("generated_ticket", "png");
     }
 
     function syncPosterTextInputs() {
       textUi.titleInput.value = posterContent.title;
+      textUi.subtitleInput.value = posterContent.subtitle;
       textUi.introInput.value = posterContent.textIntro;
       textUi.poemInput.value = posterContent.textPoem;
       textUi.dateInput.value = posterContent.dateAddress;
       textUi.extraInput.value = posterContent.extraInfo;
       textUi.extra2Input.value = posterContent.extraInfo2;
-    }
-
-    function syncPostTextInputs() {
-      textUi.postHeadlineInput.value = postContent.headline;
-      textUi.postSubtitleInput.value = postContent.subtitle;
-      textUi.postMetadataInput.value = postContent.metadata;
     }
 
     function syncTicketTextInputs() {
@@ -551,18 +541,13 @@ Lothstraße 17
 
     function updatePosterContentFromInputs() {
       posterContent.title = textUi.titleInput.value;
+      posterContent.subtitle = textUi.subtitleInput.value;
       posterContent.textIntro = textUi.introInput.value;
       posterContent.textPoem = textUi.poemInput.value;
       posterContent.dateAddress = textUi.dateInput.value;
       posterContent.extraInfo = textUi.extraInput.value;
       posterContent.extraInfo2 = textUi.extra2Input.value;
       refreshCurrentLayoutText();
-    }
-
-    function updatePostContentFromInputs() {
-      postContent.headline = textUi.postHeadlineInput.value;
-      postContent.subtitle = textUi.postSubtitleInput.value;
-      postContent.metadata = textUi.postMetadataInput.value;
     }
 
     function updateTicketContentFromInputs() {
@@ -578,6 +563,7 @@ Lothstraße 17
       if (!currentLayout) return;
 
       currentLayout.titleText = posterContent.title;
+      currentLayout.subtitleText = posterContent.subtitle;
 
       if (currentLayout.textBlocks[0]) {
         currentLayout.textBlocks[0].text = posterContent.textIntro;
@@ -630,11 +616,6 @@ Lothstraße 17
     function draw() {
       if (activeMode === "poster") {
         drawPoster();
-        return;
-      }
-
-      if (activeMode === "post") {
-        drawPost();
         return;
       }
 
@@ -1342,6 +1323,8 @@ Lothstraße 17
       }
 
       layout.titleText = posterContent.title;
+      layout.subtitleText = posterContent.subtitle;
+      layout.title.splitAtSemicolon = random() < 0.55;
       layout.date.kind = "light";
       layout.extras = layout.extras.filter(Boolean).map((block) => ({
         ...block,
@@ -1374,6 +1357,7 @@ Lothstraße 17
       );
 
       drawTitle(currentLayout.title, currentLayout.titleText);
+      drawPosterSubtitle(currentLayout.title, currentLayout.titleText, currentLayout.subtitleText);
       drawImageBlock(currentBuilding, currentLayout.image);
       posterTextBlocks.forEach((block) => {
         if (block.kind === "light") {
@@ -1428,9 +1412,12 @@ Lothstraße 17
     function createTicketLayout() {
       const mode = pick(["classic", "swapped", "bigCity", "bigTitle"]);
       const zones = createTicketModeZones(mode);
+      const splitTitleAtSemicolon = random() < 0.55;
       const titleSize = random(zones.titleSize[0], zones.titleSize[1]);
       const titleLeading = random(0.78, 0.88);
-      const titleLines = ticketTitleLines(ticketContent.title, zones.title.w - zones.titlePadRight, titleSize);
+      const titleLines = splitTitleAtSemicolon
+        ? ["RE;", "ASSEMBLY;", "city generator"]
+        : ["RE;ASSEMBLY;", "city generator"];
       const titleHeight = titleLines.length * titleSize * titleLeading;
       const titleY = zones.title.y + random(0, max(2, zones.title.h - titleHeight));
       const imageW = zones.image.w * random(zones.imageScale[0], zones.imageScale[1]);
@@ -1452,6 +1439,7 @@ Lothstraße 17
           },
           size: titleSize,
           leadingRatio: titleLeading,
+          splitAtSemicolon: splitTitleAtSemicolon,
         },
         image: {
           x: constrain(imageX, zones.image.x, zones.image.x + zones.image.w - imageW),
@@ -1610,19 +1598,29 @@ Lothstraße 17
       fill(paletteAssignment.headline);
       noStroke();
 
-      const titleText = title.trim().toUpperCase() || "IMAGINARY CITY ARCHIVE";
-      const lines = ticketTitleLines(titleText, block.rect.w, block.size || 78);
+      const [mainTitle = "RE;ASSEMBLY;", ...subtitleParts] = title.trim().split(/\n+/);
+      const subtitle = subtitleParts.join(" ").trim() || "city generator";
+      const titleLines = block.splitAtSemicolon && mainTitle.toUpperCase() === "RE;ASSEMBLY;"
+        ? ["RE;", "ASSEMBLY;"]
+        : ticketTitleLines(mainTitle.toUpperCase(), block.rect.w, block.size || 78);
+      const subtitleLines = ticketTitleLines(subtitle, block.rect.w, block.size || 78);
+      const lines = [...titleLines, ...subtitleLines];
       const fontSize = fitTicketTitleLines(lines, block.rect, block.size || 78, block.leadingRatio || 0.86);
       const leading = fontSize * (block.leadingRatio || 0.86);
 
-      textFont("Arial Black");
+      textFont("Arial");
       textSize(fontSize);
       textLeading(leading);
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      lines.forEach((line, index) => {
+      titleLines.forEach((line, index) => {
         text(line, block.rect.x, block.rect.y + index * leading);
+      });
+
+      textStyle(ITALIC);
+      subtitleLines.forEach((line, index) => {
+        text(line, block.rect.x, block.rect.y + (titleLines.length + index) * leading);
       });
 
       textStyle(NORMAL);
@@ -1657,25 +1655,41 @@ Lothstraße 17
     }
 
     function drawTicketInfo(r) {
-      noStroke();
-      fill(paletteAssignment.bodyText);
-      textAlign(r.align || LEFT, TOP);
+      if (!ticketQrImage) return;
 
-      textFont("Arial Black");
-      textStyle(BOLD);
-      textSize(28);
-      textLeading(26);
-      text("EXHIBITION", r.x, r.y, r.w, 34);
+      const qrSize = min(TICKET_INFO_ZONE.w, TICKET_INFO_ZONE.h) * 0.82;
+      const qrX = TICKET_INFO_ZONE.x + (TICKET_INFO_ZONE.w - qrSize) / 2;
+      const qrY = TICKET_INFO_ZONE.y + (TICKET_INFO_ZONE.h - qrSize) / 2;
+      image(getTintedTicketQr(), qrX, qrY, qrSize, qrSize);
+    }
 
-      textFont("Arial");
-      textStyle(NORMAL);
-      textSize(r.bodySize || 18);
-      textLeading(r.leading || 24);
-      text([ticketContent.date, ticketContent.time].filter(Boolean).join(", "), r.x, r.y + 44, r.w, 28);
+    function getTintedTicketQr() {
+      const qrColor = paletteAssignment.bodyText;
+      if (ticketQrTintedImage && ticketQrTintColor === qrColor) {
+        return ticketQrTintedImage;
+      }
 
-      textSize(r.bodySize || 18);
-      textLeading(r.leading || 24);
-      text(ticketContent.location, r.x, r.y + 112, r.w, r.h - 112);
+      const [red, green, blue] = posterPaletteApi.hexToRgb(qrColor);
+      const tintedImage = ticketQrImage.get();
+      tintedImage.loadPixels();
+
+      for (let index = 0; index < tintedImage.pixels.length; index += 4) {
+        const luminance = (
+          tintedImage.pixels[index] * 0.299
+          + tintedImage.pixels[index + 1] * 0.587
+          + tintedImage.pixels[index + 2] * 0.114
+        );
+        const sourceAlpha = tintedImage.pixels[index + 3];
+        tintedImage.pixels[index] = red;
+        tintedImage.pixels[index + 1] = green;
+        tintedImage.pixels[index + 2] = blue;
+        tintedImage.pixels[index + 3] = sourceAlpha * (1 - luminance / 255);
+      }
+
+      tintedImage.updatePixels();
+      ticketQrTintedImage = tintedImage;
+      ticketQrTintColor = qrColor;
+      return tintedImage;
     }
 
     function drawTicketPerforation(x) {
@@ -1716,11 +1730,6 @@ Lothstraße 17
       textAlign(LEFT, TOP);
       text(topSerial, ticketLayout.serialTopPos.x, ticketLayout.serialTopPos.y);
 
-      push();
-      translate(TICKET_W - TICKET_MARGIN_X + 14, ticketLayout.serialSideY);
-      rotate(-HALF_PI);
-      text(ticketLayout.serialBottom, 0, 0);
-      pop();
     }
 
     function fitTicketTitleLines(lines, r, preferredSize, leadingRatio) {
@@ -2123,23 +2132,115 @@ Lothstraße 17
       noStroke();
 
       const r = block.rect;
-      const titleText = title.toUpperCase();
-      const fontSize = fitTitleSize(titleText, r, block.size);
-      const leading = fontSize * 0.82;
-      const lines = wrapTextLines(titleText, r.w, fontSize);
+      const heading = getPosterHeadingMetrics(block, title, posterContent.subtitle);
 
-      textFont("Arial Black");
-      textSize(fontSize);
-      textLeading(leading);
+      textFont("Arial");
+      textSize(heading.size);
+      textLeading(heading.titleLeading);
       textStyle(BOLD);
       textAlign(LEFT, TOP);
 
-      lines.forEach((line, index) => {
-        text(line, r.x, r.y + index * leading);
+      heading.titleLines.forEach((line, index) => {
+        text(line, r.x, r.y + index * heading.titleLeading);
       });
 
       textStyle(NORMAL);
       textFont("Arial");
+    }
+
+    function drawPosterSubtitle(block, title, subtitle) {
+      const subtitleText = (subtitle || "").trim();
+      if (!subtitleText) return;
+
+      const r = block.rect;
+      const heading = getPosterHeadingMetrics(block, title, subtitleText);
+      const subtitleY = r.y + heading.titleLines.length * heading.titleLeading + heading.gap;
+
+      fill(paletteAssignment.headline);
+      noStroke();
+      textFont("Arial");
+      textSize(heading.size);
+      textLeading(heading.subtitleLeading);
+      textStyle(ITALIC);
+      textAlign(LEFT, TOP);
+      heading.subtitleLines.forEach((line, index) => {
+        text(line, r.x, subtitleY + index * heading.subtitleLeading);
+      });
+
+      textStyle(NORMAL);
+      textFont("Arial");
+    }
+
+    function getPosterHeadingMetrics(block, title, subtitle) {
+      const r = block.rect;
+      const titleText = (title || "").trim().toUpperCase();
+      const subtitleText = (subtitle || "").trim();
+
+      for (let size = block.size; size >= 42; size -= 2) {
+        const titleLines = getPosterTitleLines(titleText, r.w, size, block.splitAtSemicolon);
+        const subtitleLines = wrapHeadingLines(subtitleText, r.w, size, ITALIC);
+        const titleLeading = size * 0.82;
+        const subtitleLeading = size * 0.92;
+        const gap = size * 0.06;
+        const totalHeight = titleLines.length * titleLeading + gap + subtitleLines.length * subtitleLeading;
+        const titleFits = headingLinesFit(titleLines, r.w, size, BOLD);
+        const subtitleFits = headingLinesFit(subtitleLines, r.w, size, ITALIC);
+
+        if (totalHeight <= r.h && titleFits && subtitleFits) {
+          return { size, titleLines, subtitleLines, titleLeading, subtitleLeading, gap };
+        }
+      }
+
+      const size = 42;
+      return {
+        size,
+        titleLines: getPosterTitleLines(titleText, r.w, size, block.splitAtSemicolon),
+        subtitleLines: wrapHeadingLines(subtitleText, r.w, size, ITALIC),
+        titleLeading: size * 0.82,
+        subtitleLeading: size * 0.92,
+        gap: size * 0.06,
+      };
+    }
+
+    function getPosterTitleLines(title, maxWidth, size, splitAtSemicolon) {
+      if (splitAtSemicolon && title === "RE;ASSEMBLY;") {
+        return ["RE;", "ASSEMBLY;"];
+      }
+
+      return wrapHeadingLines(title, maxWidth, size, BOLD);
+    }
+
+    function wrapHeadingLines(textValue, maxWidth, size, style) {
+      textFont("Arial");
+      textStyle(style);
+      textSize(size);
+
+      const words = textValue.split(/\s+/).filter(Boolean);
+      const lines = [];
+      let currentLine = "";
+
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (textWidth(testLine) <= maxWidth || !currentLine) {
+          currentLine = testLine;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      });
+
+      if (currentLine) lines.push(currentLine);
+      textStyle(NORMAL);
+      return lines;
+    }
+
+    function headingLinesFit(lines, maxWidth, size, style) {
+      textFont("Arial");
+      textStyle(style);
+      textSize(size);
+      const fits = lines.every((line) => textWidth(line) <= maxWidth);
+      textStyle(NORMAL);
+      return fits;
     }
 
     function drawBodyText(block) {
@@ -2154,7 +2255,8 @@ Lothstraße 17
       textStyle(NORMAL);
       textAlign(LEFT, TOP);
 
-      text(block.text, r.x, r.y, r.w, r.h);
+      const paragraphText = block.text.replace(/\s+/g, " ").trim();
+      text(paragraphText, r.x, r.y, r.w, r.h);
     }
 
     function drawLightText(block) {
