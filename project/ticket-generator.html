@@ -115,6 +115,56 @@
     .palette-button.is-active .palette-dot {
       border-color: rgba(255, 255, 255, 0.72);
     }
+
+    @media (max-width: 760px) {
+      body {
+        min-height: 100dvh;
+        box-sizing: border-box;
+        padding: 76px 12px 12px;
+      }
+
+      canvas {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 100px);
+      }
+
+      .ui {
+        top: 12px;
+        left: 12px;
+        right: 68px;
+        gap: 6px;
+        flex-wrap: nowrap;
+      }
+
+      .ui button {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 12px;
+      }
+
+      .palette-controls {
+        min-width: 0;
+        padding: 2px;
+      }
+
+      .palette-button {
+        min-width: 34px !important;
+        width: 34px;
+        height: 34px !important;
+        padding: 0 !important;
+        justify-content: center;
+      }
+
+      .palette-label {
+        display: none;
+      }
+
+      .palette-dot {
+        width: 11px;
+        height: 11px;
+      }
+    }
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>

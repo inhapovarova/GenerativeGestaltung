@@ -211,15 +211,91 @@
 
 @media (max-width: 760px) {
   .generator-toolbar {
-    right: 18px;
-    flex-wrap: wrap;
+    top: 12px;
+    left: 12px;
+    right: 68px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .generator-toolbar button {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+  }
+
+  .generator-toolbar .icon-button {
+    width: 40px;
+  }
+
+  .generator-toolbar .palette-controls {
+    min-width: 0;
+    padding: 2px;
+  }
+
+  .generator-toolbar .palette-button {
+    min-width: 34px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .generator-toolbar .palette-label {
+    display: none;
+  }
+
+  .generator-toolbar .palette-dot {
+    width: 11px;
+    height: 11px;
   }
 
   .generator-text-popover {
-    width: calc(100vw - 36px);
+    top: 108px;
+    left: 12px;
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 14px;
   }
 
   .format-toggle {
-    right: 78px;
+    top: 60px;
+    left: 12px;
+    right: auto;
+    height: 38px;
+  }
+
+  .format-toggle button {
+    min-width: 76px;
+    height: 30px;
+  }
+
+  .generator-text-popover textarea {
+    min-height: 64px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .generator-toolbar {
+    right: 58px;
+  }
+
+  .generator-toolbar button {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 9px;
+  }
+
+  .generator-toolbar .icon-button {
+    width: 36px;
+  }
+
+  .generator-toolbar .palette-button {
+    min-width: 30px;
+    width: 30px;
+    height: 30px;
   }
 }

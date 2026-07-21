@@ -36,6 +36,35 @@
       height: auto !important;
     }
 
+    @media (max-width: 760px) {
+      body {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        padding: 108px 12px 12px;
+      }
+
+      canvas {
+        width: min(calc(100vw - 24px), calc((100dvh - 120px) * 1240 / 1754)) !important;
+        height: auto !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 120px);
+      }
+
+      body[data-format="ticket"] {
+        min-height: 100dvh;
+        padding: 108px 12px 12px;
+      }
+
+      body[data-format="ticket"] canvas {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100dvh - 120px);
+      }
+    }
+
   </style>
   <link rel="stylesheet" href="generator-toolbar.css">
   <link rel="stylesheet" href="shared-nav.css">

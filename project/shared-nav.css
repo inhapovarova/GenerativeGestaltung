@@ -67,3 +67,24 @@
   line-height: 1.2;
   text-decoration: none;
 }
+
+@media (max-width: 760px) {
+  .shared-nav-button {
+    top: 12px;
+    right: 12px;
+    min-width: 44px;
+    height: 40px;
+    padding: 0 12px;
+  }
+
+  .shared-nav-panel {
+    top: 60px;
+    right: 12px;
+    width: min(200px, calc(100vw - 24px));
+  }
+
+  .shared-nav-panel a {
+    padding: 12px;
+    font-size: 14px;
+  }
+}

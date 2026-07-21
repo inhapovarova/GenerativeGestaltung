@@ -147,6 +147,32 @@
       stroke-width: 1.7;
     }
 
+    @media (max-width: 640px) {
+      .ui {
+        top: 12px;
+        left: 12px;
+        width: calc(100vw - 24px);
+      }
+
+      .ui-content {
+        max-height: calc(100dvh - 136px);
+        padding: 14px;
+      }
+
+      .panel-toggle {
+        min-width: 40px;
+        height: 40px;
+      }
+
+      .buttons {
+        flex-wrap: wrap;
+      }
+
+      .buttons button {
+        min-height: 40px;
+      }
+    }
+
   </style>
   <link rel="stylesheet" href="shared-nav.css">
 </head>
